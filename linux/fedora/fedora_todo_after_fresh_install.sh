@@ -130,6 +130,9 @@ sudo dnf install -y gh
 # https://fedoramagazine.org/two-factor-authentication-ssh-fedora/
 # sudo dnf install -y google-authenticator
 
+# Password management
+sudo dnf install keepassxc
+
 
 # Install GNOME Tweaks
 sudo dnf install -y gnome-tweaks
@@ -565,6 +568,11 @@ flatpak install -y flathub tv.kodi.Kodi
 
 ###############################################################
 
+# Android apps on linux:
+# https://docs.waydro.id/usage/install-on-desktops
+# sudo dnf install waydroid
+# System OTA: https://ota.waydro.id/system
+# Vendor OTA: https://ota.waydro.id/vendor
 
 ###############################################################
 
