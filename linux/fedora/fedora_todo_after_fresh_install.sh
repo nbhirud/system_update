@@ -125,7 +125,7 @@ sudo dnf update -y && sudo dnf upgrade --refresh -y
 
 ### Install software
 
-sudo dnf install -y gh
+sudo dnf install -y gh python
 
 # https://fedoramagazine.org/two-factor-authentication-ssh-fedora/
 # sudo dnf install -y google-authenticator
@@ -143,7 +143,7 @@ sudo dnf install -y gnome-browser-connector
 # Go to extensions.gnome.org and install the browser extension
 
 # Install useful things:
-sudo dnf install -y vlc htop neofetch gimp gparted bleachbit kdenlive transmission 
+sudo dnf install -y vlc htop neofetch gimp gparted alacritty bleachbit kdenlive transmission 
 
 sudo dnf install -y chromium
 
@@ -194,6 +194,14 @@ sudo dnf remove -y totem # Remove stock video player
 # sudo dnf install fedore-workstation-repositories
 # sudo dnf config-manager --set-enabled google-chrome
 # sudo dnf install google-chrome-stable
+
+# TODO:
+# signal
+# python version check
+# configure firewall
+# configure app specific settings
+# firefox privacy
+# hosts file
 
 ######################################################
 
@@ -420,7 +428,7 @@ crontab -e
 
     MaxFileSize: Adjust the maximum file size that ClamAV will scan.
     MaxScanSize: Change the maximum data size that ClamAV will scan within an archive or a file.
-    HeuristicScanPrecedence: Enable or disable heuristic scanning, which uses techniques to detect unknown malware.
+    HeuristxxicScanPrecedence: Enable or disable heuristic scanning, which uses techniques to detect unknown malware.
 
 
 
