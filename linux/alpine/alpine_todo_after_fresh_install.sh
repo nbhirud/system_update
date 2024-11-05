@@ -23,6 +23,11 @@ setup-apkrepos -cf
 
 # Graphics drivers - https://wiki.alpinelinux.org/wiki/Graphics_driver
 
+# setup Desktop Environment:
+setup-desktop
+# choose gnome
+# cat /sbin/setup-desktop # view all the packages that are installed by the script for the chosen desktop
+
 
 
 
