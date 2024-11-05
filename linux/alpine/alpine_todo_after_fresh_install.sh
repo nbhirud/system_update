@@ -21,6 +21,8 @@ setup-apkrepos -cf
 # For better security you should probably change the url's from http to https in /etc/apk/repositories manually if supported, else change mirror/repo
 
 
+# Graphics drivers - https://wiki.alpinelinux.org/wiki/Graphics_driver
+
 
 
 
