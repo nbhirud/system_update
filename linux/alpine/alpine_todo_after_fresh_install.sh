@@ -40,6 +40,41 @@ doas addgroup nbhirud video
 doas apk add pipewire wireplumber pipewire-pulse pipewire-jack pipewire-alsa gst-plugin-pipewire
 /usr/libexec/pipewire-launcher # just run and ignore errors
 
+#######################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#######################################################
+
+
+# Alpine Package Keeper (apk) commands
+apk search firefox
+apk info zlib
+apk info # list all installed packages
+doas apk add bash zsh
+doas apk update # update the list of available packages
+doas apk upgrade # upgrade the installed packages
+doas apk -U upgrade # combines update and upgrade
+doas apk del bash vim # remove package
+apk cache clean
+
+
+
+
+#######################################################
 
 
 
