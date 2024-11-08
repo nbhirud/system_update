@@ -33,5 +33,13 @@ apk add font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-
 fc-cache -fv # display the font locations and to update the cache
 
 
+# Audio - https://wiki.alpinelinux.org/wiki/PipeWire
+# your user should be in audio (to access audio devices) and video (to access webcam devices) groups
+doas addgroup nbhirud audio
+doas addgroup nbhirud video
+doas apk add pipewire wireplumber pipewire-pulse pipewire-jack pipewire-alsa gst-plugin-pipewire
+/usr/libexec/pipewire-launcher # just run and ignore errors
+
+
 
 
