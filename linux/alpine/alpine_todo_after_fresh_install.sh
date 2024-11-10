@@ -91,6 +91,12 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 # restart
 
 
+# LibreWolf - https://librewolf.net/installation/linux/
+flatpak install flathub io.gitlab.librewolf-community
+
+#######################################################
+
+
 
 #######################################################
 
