@@ -82,6 +82,21 @@ sudo apk update && sudo apk upgrade && flatpak update -y && sudo freshclam && ne
 #######################################################
 
 
+#######################################################
+
+# Enable flatpack flathub - https://flathub.org/setup/Alpine
+doas apk add flatpak
+doas apk add gnome-software-plugin-flatpak
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+# restart
+
+
+# LibreWolf - https://librewolf.net/installation/linux/
+flatpak install flathub io.gitlab.librewolf-community
+
+#######################################################
+
+
 
 #######################################################
 
