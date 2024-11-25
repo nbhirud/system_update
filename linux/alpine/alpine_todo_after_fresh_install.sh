@@ -53,9 +53,13 @@ sudo nano /etc/apk/repositories
 
 sudo apk update && sudo apk upgrade
 
+#######################################################
 
+sudo addgroup nbhirud audio
+doas addgroup nbhirud video
+sudo apk add pipewire wireplumber pipewire-pulse pipewire-jack pipewire-alsa gst-plugin-pipewire
 
-
+sudo apk update && sudo apk upgrade
 
 
 
