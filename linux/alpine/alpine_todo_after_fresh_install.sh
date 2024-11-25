@@ -51,6 +51,7 @@ sudo update-kernel
 
 sudo setup-apkrepos
 sudo nano /etc/apk/repositories
+sudo apk add --upgrade apk-tools
 
 sudo apk update && sudo apk upgrade
 
@@ -102,9 +103,11 @@ apk autoremove && apk cache clean
 
 #######################################################
 
-
-
-
+# Clamav
+sudo apk add clamav
+sudo freshclam
+# update the config files
+sudo clamscan -i -r /home
 
 
 
