@@ -43,7 +43,7 @@ doas apk add pipewire wireplumber pipewire-pulse pipewire-jack pipewire-alsa gst
 #######################################################
 
 
-
+sudo update-kernel
 
 
 
@@ -95,5 +95,24 @@ sudo nano /etc/passwd
 
 # Update "ALL" command 
 sudo apk update && sudo apk upgrade && flatpak update -y && sudo freshclam && omz update && fastfetch
+
+
+# Clean all command
+apk autoremove
+
+#######################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
