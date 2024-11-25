@@ -71,17 +71,6 @@ doas apk -U upgrade # combines update and upgrade
 doas apk del bash vim # remove package
 apk cache clean
 
-
-
-
-#######################################################
-
-sudo apk update && sudo apk upgrade && flatpak update -y && sudo freshclam && neofetch
-
-
-#######################################################
-
-
 #######################################################
 
 # Enable flatpack flathub - https://flathub.org/setup/Alpine
@@ -104,5 +93,7 @@ sudo nano /etc/passwd
 
 #######################################################
 
+# Update "ALL" command 
+sudo apk update && sudo apk upgrade && flatpak update -y && sudo freshclam && omz update && fastfetch
 
 
