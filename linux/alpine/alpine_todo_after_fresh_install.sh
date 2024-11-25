@@ -88,6 +88,7 @@ flatpak install flathub io.gitlab.librewolf-community
 
 sudo apk add gnome-apps-extra
 sudo apk add  zsh
+sudo apk add fastfetch
 sudo apk add nano
 sudo nano /etc/passwd
 
@@ -109,8 +110,10 @@ sudo freshclam
 # update the config files
 sudo clamscan -i -r /home
 
+#######################################################
 
-
+flatpak install org.bleachbit.BleachBit
+flatpak run org.bleachbit.BleachBit  # clean up using the UI that opens
 
 
 
