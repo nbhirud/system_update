@@ -96,6 +96,10 @@ flatpak install flathub io.gitlab.librewolf-community
 
 #######################################################
 
+sudo apk add gnome-apps-extra
+sudo apk add  zsh
+sudo apk add nano
+sudo nano /etc/passwd
 
 
 #######################################################
