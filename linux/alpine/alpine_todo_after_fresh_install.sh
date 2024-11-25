@@ -29,7 +29,7 @@ setup-desktop
 # cat /sbin/setup-desktop # view all the packages that are installed by the script for the chosen desktop
 
 # Fonts: https://wiki.alpinelinux.org/wiki/Fonts
-apk add font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-awesome font-noto-extra font-noto-devanagari 
+sudo apk add font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-awesome font-noto-extra font-noto-devanagari 
 fc-cache -fv # display the font locations and to update the cache
 
 
@@ -40,6 +40,7 @@ doas addgroup nbhirud video
 doas apk add pipewire wireplumber pipewire-pulse pipewire-jack pipewire-alsa gst-plugin-pipewire
 /usr/libexec/pipewire-launcher # just run and ignore errors
 
+sudo apk update && sudo apk upgrade
 #######################################################
 
 
@@ -53,13 +54,6 @@ sudo nano /etc/apk/repositories
 
 sudo apk update && sudo apk upgrade
 
-#######################################################
-
-sudo addgroup nbhirud audio
-doas addgroup nbhirud video
-sudo apk add pipewire wireplumber pipewire-pulse pipewire-jack pipewire-alsa gst-plugin-pipewire
-
-sudo apk update && sudo apk upgrade
 
 
 
