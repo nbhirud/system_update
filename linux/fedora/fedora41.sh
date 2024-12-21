@@ -1,0 +1,385 @@
+############# bash
+
+sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+
+echo $SHELL
+sudo dnf install -y zsh autojump
+chsh -s $(which zsh)
+zsh
+
+####################### zsh
+echo $SHELL
+
+# Change default downloads dir:
+xdg-user-dirs-update --set DOWNLOAD "/home/nbhirud/nb/Downloads"
+
+# Enable Minimize or Maximize Window Buttons
+gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
+
+
+### OMZ
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+cd $ZSH_CUSTOM/plugins
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+
+cd
+nano .zshrc
+# do changes in .zshrc
+omz update
+source ~/.zshrc
+
+### mount nb HDD and change ownership
+# Disks app -> select nb HDD -> 3 gears -> edit mountpoint -> set mountpoint as /home/nbhirud/nb
+sudo umount /home/nbhirud/nb
+sudo chown -R nbhirud:nbhirud nb
+sudo mount -va
+
+### Fonts
+mkdir nb
+mkdir nb/CodeProjects
+cd nb/CodeProjects
+
+git clone --depth 1 https://github.com/ryanoasis/nerd-fonts.git
+
+cd nerd-fonts
+find . -name "*.md" -type f -delete
+find . -name "*.txt" -type f -delete
+find . -name "LICENSE" -type f -delete
+find . -name ".uuid" -type f -delete
+
+mkdir -p ~/.local/share/fonts # this fonts folder is absent by default
+cp ~/nb/CodeProjects/nerd-fonts/patched-fonts ~/.local/share/fonts/nerd-fonts -r
+rm -rf ~/nb/CodeProjects/nerd-fonts
+
+fc-cache -fr
+fc-list | grep "JetBrains"
+
+
+### VSCodium
+
+sudo rpmkeys --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg
+
+printf "[gitlab.com_paulcarroty_vscodium_repo]\nname=download.vscodium.com\nbaseurl=https://download.vscodium.com/rpms/\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg\nmetadata_expire=1h" | sudo tee -a /etc/yum.repos.d/vscodium.repo
+
+sudo dnf install codium
+
+
+### Configuration of Repositories - https://rpmfusion.org/Configuration
+
+sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm # use bash, not zsh (done above)
+
+sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
+sudo dnf update @core
+
+### Multimedia on Fedora - https://rpmfusion.org/Howto/Multimedia 
+sudo dnf swap ffmpeg-free ffmpeg --allowerasing
+sudo dnf update @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
+
+# Which intel driver to install -  https://wiki.archlinux.org/title/Hardware_video_acceleration
+sudo dnf install libva-intel-driver
+
+### Codecs - https://docs.fedoraproject.org/en-US/quick-docs/installing-plugins-for-playing-movies-and-music/
+sudo dnf group install multimedia
+
+sudo dnf update -y && sudo dnf upgrade --refresh -y
+
+
+### Enable flatpak flathub
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+### rename pc
+sudo hostnamectl set-hostname "nbFedora"
+
+# Install software
+
+
+sudo dnf install -y gh keepassxc gnome-tweaks gnome-browser-connector vlc htop fastfetch gparted bleachbit transmission dnfdragora timeshift alacritty torbrowser-launcher
+
+flatpak install -y flathub com.mattjakeman.ExtensionManager com.spotify.Client org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave ca.desrt.dconf-editor
+
+
+##### LibreWolf - https://librewolf.net/installation/fedora/
+# add the repo
+curl -fsSL https://repo.librewolf.net/librewolf.repo | pkexec tee /etc/yum.repos.d/librewolf.repo
+# install the package
+sudo dnf install librewolf
+
+#### Kodi
+sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rtmp kodi-platform kodi-pvr-iptvsimple kodi-visualization-spectrum kodi-eventclients kodi
+
+flatpak install -y tv.kodi.Kodi
+
+
+# remove stuff
+sudo dnf remove -y  totem yelp gnome-tour gnome-connections
+
+
+######################
+sudo nano /etc/yum.repos.d/tor.repo
+
+# [tor]
+# name=Tor for Fedora $releasever - $basearch
+# baseurl=https://rpm.torproject.org/fedora/$releasever/$basearch
+# enabled=1
+# gpgcheck=1
+# gpgkey=https://rpm.torproject.org/fedora/public_gpg.key
+# cost=100
+
+
+dnf install tor -y
+
+
+sudo nano /etc/tor/torrc
+
+# Note: ExitNodes is what shows up as your location
+# LOL
+# EntryNodes {sg}{ae}{sa}{tr}{tw}{aq} StrictNodes 1
+# MiddleNodes {in}{ru}{su}{cn}{ir} StrictNodes 1
+# ExitNodes {ca}{us}{uk}{au} StrictNodes 1
+sudo systemctl enable tor
+sudo systemctl start tor
+# sudo systemctl reload tor
+
+source torsocks on
+echo ". torsocks on" >> ~/.bashrc
+echo ". torsocks on" >> ~/.zshrc
+
+
+#### GSConnect
+# Help - https://github.com/GSConnect/gnome-shell-extension-gsconnect/wiki/Help
+# https://github.com/GSConnect/gnome-shell-extension-gsconnect/wiki/Error#openssl-not-found
+sudo dnf install openssl
+dconf write /org/gnome/shell/disable-user-extensions false
+gapplication launch org.gnome.Shell.Extensions.GSConnect # if error, run next line
+systemctl --user reload dbus-broker.service
+
+
+###### clamav
+
+sudo dnf -y install clamav clamd clamav-update clamtk
+sudo systemctl stop clamav-freshclam 
+sudo freshclam
+sudo systemctl enable clamav-freshclam --now
+
+
+# Generate config files:
+clamconf -g freshclam.conf > freshclam.conf
+clamconf -g clamd.conf > clamd.conf
+clamconf -g clamav-milter.conf > clamav-milter.conf
+
+# Create log files:
+sudo touch /var/log/freshclam.log
+sudo chmod 600 /var/log/freshclam.log
+sudo chown clamupdate /var/log/freshclam.log
+
+sudo touch /var/log/clamav.log
+sudo chmod 600 /var/log/clamav.log
+sudo chown clamscan /var/log/clamav.log
+
+# Configurations:
+
+## freshclam
+# Do these configs in ~/freshclam.conf
+# LogFileMaxSize 20M
+# LogTime yes
+# LogRotate yes
+# UpdateLogFile /var/log/freshclam.log
+# DatabaseOwner clamupdate
+# NotifyClamd yes
+
+
+## clamd
+# Do these configs in /etc/clamd.d/scan.conf
+
+# Comment the "Example"
+# LogFile /var/log/clamav.log
+# LogFileMaxSize 20M
+# LogTime yes
+# LogRotate yes
+# ExitOnOOM yes # Not sure if this is a good thing to do
+# User clamscan
+# DetectPUA yes
+# TLDR of - https://docs.clamav.net/manual/OnAccess.html
+# OnAccessIncludePath /home # Figure out if this is the best option
+# OnAccessExcludeUname clamscan
+# OnAccessPrevention yes
+# OnAccessDisableDDD yes
+
+###########################
+
+# Firefox
+# First thing to do (STEP 1):
+# https://github.com/arkenfox/user.js - The arkenfox user.js is a template which aims to provide as much privacy and enhanced security as possible, and to reduce tracking and fingerprinting as much as possible - while minimizing any loss of functionality and breakage (but it will happen).
+# And then:
+# Review all settings including labs
+# and then:
+
+
+
+# Ublock Origin - Enable relevant filters
+# https://github.com/mchangrh/yt-neuter - Add this filter to ublock origin
+
+# https://github.com/StevenBlack/hosts - modify hosts file - sudo nano /etc/hosts
+mkdir ~/nb/hostsplay
+cd ~/nb/hostsplay
+wget https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn-social/hosts
+sudo mv /etc/hosts ~/nb/hostsplay/hosts_orig
+# modify the downloaded hosts file if necessary
+sudo cp hosts_new_with_linkedin_etc /etc/hosts
+
+
+##### Privacy/youtube extensions - reference: https://www.youtube.com/watch?v=rteYHxcLCZk
+# https://github.com/mchangrh/yt-neuter
+#Return YouTube Dislike: https://returnyoutubedislike.com/
+#SponsorBlock: https://sponsor.ajay.app/
+#Dearrow (clickbait remover): https://dearrow.ajay.app/
+#Unhook: https://unhook.app/
+#uBlock Origin: https://ublockorigin.com/
+#uBO troubleshooting:   / megathread
+#uBO status: https://drhyperion451.github.io/does-...
+#Hide YouTube Shorts: https://github.com/gijsdev/ublock-hid...
+#NewPipe: https://newpipe.net/
+
+
+# Optimizing SSD Drive
+# sudo systemctl status fstrim.timer
+# sudo systemctl enable fstrim.timer
+
+
+
+# https://mullvad.net/en/download/browser/linux
+# Add the Mullvad repository server to dnf
+sudo dnf config-manager addrepo --from-repofile=https://repository.mullvad.net/rpm/stable/mullvad.repo
+# Install the package
+sudo dnf install mullvad-browser
+
+
+# https://brave.com/linux/
+sudo dnf install dnf-plugins-core
+sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
+sudo dnf install brave-browser
+
+# Thunderbird
+sudo dnf install thunderbird
+
+# calendar
+
+# timeshift
+
+# preload equivalent
+
+
+
+#################################################################
+# Added by nbhirud manually:
+#################################################################
+
+### Custom linux aliases - add to ~/.zshrc
+
+# Application shortcuts:
+# alias codium="flatpak run com.vscodium.codium "
+
+# Update/Upgrade related:
+alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && sudo freshclam && omz update -y && . torsocks on && fastfetch"
+# alias nbdistu="sudo apt dist-upgrade -y && sudo do-release-upgrade"
+alias nbreload="systemctl daemon-reload && source ~/.zshrc"
+alias nbclean="dnf clean -y all && yum clean -y all && flatpak uninstall --unused"
+alias nbtoron=". torsocks on"
+alias nbtoroff=". torsocks off"
+
+### Stuff other than aliases:
+. torsocks on
+
+
+
+
+##############################################################
+##############################################################
+##############################################################
+##############################################################
+
+
+# import Kodi backup
+
+# spyder and poetry
+
+sudo dnf install -y python3-spyder python3-poetry meld
+
+
+# DBeaver
+flatpak install flathub io.dbeaver.DBeaverCommunity
+
+
+# vpn via network settings - skip
+
+
+#################################################################
+
+
+# # UFW
+# # Recommended rules from https://christitus.com/linux-security-mistakes/
+# sudo ufw limit 22/tcp
+# sudo ufw allow 80/tcp
+# sudo ufw allow 443/tcp
+# sudo ufw default deny incoming
+# sudo ufw default allow outgoing
+# # Enable ufw
+# sudo ufw enable
+# #sudo systemctl enable ufw # Didn't work for some reason
+# #sudo systemctl start ufw # Didn't work for some reason
+# # sudo ufw status numbered
+# # sudo ufw delete 7 # Use numbers from above numbered command
+
+
+
+###### firewalld #TODO
+# https://www.redhat.com/en/blog/how-to-configure-firewalld
+
+sudo dnf install firewall-config # GUI
+
+## basic commands
+systemctl status firewalld
+# systemctl start --now firewalld
+systemctl enable --now firewalld
+# systemctl stop firewalld
+# systemctl restart firewalld
+
+## config
+
+firewall-cmd --state
+# firewall-cmd --reload
+firewall-cmd --list-all
+
+
+
+
+
+
+# GSConnect firewalld rules
+firewall-cmd --permanent --zone=public --add-service=kdeconnect 
+firewall-cmd --reload
+
+
+# SELinux
+
+sudo dnf update -y && sudo dnf upgrade --refresh -y
+
+# reboot
+sudo reboot
+
+
+###################################################
+
+# One of the VPN options - Proton
+# https://protonvpn.com/support/linux-openvpn/
+# https://protonvpn.com/support/official-linux-vpn-fedora/
+# https://protonvpn.com/support/linux-vpn-setup/
+
+# Another option - Nord
+
+###################################################
+
+# btop like htop
+
