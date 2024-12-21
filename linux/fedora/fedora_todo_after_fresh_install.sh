@@ -65,6 +65,7 @@ git clone --depth 1 https://github.com/ryanoasis/nerd-fonts.git
 # https://rpmfusion.org/Configuration
 
 sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+# The above doesn't work with zsh. Use bash
 # If the above doesn't work, there is another GUI method in the link
 sudo dnf config-manager --enable fedora-cisco-openh264
 sudo dnf update -y && sudo dnf upgrade --refresh -y
@@ -108,10 +109,19 @@ sudo fwupdmgr update
 /sbin/lspci | grep -e 3D
 # Search and install based on system - Following is for recent systems:
 sudo dnf update -y # and reboot if you are not on the latest kernel
-sudo dnf install akmod-nvidia # rhel/centos users can use kmod-nvidia instead
-sudo dnf install xorg-x11-drv-nvidia-cuda #optional for cuda/nvdec/nvenc support
-modinfo -F version nvidia
-# Also see: https://www.nvidia.com/content/DriverDownloads/confirmation.php?url=/XFree86/Linux-x86_64/550.90.07/NVIDIA-Linux-x86_64-550.90.07.run&lang=us&type=geforcem
+
+# # For semi-old nvidia graphics cards:
+# sudo dnf install akmod-nvidia # rhel/centos users can use kmod-nvidia instead
+# sudo dnf install xorg-x11-drv-nvidia-cuda #optional for cuda/nvdec/nvenc support
+# # modinfo -F version nvidia
+# # Also see: https://www.nvidia.com/content/DriverDownloads/confirmation.php?url=/XFree86/Linux-x86_64/550.90.07/NVIDIA-Linux-x86_64-550.90.07.run&lang=us&type=geforcem
+
+# # For very old graphics cards like GeForce 210:
+# sudo dnf copr enable kwizart/kernel-longterm-6.1
+# sudo dnf install akmods gcc kernel-longterm kernel-longterm-devel
+# # sudo dnf remove xorg-x11-drv-nvidia-libs-3
+# sudo dnf install xorg-x11-drv-nvidia-340xx akmod-nvidia-340xx --allowerasing
+# sudo dnf install xorg-x11-drv-nvidia-340xx-cuda
 
 
 sudo dnf update -y && sudo dnf upgrade --refresh -y
@@ -143,9 +153,16 @@ sudo dnf install -y gnome-browser-connector
 # Go to extensions.gnome.org and install the browser extension
 
 # Install useful things:
-sudo dnf install -y vlc htop neofetch gimp gparted alacritty bleachbit kdenlive transmission 
+sudo dnf install -y vlc htop neofetch gparted alacritty bleachbit transmission 
 
-sudo dnf install -y chromium
+# Install Brave instead of chromium
+# https://brave.com/linux/
+sudo dnf install dnf-plugins-core
+sudo dnf config-manager --add-repo https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
+sudo rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-core.asc
+sudo dnf install -y brave-browser
+
+# sudo dnf install -y kdenlive gimp chromium
 
 # LibreWolf
 # https://librewolf.net/installation/
@@ -154,18 +171,25 @@ curl -fsSL https://rpm.librewolf.net/librewolf-repo.repo | pkexec tee /etc/yum.r
 # install the package
 sudo dnf install -y librewolf
 
+# another privacy browser:
+# https://mullvad.net/en/download/browser/linux
+# Add the Mullvad repository server to dnf
+sudo dnf config-manager --add-repo https://repository.mullvad.net/rpm/stable/mullvad.repo
+# Install the package
+sudo dnf install mullvad-browser
+
 # auto-cpufreq # Install for better battery management on laptops
 
 # Pachage manager (for fedora like what synaptic is for ubuntu)
-sudo dnf isntall -y dnfdragora
+# sudo dnf install -y dnfdragora
 
 # Speeds up opening of most used apps (avoid on low end or low RAM PCs)
 # sudo dnf install -y preload 
 # sudo dnf copr enable elxreno/preload -y && sudo dnf install preload -y
 
 # To connect phone and PC
-sudo dnf install -y kdeconnectd 
-# Also check GSConnect GNOME extension
+# sudo dnf install -y kdeconnectd # if using KDE Plasma
+# Install Gnome extension: GSConnect if using Gnome
 # Install KDE Connect on android phone and connect both
 
 # sudo dnf install -y steam # If you wish to play games
@@ -195,13 +219,6 @@ sudo dnf remove -y totem # Remove stock video player
 # sudo dnf config-manager --set-enabled google-chrome
 # sudo dnf install google-chrome-stable
 
-# TODO:
-# signal
-# python version check
-# configure firewall
-# configure app specific settings
-# firefox privacy
-# hosts file
 
 ######################################################
 
@@ -273,9 +290,10 @@ sudo dnf install tor -y
 
 sudo nano /etc/tor/torrc
 ## Paste the following, and modify as necessary:
-# EntryNodes {ca}{us}{uk} StrictNodes 1
-# ExitNodes {ca}{us}{uk} StrictNodes 1
+EntryNodes {ca}{us}{uk} StrictNodes 1
+ExitNodes {ca}{us}{uk} StrictNodes 1
 sudo systemctl reload tor
+
 
 source torsocks on
 echo ". torsocks on" >> ~/.bashrc
@@ -401,7 +419,8 @@ sudo dnf install clamav clamd clamav-update clamtk #  Install ClamAV  and ClamTK
 sudo systemctl stop clamav-freshclam 
 sudo freshclam
 sudo systemctl enable clamav-freshclam --now
-ls -l /var/lib/clamav/ # Check ClamAV directory and the dates of the files
+sudo systemctl start clamav-freshclam
+# ls -l /var/lib/clamav/ # Check ClamAV directory and the dates of the files
 
 # Scanning:
 # sudo clamscan [options] [file/directory/-]
@@ -477,6 +496,9 @@ sudo chown clamscan /var/log/clamav.log
 # OnAccessPrevention yes
 # OnAccessDisableDDD yes
 
+
+# also check /etc/clamd.d/scan.conf
+
 ######################################################
 
 # Scheduled update, etc:
@@ -510,20 +532,8 @@ alias nbtoroff=". torsocks off"
 
 ### Settings
 
-
-# DNS:
-# Same as ubuntu
-
-# Privacy
-
-
-
-
-
-### Search in Super menu 
-# Same as ubuntu
-
-
+# Follow instructions here:
+# linux/gnome_common/gnome_settings.sh
 
 
 #################################################################
@@ -556,7 +566,7 @@ alias nbtoroff=". torsocks off"
 ################################################################
 
 # Better Fonts:
-sudo dnf copr enable dawid/better_fonts -y
+# sudo dnf copr enable dawid/better_fonts -y
 # sudo dnf install fontconfig-font-replacements -y
 # sudo dnf install fontconfig-enhanced-defaults -y
 
@@ -567,8 +577,16 @@ sudo dnf copr enable dawid/better_fonts -y
 
 ###############################################################
 
-# https://www.linuxcapable.com/how-to-install-kodi-on-fedora-linux/
-flatpak install -y flathub tv.kodi.Kodi
+# https://linuxcapable.com/how-to-install-kodi-on-fedora-linux/
+# flatpak install -y flathub tv.kodi.Kodi
+sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rtmp kodi-platform kodi-pvr-iptvsimple kodi-visualization-spectrum kodi-eventclients kodi
+
+# cmake make automake gcc gcc-c++
+
+
+# flatpak install flathub com.stremio.Stremio
+
 
 ###############################################################
 
@@ -584,6 +602,14 @@ flatpak install -y flathub tv.kodi.Kodi
 
 ###############################################################
 
+# For creating WebApps (PWA): https://ostechnix.com/linux-mint-webapp-manager/
+# sudo dnf copr enable refi64/webapp-manager
+# sudo dnf install webapp-manager
+
+###############################################################
+
+# Change default downloads dir:
+xdg-user-dirs-update --set DOWNLOAD "/home/nbhirud/nb/Downloads"
 
 ###############################################################
 
@@ -608,12 +634,210 @@ flatpak install -y flathub tv.kodi.Kodi
 
 ###############################################################
 
+# dnf tweaks
+sudo nano /etc/dnf/dnf.conf
+# don't do dnf update here
+
+# rpmfusion
+sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+# don't do dnf update here
+
+# zsh
+sudo dnf install -y zsh 
+chsh -s $(which zsh) 
+zsh
+# don't do dnf update here
+
+# name
+sudo hostnamectl set-hostname "nbFedora"
+
+# nvidia drivers
+sudo dnf copr enable kwizart/kernel-longterm-6.1
+#sudo dnf install akmods gcc kernel-longterm kernel-longterm-devel
+#sudo dnf install xorg-x11-drv-nvidia-340xx akmod-nvidia-340xx --allowerasing
+## sudo dnf remove xorg-x11-drv-nvidia-libs-3:555.58.02-1.fc40.x86_64
+#sudo dnf install xorg-x11-drv-nvidia-340xx-cuda
+
+# firmware stuff
+sudo fwupdmgr refresh --force
+sudo fwupdmgr get-updates
+sudo fwupdmgr update
+
+# important updates
+sudo dnf config-manager --enable fedora-cisco-openh264
+# sudo dnf update -y && sudo dnf upgrade --refresh -y
+sudo dnf groupupdate core -y
+sudo dnf swap ffmpeg-free ffmpeg --allowerasing -y
+sudo dnf groupupdate multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin -y
+sudo dnf groupupdate sound-and-video -y
+sudo dnf install libva-intel-driver -y
+sudo dnf group install Multimedia -y
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+# update
+# this will update huge number of things when run for the first time
+sudo dnf update -y && sudo dnf upgrade --refresh -y
+
+# reboot
+sudo reboot
+
+
+# codium
+sudo rpmkeys --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg
+printf "[gitlab.com_paulcarroty_vscodium_repo]\nname=download.vscodium.com\nbaseurl=https://download.vscodium.com/rpms/\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg\nmetadata_expire=1h" | sudo tee -a /etc/yum.repos.d/vscodium.repo
+sudo dnf install codium -y
+
+# software
+sudo dnf install -y git gh htop bleachbit neofetch vlc transmission gparted chromium steam clamav clamd clamav-update clamtk
+
+sudo dnf update -y && sudo dnf upgrade --refresh -y
+
+
+curl -fsSL https://rpm.librewolf.net/librewolf-repo.repo | pkexec tee /etc/yum.repos.d/librewolf.repo
+sudo dnf install -y librewolf
+
+
+
+
+
+# tor
+sudo nano /etc/yum.repos.d/tor.repo
+# put stuff there
+# don't install tor
+sudo dnf update -y && sudo dnf upgrade --refresh -y
+
+# install tor browser
+sudo dnf install -y torbrowser-launcher
+
+
+
+
+# clamav config
+# cd /usr/share/doc/clamd/
+sudo nano /usr/share/doc/clamd/clamd.conf
+
+# omz
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+cd $ZSH_CUSTOM/plugins
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+
+#cd
+#nano .zshrc
+## do the following changes:
+## ZSH_THEME="robbyrussell" # comment this line
+#ZSH_THEME="agnoster"
+#zstyle ':omz:update' mode auto # Uncomment this
+#zstyle ':omz:update' frequency 7 # Uncomment and change value
+#ENABLE_CORRECTION="true" # Uncomment - Give it a try
+#COMPLETION_WAITING_DOTS="true"
+#plugins=(git sudo safe-paste github python repo zsh-autosuggestions zsh-syntax-highlighting)
+## At the bottom of oh-my-zsh stuff:
+#ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#ff00ff,bg=cyan,bold,underline"
+#ZSH_AUTOSUGGEST_STRATEGY=(history completion match_prev_cmd)
+#ZSH_HIGHLIGHT_HIGHLIGHTERS+=(main brackets pattern cursor)
+
+# fonts
+mkdir -p ~/.local/share/fonts
+# paste folder 
+fc-cache -fr 
+# fc-list | grep "JetBrains" 
+
+
+
+
+
+
+
+
+# after reboot
+sudo reboot
+omz update
+
+# boot order
+sudo efibootmgr -v
+# sudo efibootmgr -o 0006,0008,0004,0003,0001,0002
+
+
+# memory testing software
+# sudo dnf install -y memtest86+ 
+
+
+# TODO:
+
+# clamav config
+
+# signal - check flatpak - https://www.signal.org/download/linux/
+flatpak install flathub org.signal.Signal
+# flatpak run org.signal.Signal
+
+# firefox privacy
+# hosts file
+
+# configure app specific settings
+# configure firewall
+
+
 
 ###############################################################
 
+https://itsfoss.com/things-to-do-after-installing-fedora/
+https://www.hackingthehike.com/fedora-40-after-install-guide/
+https://www.debugpoint.com/10-things-to-do-fedora-39-after-install/
+https://artofcoding.dev/things-to-do-after-installing-fedora-40
+
 
 ###############################################################
 
+# Virtualization
+# https://docs.fedoraproject.org/en-US/quick-docs/virtualization-getting-started/
+
+egrep '^flags.*(vmx|svm)' /proc/cpuinfo # Should return something - else hardware virtualization isn't supported
+
+dnf groupinfo virtualization # view the packages in Virtualization Package Group
+
+sudo dnf install @virtualization # install the mandatory and default packages in the virtualization group
+sudo dnf group install --with-optional virtualization # install the mandatory, default, and optional packages
+
+sudo systemctl start libvirtd
+sudo systemctl enable libvirtd # start the service on boot
+lsmod | grep kvm # verify that the KVM kernel modules are properly loaded
+
+
+# Permissions
+
+mkdir vm
+cd vm
+# Create a group shared and two users
+sudo groupadd vm_group
+sudo usermod -aG vm_group nbhirud
+sudo usermod -aG vm_group qemu
+# Recursively change group folder ownership (. = current dir = vm dir)
+sudo chgrp -R vm_group .
+# Adding reading, writing and executing (only for files already executables) permissions for the group
+sudo chmod -R g+rwX .
+
+
+
+# virt-install (CLI)
+
+sudo dd if=/dev/zero of=/home/nbhirud/nb/vm/pureos10/pureos10_20240922.img bs=1M count=20480
+sudo virt-install --name pureos10 \
+--description 'PureOS 10 Workstation' \
+--ram 2048 \
+--vcpus 2 \
+--disk /home/nbhirud/nb/vm/pureos10/pureos10_20240922.img,size=20 \
+--os-type linux \
+--os-variant pureos10 \
+--network bridge=virbr0 \
+--graphics vnc,listen=127.0.0.1,port=5901 \
+--cdrom /home/nbhirud/Downloads/pureos-10.3-gnome-live-20230614_amd64.iso \
+--noautoconsole
+
+# Install virt-manager (GUI)
+# sudo virt-manager # Start Virtual Machine Manager
+virt-manager
 
 
 
