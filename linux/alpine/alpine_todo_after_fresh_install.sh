@@ -24,7 +24,7 @@ setup-apkrepos -cf
 # Graphics drivers - https://wiki.alpinelinux.org/wiki/Graphics_driver
 
 # setup Desktop Environment:
-setup-desktop
+sudo setup-desktop
 # choose gnome
 # cat /sbin/setup-desktop # view all the packages that are installed by the script for the chosen desktop
 
@@ -84,6 +84,9 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 # LibreWolf - https://librewolf.net/installation/linux/
 flatpak install flathub io.gitlab.librewolf-community
 
+flatpak install org.bleachbit.BleachBit
+flatpak run org.bleachbit.BleachBit  # clean up using the UI that opens
+
 #######################################################
 
 sudo apk add gnome-apps-extra
@@ -112,12 +115,9 @@ sudo clamscan -i -r /home
 
 #######################################################
 
-flatpak install org.bleachbit.BleachBit
-flatpak run org.bleachbit.BleachBit  # clean up using the UI that opens
+# https://support.mozilla.org/en-US/kb/install-firefox-linux?as=u&utm_source=inproduct#w_security-features-warning
 
-
-
-
+#######################################################
 
 
 
