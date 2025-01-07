@@ -28,6 +28,10 @@ sudo flatpak install tor-browser
 # Spotify
 flatpak install -y flathub com.spotify.Client
 
+# Signal Desktop
+flatpak install flathub org.signal.Signal
+# flatpak run org.signal.Signal
+
 # bottles
 # Run Windows applications on ubuntu - can use actual *.exe files
 # flatpak install -y flathub com.usebottles.bottles
