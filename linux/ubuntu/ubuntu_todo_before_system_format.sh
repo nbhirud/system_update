@@ -13,6 +13,11 @@ apt list --installed > apt_list_installed_$(date +%Y-%m-%d_%H-%M-%S).txt
 flatpak list > flatpak_list_$(date +%Y-%m-%d_%H-%M-%S).txt
 snap list > snap_list_$(date +%Y-%m-%d_%H-%M-%S).txt
 
+
+dnf list > dnf_list_$(date +%Y-%m-%d_%H-%M-%S).txt
+dnf list installed > dnf_list_installed_$(date +%Y-%m-%d_%H-%M-%S).txt
+
+
 # Backup the following from /home
 # Also include any personal folders you may have created
 freshclam.conf
@@ -59,11 +64,12 @@ signal-desktop-keyring.gpg
 .pam_environment
 .profile
 .profile.bak
+.var/app # Flatpak stores apps here. Configs too.
 
 ### Backup the following directory, and delete things you don't need (to be defined)
 /etc
 
-/var/app # Flatpak stores apps here. Configs too.
+
 
 
 ##### Export the following from specific apps:
