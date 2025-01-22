@@ -111,6 +111,8 @@ sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rt
 
 flatpak install -y tv.kodi.Kodi
 
+# uninstall
+# sudo dnf remove kodi kodi-eventclients kodi-firewalld kodi-inputstream-adaptive kodi-inputstream-rtmp kodi-platform  kodi-pvr-iptvsimple kodi-visualization-spectrum 
 
 # remove stuff
 sudo dnf remove -y  totem yelp gnome-tour gnome-connections
@@ -221,13 +223,7 @@ sudo chown clamscan /var/log/clamav.log
 # Ublock Origin - Enable relevant filters
 # https://github.com/mchangrh/yt-neuter - Add this filter to ublock origin
 
-# https://github.com/StevenBlack/hosts - modify hosts file - sudo nano /etc/hosts
-mkdir ~/nb/hostsplay
-cd ~/nb/hostsplay
-wget https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn-social/hosts
-sudo mv /etc/hosts ~/nb/hostsplay/hosts_orig
-# modify the downloaded hosts file if necessary
-sudo cp hosts_new_with_linkedin_etc /etc/hosts
+# replace hosts file - check ../security_os_level/
 
 
 ##### Privacy/youtube extensions - reference: https://www.youtube.com/watch?v=rteYHxcLCZk
