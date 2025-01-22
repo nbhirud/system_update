@@ -68,6 +68,7 @@
 # Default Apps - check and set
 
 # Date and Time - Set time format to AM/PM
+# add world clocks and weather location by clicking notification panel
 
 
 ##### GNOME Tweaks
@@ -77,24 +78,27 @@
 #################################
 
 ### Gnome apps
-flatpak install -y flathub com.rafaelmardojai.Blanket # ambient sounds
+# flatpak install -y flathub com.rafaelmardojai.Blanket # ambient sounds
 # flatpak install -y flathub re.sonny.Commit # write better Git commit messages - interesting but unnecessary
-flatpak install -y flathub io.gitlab.liferooter.TextPieces # Developer's scratchpad
-flatpak install -y flathub org.gnome.Builder #  IDE for GNOME
+# flatpak install -y flathub io.gitlab.liferooter.TextPieces # Developer's scratchpad
+# flatpak install -y flathub org.gnome.Builder #  IDE for GNOME
 # flatpak install -y flathub com.belmoussaoui.Decoder # QR Codes scanner and generator.
-flatpak install -y flathub io.github.mrvladus.List #   Todo application
-flatpak install -y flathub se.sjoerd.Graphs # Plot and manipulate data
-flatpak install -y flathub dev.Cogitri.Health # Track your fitness goals - connects with Google Fit
+# flatpak install -y flathub io.github.mrvladus.List #   Todo application
+# flatpak install -y flathub se.sjoerd.Graphs # Plot and manipulate data
+# flatpak install -y flathub dev.Cogitri.Health # Track your fitness goals - connects with Google Fit
 # flatpak install -y flathub io.gitlab.gregorni.Letterpress # Create beautiful ASCII art
 # flatpak install -y flathub com.belmoussaoui.Obfuscate # redact your private information from any image
 # flatpak install -y flathub io.gitlab.adhami3310.Converter # Convert and manipulate images
 flatpak install -y flathub org.gnome.Podcasts # Play, update, and manage your podcasts
 flatpak install -y flathub de.haeckerfelix.Shortwave # Listen to internet radio
-flatpak install -y flathub org.gnome.Polari # Internet Relay Chat (IRC) client
+# flatpak install -y flathub org.gnome.Polari # Internet Relay Chat (IRC) client
 # flatpak install flathub de.haeckerfelix.Fragments # Manage torrents
 flatpak install -y flathub ca.desrt.dconf-editor # graphical tool for editing the dconf database
 # https://apps.gnome.org/en/Sysprof/ # Profile an application or entire system
 
 
+###################################
 
+# Install the following:
+# Notification Banner Reloaded
 
