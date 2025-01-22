@@ -109,6 +109,8 @@ git clone --depth 1 https://github.com/ryanoasis/nerd-fonts.git
 # find . -name "*.md" -type f -delete
 # find . -name "*.txt" -type f -delete
 # find . -name "LICENSE" -type f -delete
+# find . -name ".uuid" -type f -delete
+
 # But first verify without the -delete option like following:
 find . -name "*.bak" -type f
 
@@ -175,7 +177,7 @@ git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-m
 #zstyle ':omz:update' frequency 7 # Uncomment and change value
 #ENABLE_CORRECTION="true" # Uncomment - Give it a try
 #COMPLETION_WAITING_DOTS="true"
-#plugins=(git sudo debian safe-paste screen autojump github postgres docker pip python poetry repo themes zsh-autosuggestions zsh-syntax-highlighting)
+#plugins=(git sudo safe-paste github python repo zsh-autosuggestions zsh-syntax-highlighting)
 ## At the bottom of oh-my-zsh stuff:
 #ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#ff00ff,bg=cyan,bold,underline"
 #ZSH_AUTOSUGGEST_STRATEGY=(history completion match_prev_cmd)
@@ -596,6 +598,21 @@ sudo apt update
 sudo apt install librewolf -y
 ###########
 
+# another privacy browser:
+# https://mullvad.net/en/download/browser/linux
+
+# Download the Mullvad signing key
+sudo curl -fsSLo /usr/share/keyrings/mullvad-keyring.asc https://repository.mullvad.net/deb/mullvad-keyring.asc
+
+# Add the Mullvad repository server to apt
+echo "deb [signed-by=/usr/share/keyrings/mullvad-keyring.asc arch=$( dpkg --print-architecture )] https://repository.mullvad.net/deb/stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/mullvad.list
+
+# Install the package
+sudo apt update
+sudo apt install mullvad-browser
+
+###########
+
 # Preloads most used apps in RAM for quick reaction times
 # sudo apt install -y preload # Skip this on low memory systems
 #sudo nano /etc/preload.conf
@@ -807,6 +824,7 @@ sudo systemctl restart unattended-upgrades
 # Ublock Origin - Enable relevant filters
 # https://github.com/mchangrh/yt-neuter - Add this filter to ublock origin
 # https://github.com/StevenBlack/hosts - modify hosts file - sudo nano /etc/hosts
+# https://github.com/arkenfox/user.js - The arkenfox user.js is a template which aims to provide as much privacy and enhanced security as possible, and to reduce tracking and fingerprinting as much as possible - while minimizing any loss of functionality and breakage (but it will happen).
 
 ##### Tor Browser
 # Open "Tor Browser Launcher Settings" app -> enable "Download over System Tor"
