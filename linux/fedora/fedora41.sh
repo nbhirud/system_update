@@ -115,7 +115,8 @@ flatpak install -y tv.kodi.Kodi
 # sudo dnf remove kodi kodi-eventclients kodi-firewalld kodi-inputstream-adaptive kodi-inputstream-rtmp kodi-platform  kodi-pvr-iptvsimple kodi-visualization-spectrum 
 
 # remove stuff
-sudo dnf remove -y  totem yelp gnome-tour gnome-connections
+sudo dnf remove -y  totem yelp gnome-tour gnome-connections ptyxis 
+# remove the gnome terminal ptyxis as we have installed alacritty
 
 
 ######################
