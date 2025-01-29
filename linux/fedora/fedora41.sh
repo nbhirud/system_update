@@ -115,7 +115,8 @@ flatpak install -y tv.kodi.Kodi
 # sudo dnf remove kodi kodi-eventclients kodi-firewalld kodi-inputstream-adaptive kodi-inputstream-rtmp kodi-platform  kodi-pvr-iptvsimple kodi-visualization-spectrum 
 
 # remove stuff
-sudo dnf remove -y  totem yelp gnome-tour gnome-connections
+sudo dnf remove -y  totem yelp gnome-tour gnome-connections ptyxis 
+# remove the gnome terminal ptyxis as we have installed alacritty
 
 
 ######################
@@ -299,9 +300,33 @@ alias nbtoroff=". torsocks off"
 
 # import Kodi backup
 
-# spyder and poetry
+# spyder, meld, poetry
 
-sudo dnf install -y python3-spyder python3-poetry meld
+sudo dnf install -y python3-spyder meld
+# sudo dnf install -y python3-poetry # install using pipx instead as below?
+
+# pipx - https://pipx.pypa.io/stable/installation/
+sudo dnf install pipx
+pipx ensurepath
+
+# poetry - https://python-poetry.org/docs/#installing-with-pipx
+pipx install poetry
+# pipx upgrade poetry
+# pipx uninstall poetry
+mkdir $ZSH_CUSTOM/plugins/poetry
+poetry completions zsh > $ZSH_CUSTOM/plugins/poetry/_poetry
+# add poetry in OMZ plugins array
+
+### Interesting/Useful Oh My ZSH plugins
+# python related: autopep8 conda conda-env dotenv pep8 pip pipenv poetry poetry-env pyenv pylint python virtualenvwrapper
+# fedora related: dnf yum
+# linux (general) related: colored-man-pages colorize history history-substring-search perms safe-paste screen sudo systemadmin systemd 
+# security: firewalld gpg-agent keychain ufw
+# git related: branch gh git git-auto-fetch git-commit git-escape-magic gitfast github gitignore git-prompt  pre-commit
+# cloud and containers: aws docker docker-compose helm kops kubectl kubectx podman terraform toolbox
+# database related: mongocli postgres
+# misc: isodate jsontools rsync rust thefuck timer torrent transfer universalarchive urltools vscode web-search wp-cli zsh-interactive-cd zsh-navigation-tools
+
 
 
 # DBeaver
