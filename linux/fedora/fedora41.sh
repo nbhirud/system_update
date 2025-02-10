@@ -97,7 +97,8 @@ sudo hostnamectl set-hostname "nbFedora"
 
 sudo dnf install -y gh keepassxc gnome-tweaks gnome-browser-connector vlc htop fastfetch gparted bleachbit transmission dnfdragora timeshift alacritty torbrowser-launcher
 
-flatpak install -y flathub com.mattjakeman.ExtensionManager com.spotify.Client org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave ca.desrt.dconf-editor
+flatpak install -y flathub com.mattjakeman.ExtensionManager com.spotify.Client org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.protonvpn.www me.proton.Mail me.proton.Pass com.bitwarden.desktop
+# flatpak install -y flathub ca.desrt.dconf-editor 
 
 
 ##### LibreWolf - https://librewolf.net/installation/fedora/
