@@ -55,7 +55,9 @@ ddrescue -r3 -n /dev/[baddrive] /dev/[gooddrive] recovery.log
 
 ddrescue -f -n /dev/[baddrive] /dev/[gooddrive] /root/recovery.log
 
+sudo ddrescue -r3 -n -d -f  /dev/sdd /dev/sdc /home/nbhirud/nb/DataRecoveryCustomerXYZ/ddrescue_recovery.log
+
 
 ##################################################3
 
-sudo ddrescue -d -f -n -r3 -v /dev/sdc /dev/sdd1 /home/nbhirud/nb/DataRecoveryCustomer01/clone.logfile
+sudo ddrescue -d -f -n -r3 -v /dev/sdc /dev/sdd1 /home/nbhirud/nb/DataRecoveryCustomerXYZ/clone.logfile
