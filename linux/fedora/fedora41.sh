@@ -110,7 +110,7 @@ sudo dnf install librewolf
 #### Kodi
 sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rtmp kodi-platform kodi-pvr-iptvsimple kodi-visualization-spectrum kodi-eventclients kodi
 
-flatpak install -y tv.kodi.Kodi
+# flatpak install -y tv.kodi.Kodi
 
 # uninstall
 # sudo dnf remove kodi kodi-eventclients kodi-firewalld kodi-inputstream-adaptive kodi-inputstream-rtmp kodi-platform  kodi-pvr-iptvsimple kodi-visualization-spectrum 
@@ -404,4 +404,7 @@ sudo reboot
 ###################################################
 
 # btop like htop
+
+###################################################
+
 
