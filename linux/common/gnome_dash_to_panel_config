@@ -1,0 +1,27 @@
+[/]
+animate-appicon-hover=false
+animate-appicon-hover-animation-extent={'RIPPLE': 4, 'PLANK': 4, 'SIMPLE': 1}
+appicon-margin=3
+appicon-padding=0
+appicon-style='NORMAL'
+available-monitors=[0]
+dot-position='TOP'
+dot-style-focused='METRO'
+dot-style-unfocused='DASHES'
+group-apps=true
+hotkeys-overlay-combo='TEMPORARILY'
+leftbox-padding=-1
+panel-anchors='{"0":"MIDDLE"}'
+panel-lengths='{"0":100}'
+panel-sizes='{"0":24}'
+primary-monitor=0
+secondarymenu-contains-showdetails=true
+show-favorites=true
+status-icon-padding=-1
+trans-panel-opacity=0.20000000000000001
+trans-use-custom-bg=false
+trans-use-custom-gradient=false
+trans-use-custom-opacity=true
+trans-use-dynamic-opacity=false
+tray-padding=-1
+window-preview-title-position='TOP'
