@@ -1,3 +1,6 @@
+# Basics:
+# https://www.baeldung.com/linux/gnome-shell-extension
+
 ##### Settings
 
 # Network -> Click the gear box next to the connection in use -> IPV4 tab -> Disable "Automatic" for
@@ -102,3 +105,124 @@ flatpak install -y flathub ca.desrt.dconf-editor # graphical tool for editing th
 # Install the following:
 # Notification Banner Reloaded
 
+###################################
+
+# Many apps store their settings here:
+# nano /org/gnome/shell/extensions/ 
+
+# Gnome extensions are stored here: 
+# ~/.local/share/gnome-shell/
+
+
+## The default extension settings are located in an *.xml file in the following directory if you installed the extension globally:
+# /usr/share/gnome-shell/extensions/<extension directory>/schemas
+## The default extension settings are located in an *.xml file in the following directory if you installed the extension locally:
+# ~/.local/share/gnome-shell/extensions/<extension directory>/schemas
+
+# ####################################################################################
+# ######### Copying https://askubuntu.com/a/1178587 just so that I do npt lose this 
+# ######### (don't know if these answers can be deleted, so backup)
+# ####################################################################################
+
+# Schema Files
+
+# The default extension settings are located in an *.xml file in the following directory if you installed the extension globally:
+
+# /usr/share/gnome-shell/extensions/<extension directory>/schemas
+
+# The default extension settings are located in an *.xml file in the following directory if you installed the extension locally (which seems to be your case):
+
+# ~/.local/share/gnome-shell/extensions/<extension directory>/schemas
+
+# In the *.xml file, the <key> tags will list the keys. The <default> tags will contain the default values. You could manually edit these files. In order to transfer settings across systems, you will need to update the extension's *.xml "gschema" file.
+
+# In the example extension you referenced above, the settings are located at Screenshot configurations.
+
+# If you edit these files on your installed system, you will need to recompile the "gschema" by running one of the following commands.
+
+# If you had installed the extension globally, execute:
+
+# sudo glib-compile-schemas /usr/share/gnome-shell/extensions/<extension directory>/schemas
+
+# If you had installed the extension locally, execute:
+
+# glib-compile-schemas ~/.local/share/gnome-shell/extensions/<extension directory>/schemas
+
+# This will create an updated gschemas.compiled file in the extension's schema directory.
+
+# Gsettings
+
+# When you change a setting using a GUI (the extension's settings dialog), the change is actually stored in gsettings.
+
+# You can use Dconf Editor to locate the key and value for a particular "gsetting".
+
+# Install Dconf Editor using:
+
+# sudo apt install dconf-editor
+
+# (You can also use the gsettings commandline tool instead of the Dconf Editor GUI tool).
+
+# The <schema> or <path> tags in *.xml file (as described above) will tell you which schema to navigate to in Dconf Editor. (Hint, it will be under /org/gnome/shell/extensions/). The *.xml file will also list which keys can be configured.
+
+# You can search for the schema and key in Dconf Editor, and make changes.
+
+# In my experience, most extension settings are stored in "relocatable" schemas. Effectively, this means you can search for them and change them using Dconf Editor only after they have been set at least once. Otherwise the key simply will not be available in Dconf Editor, and you will consequently not be able to change its value. This is because the default values from the *.xml files (as described above) are used when there are no gsettings to override them.
+
+# Because you want to transfer these settings across installations, try exporting your gsettings, and loading them onto your new machine. See this answer to another question for instructions. (This approach may be actually easier then editing the *.xml files, described above).
+
+# Watch for Changes
+
+# A good way to watch for gsettings changes, as you make them, is to run the following command:
+
+# dconf watch /
+
+# This will show you which schema and key you just changed.
+
+# Install the the dconf commandline tool using:
+
+# sudo apt install dconf-cli
+
+# ####################################################################################
+# ####################################################################################
+
+
+
+# also see:
+# https://github.com/default-writer/gnome-export
+# https://gist.github.com/lucianoratamero/bc66b1a370b9dc030674ff89c39ac87c
+# https://github.com/m0squdev/gnomeport/blob/main/README.md
+# https://extensions.gnome.org/extension/1486/extensions-sync/
+# https://github.com/oae/gnome-shell-extensions-sync
+
+
+# ####################################################################################
+# ######### Copying https://askubuntu.com/questions/522833/how-to-dump-all-dconf-gsettings-so-that-i-can-compare-them-between-two-different
+# just so that I do npt lose this 
+# ######### (don't know if these answers can be deleted, so backup)
+# ####################################################################################
+
+# Use the dump command of dconf (https://developer.gnome.org/dconf/unstable/dconf-tool.html):
+
+# dconf dump /
+
+# dconf dump /org/freedesktop/
+
+# As always you can use output redirection to save the output to a file for later use:
+
+# dconf dump / > dconf-backup.txt
+
+# https://askubuntu.com/questions/984205/how-to-save-gnome-settings-in-a-file
+# It's ok to save all donf settings like this :
+
+# dconf dump / > dconf-settings.ini
+
+# But you have to restore them like that ! :
+
+# dconf load / < dconf-settings.ini
+
+
+# ####################################################################################
+# ####################################################################################
+
+
+# You can use gsettings --list-recursively to dump your dconf-database to a file and import it on the other machines. 
