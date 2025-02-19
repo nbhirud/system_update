@@ -407,4 +407,5 @@ sudo reboot
 
 ###################################################
 
-
+# Alacritty config
+# https://alacritty.org/config-alacritty.html
