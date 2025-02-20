@@ -93,7 +93,48 @@ pacman -Syu
 ########## 
 ##########################################################################
 
+## yay
+# https://itsfoss.com/install-yay-arch-linux/
+sudo pacman -Syu
+sudo pacman -S --needed base-devel git
+git clone https://aur.archlinux.org/yay.git
+cd yay
+makepkg -si
+yay --version
+yay -Sua # Upgrading (only) the AUR packages:
 
+##########################################################################
+########## 
+##########################################################################
+
+## aura
+# https://fosskers.github.io/aura/install.html
+git clone https://aur.archlinux.org/aura.git
+cd aura
+makepkg -s
+sudo pacman -U <the-package-file-that-makepkg-produces>
+aura check
+aura conf --gen > ~/.config/aura/config.toml
+aura stats --lang
+aura -Au # Updating your AUR Packages - run without sudo
+
+##########################################################################
+########## 
+##########################################################################
+
+## vscodium
+# https://vscodium.com/
+# https://aur.archlinux.org/packages/vscodium-bin/
+
+# Aura:
+# sudo aura -A vscodium-bin
+
+# Yay:
+yay -S vscodium-bin
+
+##########################################################################
+########## 
+##########################################################################
 
 
 ##########################################################################
@@ -101,13 +142,15 @@ pacman -Syu
 ##########################################################################
 
 
-
-
+##########################################################################
+########## 
+##########################################################################
 
 
 ##########################################################################
 ########## 
 ##########################################################################
+
 
 
 
