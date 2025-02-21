@@ -162,6 +162,8 @@ systemctl --user reload dbus-broker.service
 
 ###### clamav
 
+# Enable daemon, enable scheduled updates, schedule scan, etc. - https://idroot.us/install-clamav-fedora-41/
+
 sudo dnf -y install clamav clamd clamav-update clamtk
 sudo systemctl stop clamav-freshclam 
 sudo freshclam
