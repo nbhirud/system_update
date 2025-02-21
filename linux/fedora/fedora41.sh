@@ -162,9 +162,12 @@ systemctl --user reload dbus-broker.service
 
 ###### clamav
 
+sudo dnf upgrade --refresh
 sudo dnf -y install clamav clamd clamav-update clamtk
+clamscan --version
 sudo systemctl stop clamav-freshclam 
 sudo freshclam
+sudo systemctl start clamav-freshclam
 sudo systemctl enable clamav-freshclam --now
 
 
@@ -184,18 +187,20 @@ sudo chown clamscan /var/log/clamav.log
 
 # Configurations:
 
+
 ## freshclam
-# Do these configs in ~/freshclam.conf
+sudo nano /etc/freshclam.conf
 # LogFileMaxSize 20M
 # LogTime yes
 # LogRotate yes
+# DatabaseMirror database.clamav.net
 # UpdateLogFile /var/log/freshclam.log
 # DatabaseOwner clamupdate
 # NotifyClamd yes
 
 
 ## clamd
-# Do these configs in /etc/clamd.d/scan.conf
+sudo nano /etc/clamd.d/scan.conf
 
 # Comment the "Example"
 # LogFile /var/log/clamav.log
@@ -203,6 +208,7 @@ sudo chown clamscan /var/log/clamav.log
 # LogTime yes
 # LogRotate yes
 # ExitOnOOM yes # Not sure if this is a good thing to do
+# LocalSocket /var/run/clamd.scan/clamd.sock
 # User clamscan
 # DetectPUA yes
 # TLDR of - https://docs.clamav.net/manual/OnAccess.html
@@ -210,6 +216,58 @@ sudo chown clamscan /var/log/clamav.log
 # OnAccessExcludeUname clamscan
 # OnAccessPrevention yes
 # OnAccessDisableDDD yes
+
+
+## Automatated update scheduling:
+
+# 1. create a systemd timer
+sudo nano /etc/systemd/system/freshclam.timer
+
+# Add the following content:
+
+# [Unit]
+# Description=freshclam database updates
+
+# [Timer]
+# OnCalendar=daily
+# Persistent=true
+
+# [Install]
+# WantedBy=timers.target
+
+# 2. create the corresponding service file
+sudo nano /etc/systemd/system/freshclam.service
+
+# Add the following content:
+
+# [Unit]
+# Description=freshclam database updater
+
+# [Service]
+# Type=oneshot
+# ExecStart=/usr/bin/freshclam --quiet
+
+# 3. enable and start the timer
+
+sudo systemctl enable freshclam.timer
+sudo systemctl start freshclam.timer
+
+
+## scheduled scans
+
+# create a cron job
+sudo crontab -e
+
+# Add a line to run a daily scan at 2 AM
+# 0 2 * * * /usr/bin/clamscan -r /home > /var/log/clamav/daily_scan.log
+
+
+## Service Management
+
+#  start the ClamAV daemon and enable it to start automatically on boot:
+sudo systemctl start clamd@scan
+sudo systemctl enable clamd@scan
+sudo systemctl status clamd@scan
 
 ###########################
 
