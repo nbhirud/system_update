@@ -467,3 +467,11 @@ sudo reboot
 
 # Alacritty config
 # https://alacritty.org/config-alacritty.html
+
+
+
+# Also read:
+# https://idroot.us/install-clamav-fedora-41/
+# https://wiki.archlinux.org/title/ClamAV
+# https://archlinux.org/groups/any/nerd-fonts/
+# https://aur.archlinux.org/packages/nerd-fonts-git

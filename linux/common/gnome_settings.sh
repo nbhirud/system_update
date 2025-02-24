@@ -99,6 +99,7 @@ flatpak install -y flathub de.haeckerfelix.Shortwave # Listen to internet radio
 flatpak install -y flathub ca.desrt.dconf-editor # graphical tool for editing the dconf database
 # https://apps.gnome.org/en/Sysprof/ # Profile an application or entire system
 
+# https://wiki.gnome.org/Apps/Seahorse
 
 ###################################
 

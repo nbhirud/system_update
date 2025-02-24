@@ -96,7 +96,7 @@ pacman -Syu
 ## yay
 # https://itsfoss.com/install-yay-arch-linux/
 sudo pacman -Syu
-sudo pacman -S --needed base-devel git
+sudo pacman -S --needed base-devel git less #less needed for git diff
 git clone https://aur.archlinux.org/yay.git
 cd yay
 makepkg -si
