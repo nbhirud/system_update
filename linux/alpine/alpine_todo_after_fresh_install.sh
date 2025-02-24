@@ -95,6 +95,7 @@ sudo apk add fastfetch
 sudo apk add nano
 sudo nano /etc/passwd
 
+# do not install alacritty or kitty terminal emulators as the cursor keeps disappearing on them. Keep the default 
 
 #######################################################
 
