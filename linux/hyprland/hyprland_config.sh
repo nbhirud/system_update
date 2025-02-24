@@ -117,7 +117,7 @@ nano ~/.config/hypr/hyprland.conf
 # env = HYPRCURSOR_THEME,rose-pine-hyprcursor
 
 # set the cursor size: run on terminal:
-hyprctl setcursor rose-pine-hyprcursor 24
+hyprctl setcursor rose-pine-hyprcursor 26
 
 
 ##################################
