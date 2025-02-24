@@ -248,7 +248,6 @@ sudo nano /etc/systemd/system/freshclam.service
 # ExecStart=/usr/bin/freshclam --quiet
 
 # 3. enable and start the timer
-
 sudo systemctl enable freshclam.timer
 sudo systemctl start freshclam.timer
 
@@ -338,7 +337,9 @@ sudo dnf install thunderbird
 # alias codium="flatpak run com.vscodium.codium "
 
 # Update/Upgrade related:
-alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && sudo freshclam && omz update -y && . torsocks on && fastfetch"
+# alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && sudo freshclam && omz update -y && . torsocks on && fastfetch"
+# freshclam is a service now
+alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && omz update -y && . torsocks on && fastfetch"
 # alias nbdistu="sudo apt dist-upgrade -y && sudo do-release-upgrade"
 alias nbreload="systemctl daemon-reload && source ~/.zshrc"
 alias nbclean="dnf clean -y all && yum clean -y all && flatpak uninstall --unused"
@@ -469,9 +470,37 @@ sudo reboot
 # https://alacritty.org/config-alacritty.html
 
 
+#############
 
-# Also read:
-# https://idroot.us/install-clamav-fedora-41/
-# https://wiki.archlinux.org/title/ClamAV
-# https://archlinux.org/groups/any/nerd-fonts/
-# https://aur.archlinux.org/packages/nerd-fonts-git
+
+# Also see
+# https://www.hackingthehike.com/fedora-41-after-install-guide/
+# https://itsfoss.com/things-to-do-after-installing-fedora/
+# https://www.fosslinux.com/139829/top-apps-for-fedora-linux.htm
+# https://www.debugpoint.com/10-things-to-do-fedora-40-after-install/
+# https://orcacore.com/add-essential-software-repositories-on-fedora-linux/
+# https://arcanesavant.github.io/p/2024/10/31/12-things-to-do-after-installing-fedora-workstation-41/
+# https://losst.pro/en/how-to-configure-fedora-41-after-install
+# https://dev.to/alexantartico/after-installing-fedora-41-a-glorious-adventure-awaits-3anc
+# https://www.linuxfordevices.com/tutorials/after-install-fedora
+
+# https://discussion.fedoraproject.org/t/my-config-tweak-notes-for-fedora-41/134840
+# https://wiki.realmofespionage.xyz/start
+# https://discussion.fedoraproject.org/t/my-config-tweak-notes-for-fedora-41/134840
+# https://wiki.realmofespionage.xyz/linux:distros:fedora_workstation_gnome#spinesnap
+
+# https://www.server-world.info/en/note?os=Fedora_41
+# https://www.server-world.info/en/note?os=Fedora_41&p=initial_conf&f=2
+
+
+# List of available COPRs - https://copr.fedorainfracloud.org/coprs/
+# Example - https://copr.fedorainfracloud.org/coprs/kylegospo/preload/
+
+
+#### Fedora 41 server
+# https://docs.fedoraproject.org/en-US/fedora-server/installation/
+# https://www.tecmint.com/fedora-server-installation-guide/
+# https://www.server-world.info/en/note?os=Fedora_41&p=install
+# https://www.linuxtoday.com/developer/how-to-install-fedora-41-server-with-screenshots/
+# https://www.linuxquestions.org/questions/linux-general-1/fedora-41-minimal-install-guide-with-samba-and-windows-shares-active-4175746330/
+# https://oracle-base.com/articles/linux/fedora-41-installation
