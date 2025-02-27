@@ -2,10 +2,7 @@
 
 sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 
-echo $SHELL
-sudo dnf install -y zsh autojump
-chsh -s $(which zsh)
-zsh
+# Setup zsh - check linux/common/zsh.sh
 
 ####################### zsh
 echo $SHELL
@@ -16,19 +13,6 @@ xdg-user-dirs-update --set DOWNLOAD "/home/nbhirud/nb/Downloads"
 # Enable Minimize or Maximize Window Buttons
 gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
 
-
-### OMZ
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-
-cd $ZSH_CUSTOM/plugins
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-
-cd
-nano .zshrc
-# do changes in .zshrc
-omz update
-source ~/.zshrc
 
 ### mount nb HDD and change ownership
 # Disks app -> select nb HDD -> 3 gears -> edit mountpoint -> set mountpoint as /home/nbhirud/nb
@@ -373,20 +357,8 @@ pipx ensurepath
 pipx install poetry
 # pipx upgrade poetry
 # pipx uninstall poetry
-mkdir $ZSH_CUSTOM/plugins/poetry
-poetry completions zsh > $ZSH_CUSTOM/plugins/poetry/_poetry
-# add poetry in OMZ plugins array
 
-### Interesting/Useful Oh My ZSH plugins
-# python related: autopep8 conda conda-env dotenv pep8 pip pipenv poetry poetry-env pyenv pylint python virtualenvwrapper
-# fedora related: dnf yum
-# linux (general) related: colored-man-pages colorize history history-substring-search perms safe-paste screen sudo systemadmin systemd 
-# security: firewalld gpg-agent keychain ufw
-# git related: branch gh git git-auto-fetch git-commit git-escape-magic gitfast github gitignore git-prompt  pre-commit
-# cloud and containers: aws docker docker-compose helm kops kubectl kubectx podman terraform toolbox
-# database related: mongocli postgres
-# misc: isodate jsontools rsync rust thefuck timer torrent transfer universalarchive urltools vscode web-search wp-cli zsh-interactive-cd zsh-navigation-tools
-
+# add poetry completions - check linux/common/zsh.sh
 
 
 # DBeaver
