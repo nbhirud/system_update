@@ -89,8 +89,11 @@ flatpak run org.bleachbit.BleachBit  # clean up using the UI that opens
 
 #######################################################
 
+# zsh - check linux/common/zsh.sh
+
+#######################################################
+
 sudo apk add gnome-apps-extra
-sudo apk add  zsh
 sudo apk add fastfetch
 sudo apk add nano
 sudo nano /etc/passwd

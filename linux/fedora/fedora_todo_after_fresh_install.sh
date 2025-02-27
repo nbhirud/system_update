@@ -9,13 +9,7 @@
 # bash
 # sudo dnf install bash-completion
 
-# zsh
-sudo dnf install -y zsh autojump
-chsh -s $(which zsh) # set zsh as default
-
-# Rest of the OMZ setup is same as on Ubuntu
-omz update
-source .zshrc 
+# Zsh - Check linux/common/zsh.sh
 
 #######################################################
 
@@ -642,10 +636,8 @@ sudo nano /etc/dnf/dnf.conf
 sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 # don't do dnf update here
 
-# zsh
-sudo dnf install -y zsh 
-chsh -s $(which zsh) 
-zsh
+# zsh - check linux/common/zsh.sh
+
 # don't do dnf update here
 
 # name
@@ -716,27 +708,6 @@ sudo dnf install -y torbrowser-launcher
 # cd /usr/share/doc/clamd/
 sudo nano /usr/share/doc/clamd/clamd.conf
 
-# omz
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-
-cd $ZSH_CUSTOM/plugins
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-
-#cd
-#nano .zshrc
-## do the following changes:
-## ZSH_THEME="robbyrussell" # comment this line
-#ZSH_THEME="agnoster"
-#zstyle ':omz:update' mode auto # Uncomment this
-#zstyle ':omz:update' frequency 7 # Uncomment and change value
-#ENABLE_CORRECTION="true" # Uncomment - Give it a try
-#COMPLETION_WAITING_DOTS="true"
-#plugins=(git sudo safe-paste github python repo zsh-autosuggestions zsh-syntax-highlighting)
-## At the bottom of oh-my-zsh stuff:
-#ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#ff00ff,bg=cyan,bold,underline"
-#ZSH_AUTOSUGGEST_STRATEGY=(history completion match_prev_cmd)
-#ZSH_HIGHLIGHT_HIGHLIGHTERS+=(main brackets pattern cursor)
 
 # fonts
 mkdir -p ~/.local/share/fonts
