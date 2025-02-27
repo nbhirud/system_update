@@ -6,16 +6,8 @@
 ###########################################
 
 ##### SHELL
-echo $SHELL # To check current shell
-# Did basic research of bash vs zsh vs fish and felt like zsh was the right one for me. Also, fish isn't POSIX
-# compliant. bash and zsh are mostly compatible with each other, but fish isn't.
-# sudo apt install zsh
+# check linux/common/zsh.sh in this repo
 
-# https://itsfoss.com/zsh-ubuntu/
-sudo apt install -y zsh fonts-font-awesome
-chsh -s $(which zsh) # sets zsh as default
-zsh
-# Looks like restarting terminal doesn't apply this change of default shell. But seems to work after a reboot.
 
 ###########################################
 ###########################################
@@ -138,54 +130,7 @@ fc-list | grep "JetBrains" # To check if jetbrains fond was installed successful
 ###########################################
 ###########################################
 
-##### Make terminal beautiful and productive
 
-# Step 1 - If not already done, set nerd fonts as default in "GNOME Tweaks", "GNOME Terminal -> unnamed",
-
-##### oh my zsh - https://ohmyz.sh/
-# https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH
-sudo apt install wget curl xclip autojump
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-
-
-# Interesting Built-in plugins:
-# debian, systemd, aliases, colored-man-pages, colorize,
-# command-not-found, cp, rsync, safe-paste, screen, rbw,
-# autojump, github, git, gitignore, postgres, redis-cli,
-# golang, docker, repo, pip, python, pyenv, virtualenv,
-# autopep8, pylint,  themes, sudo, history, JsonTools
-# you-should-use, Auto-Notify,
-# zsh-autosuggestions, zsh-syntax-highlighting
-
-# https://github.com/zsh-users/zsh-autosuggestions
-# https://github.com/zsh-users/zsh-autosuggestions?tab=readme-ov-file#configuration
-
-# https://github.com/zsh-users/zsh-syntax-highlighting
-
-# TLDR:
-cd $ZSH_CUSTOM/plugins
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-
-# oh-my-zsh config:
-#cd
-#nano .zshrc
-## do the following changes:
-## ZSH_THEME="robbyrussell" # comment this line
-#ZSH_THEME="agnoster"
-#zstyle ':omz:update' mode auto # Uncomment this
-#zstyle ':omz:update' frequency 7 # Uncomment and change value
-#ENABLE_CORRECTION="true" # Uncomment - Give it a try
-#COMPLETION_WAITING_DOTS="true"
-#plugins=(git sudo safe-paste github python repo zsh-autosuggestions zsh-syntax-highlighting)
-## At the bottom of oh-my-zsh stuff:
-#ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#ff00ff,bg=cyan,bold,underline"
-#ZSH_AUTOSUGGEST_STRATEGY=(history completion match_prev_cmd)
-#ZSH_HIGHLIGHT_HIGHLIGHTERS+=(main brackets pattern cursor)
-
-omz update
-# Reloads the updated terminal theme
-source ~/.zshrc
 
 ######################################################################
 ##### starship
@@ -1043,16 +988,7 @@ pipx install poetry
 # pipx upgrade poetry
 # pipx uninstall poetry
 
-# Poetry completion:
-mkdir $ZSH_CUSTOM/plugins/poetry
-poetry completions zsh > $ZSH_CUSTOM/plugins/poetry/_poetry
-# Add to plugins omz array:
-         # plugins(
-         #  ...
-         #	poetry
-         #	...
-         #	)
-
+# Poetry completion: check linux/common/zsh.sh in this repo 
 
 ##########################################################
 
