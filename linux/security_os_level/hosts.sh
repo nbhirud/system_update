@@ -5,12 +5,13 @@
 
 
 # https://github.com/StevenBlack/hosts - modify hosts file - sudo nano /etc/hosts
-mkdir hostsplay
+mkdir -p hostsplay
 cd hostsplay
+echo "Created dir: $PWD"
 wget https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
-sudo mv /etc/hosts ./hosts_orig
+sudo mv /etc/hosts ./hosts_orig_$(date +%Y%m%d_%H%M%S)
 # modify the downloaded hosts file if necessary
-sudo cp hosts /etc/hosts
+sudo mv hosts /etc/hosts
 # cd ..
 # sudo rm -r hostsplay
 
