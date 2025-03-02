@@ -27,3 +27,5 @@ then
 else
     echo "FAILED TO INSTALL PACKAGE: Package manager not found. You must manually install: "${packagesNeeded[@]}"">&2;
 fi
+
+# also check linux/playground/test.sh
