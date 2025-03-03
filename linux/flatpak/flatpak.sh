@@ -39,3 +39,6 @@ flatpak install flathub org.signal.Signal
 
 # PlayOnLinux
 flatpak install -y flathub com.playonlinux.PlayOnLinux4
+
+# Manage flatpak permissions and file storage outside of the flatpak
+flatpak install flathub com.github.tchx84.Flatseal
