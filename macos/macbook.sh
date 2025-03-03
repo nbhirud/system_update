@@ -13,3 +13,5 @@ softwareupdate --all --install --force
 
 # update/upgrade all the brew packages
 brew update && brew upgrade
+
+# do not install python using brew

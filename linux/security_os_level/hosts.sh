@@ -15,6 +15,12 @@ sudo mv hosts /etc/hosts
 # cd ..
 # sudo rm -r hostsplay
 
+####################################
+
+sudo dnf -y install podman
+
+https://github.com/StevenBlack/hosts/raw/refs/heads/master/Dockerfile
+
 
 
 

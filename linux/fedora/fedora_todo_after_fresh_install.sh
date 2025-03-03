@@ -370,6 +370,7 @@ sudo dnf upgrade -y
 
 # flatpak install -y flathub com.jetbrains.PyCharm-Community
 # flatpak run com.jetbrains.PyCharm-Community
+# https://copr.fedorainfracloud.org/coprs/phracek/PyCharm/
 
 # dnf install
 # dnf remove
@@ -714,12 +715,6 @@ mkdir -p ~/.local/share/fonts
 # paste folder 
 fc-cache -fr 
 # fc-list | grep "JetBrains" 
-
-
-
-
-
-
 
 
 # after reboot
