@@ -717,8 +717,6 @@ fc-cache -fr
 # fc-list | grep "JetBrains" 
 
 
-
-
 # after reboot
 sudo reboot
 omz update
