@@ -141,6 +141,8 @@ xprop
 ########## 
 ##########################################################################
 
+sudo pacman -Syu && yay -Sua && sudo freshclam && omz update && fastfetch
+
 
 ##########################################################################
 ########## 
@@ -151,8 +153,12 @@ xprop
 # https://wiki.archlinux.org/title/Preload
 # https://github.com/AlexMekkering/Arch-Linux/tree/master/docs
 
+# vscode extension about Arch AUR
+# https://open-vsx.org/vscode/item?itemName=claui.packaging
+
 ##########################################################################
 ########## 
 ##########################################################################
 
 
+# https://wiki.archlinux.org/title/Improving_performance
