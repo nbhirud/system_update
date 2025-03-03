@@ -1861,3 +1861,10 @@ fabric.properties
 
 # The .idea/ dir just doesn't seem to get ignored, so the following:
 .idea/*
+
+###########################################
+# hostsplay
+hostsplay/
+linux/security_os_level/hostsplay/
+
+###########################################
