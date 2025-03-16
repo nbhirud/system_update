@@ -1,4 +1,63 @@
 
+######################################################
+# From Fedora
+######################################################
+
+# # UFW
+# # Recommended rules from https://christitus.com/linux-security-mistakes/
+# sudo ufw limit 22/tcp
+# sudo ufw allow 80/tcp
+# sudo ufw allow 443/tcp
+# sudo ufw default deny incoming
+# sudo ufw default allow outgoing
+# # Enable ufw
+# sudo ufw enable
+# #sudo systemctl enable ufw # Didn't work for some reason
+# #sudo systemctl start ufw # Didn't work for some reason
+# # sudo ufw status numbered
+# # sudo ufw delete 7 # Use numbers from above numbered command
+
+# ufw
+
+# https://linuxconfig.org/how-to-install-and-use-ufw-firewall-on-linux
+# https://www.baeldung.com/linux/uncomplicated-firewall
+
+########################################3
+# from ubuntu
+##########################################
+
+
+# Firewall
+sudo apt install -y ufw
+
+
+
+# UFW
+# Recommended rules from https://christitus.com/linux-security-mistakes/
+sudo ufw limit 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+# Enable ufw
+sudo ufw enable
+#sudo systemctl enable ufw # Didn't work for some reason
+#sudo systemctl start ufw # Didn't work for some reason
+# sudo ufw status numbered
+# sudo ufw delete 7 # Use numbers from above numbered command
+
+# AppArmor
+# https://ubuntu.com/server/docs/security-apparmor
+sudo apt install apparmor-profiles
+sudo apparmor_status
+# sudo systemctl reload apparmor.service
+sudo systemctl enable apparmor.service
+sudo systemctl start apparmor.service
+
+
+######################################################
+# Originally in this file
+######################################################
 
 sudo apt update
 sudo apt dist-upgrade

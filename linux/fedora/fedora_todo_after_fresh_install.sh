@@ -343,14 +343,7 @@ cloudflared proxy-dns --upstream "https://dns4torpnlfs2ifuz2s2yf3fc7rdmsbhm6rw75
 
 #######################################################
 
-# ufw
-
-# https://linuxconfig.org/how-to-install-and-use-ufw-firewall-on-linux
-# https://www.baeldung.com/linux/uncomplicated-firewall
-
-
-# Fedora comes with firewalld
-# Figure out which is better and learn an configure
+# Configure firewall - linux/security_os_level/firewalld.sh
 
 #######################################################
 

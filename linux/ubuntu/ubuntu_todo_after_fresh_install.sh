@@ -503,9 +503,6 @@ sudo apt install -y bleachbit
 # https://docs.bleachbit.org/doc/command-line-interface.html
 # sudo apt install -y stacer # Another system cleaner
 
-# Firewall
-sudo apt install -y ufw
-
 # KDE Connect
 # find out
 
@@ -570,27 +567,9 @@ gsettings set org.gnome.shell.extensions.dash-to-dock click-action 'minimize'
 # disable Ubuntu backend reporting
 sudo ubuntu-report -f send no
 
-# UFW
-# Recommended rules from https://christitus.com/linux-security-mistakes/
-sudo ufw limit 22/tcp
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-# Enable ufw
-sudo ufw enable
-#sudo systemctl enable ufw # Didn't work for some reason
-#sudo systemctl start ufw # Didn't work for some reason
-# sudo ufw status numbered
-# sudo ufw delete 7 # Use numbers from above numbered command
+# Configure dns - linux/security_os_level/dns.sh
 
-# AppArmor
-# https://ubuntu.com/server/docs/security-apparmor
-sudo apt install apparmor-profiles
-sudo apparmor_status
-# sudo systemctl reload apparmor.service
-sudo systemctl enable apparmor.service
-sudo systemctl start apparmor.service
+# Configure firewall - linux/security_os_level/ufw.sh
 
 
 
