@@ -46,7 +46,7 @@ sudo dnf install -y librewolf alacritty git mullvad-browser codium
 #######################################
 
 # remove stuff
-sudo dnf remove -y  totem yelp gnome-tour gnome-connections firefox ptyxis
+sudo dnf remove -y  totem yelp gnome-tour gnome-connections firefox
 # remove the gnome terminal ptyxis as we have installed 
 
 #######################################
