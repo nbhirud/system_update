@@ -1,5 +1,10 @@
 
+#######################################
 
+# Benefits:
+# 1. Don't have to manually type each command and make some mistakes
+# 2. Don't have to enter credentials lot of times, just once in the beginning is enough
+# 3. Save time
 
 #######################################
 
@@ -78,10 +83,6 @@ echo "************************ Configuring Multimedia on Fedora ****************
 ### Multimedia on Fedora - https://rpmfusion.org/Howto/Multimedia 
 sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
 sudo dnf update -y @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
-
-echo "************************ Configuring intel driver ************************"
-# Which intel driver to install -  https://wiki.archlinux.org/title/Hardware_video_acceleration
-sudo dnf install -y libva-intel-driver
 
 echo "************************ Configuring Codecs ************************"
 ### Codecs - https://docs.fedoraproject.org/en-US/quick-docs/installing-plugins-for-playing-movies-and-music/
