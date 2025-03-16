@@ -237,4 +237,19 @@ https://brainfucksec.github.io/firefox-hardening-guide-2024
 
 #########################################################
 
+https://wiki.archlinux.org/title/Firefox
+https://wiki.archlinux.org/title/Firefox/Tweaks
+https://wiki.archlinux.org/title/Firefox#Configuration
+https://wiki.archlinux.org/title/Browser_extensions
+https://wiki.archlinux.org/title/Language_checking#Spell_checkers
+https://wiki.archlinux.org/title/Domain_name_resolution#Application-level_DNS
+https://blog.cloudflare.com/oblivious-dns/
+https://wiki.archlinux.org/title/Systemd-nspawn#Run_Firefox
+https://www.debian.org/doc/manuals/debian-handbook/sect.hostname-name-service.en.html#sect.name-resolution
+https://wiki.archlinux.org/title/Firefox/Privacy
+https://wiki.archlinux.org/title/Talk:Firefox/Privacy
+https://github.com/curl/curl/wiki/DNS-over-HTTPS#publicly-available-servers
+https://searx.space/#
+
+
 
