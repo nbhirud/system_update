@@ -52,3 +52,12 @@ hwinfo --disk
 
 ##############
 
+https://wiki.archlinux.org/title/File_recovery/Post_recovery_tasks
+
+https://wiki.archlinux.org/title/Btrfs
+
+https://www.system-rescue.org/
+
+https://www.roadkil.net/listing.php/C1/Data%20Recovery
+https://roadkil.net/program.php/P29/Unstoppable%20Copier
+
