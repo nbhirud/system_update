@@ -7,11 +7,12 @@ git clone https://github.com/nbhirud/system_update.git
 
 
 # Run this first: linux/fedora/run_first.sh
-sudo sh ~/nb/CodeProjects/linux/fedora/run_first.sh
+sudo sh ~/nb/CodeProjects/system_update/linux/fedora/run_first.sh
 
 #######################################
 
-
+sudo dnf remove -y ptyxis
+# remove the gnome terminal ptyxis as we have installed 
 
 ############# bash
 
