@@ -28,11 +28,6 @@ sudo setup-desktop
 # choose gnome
 # cat /sbin/setup-desktop # view all the packages that are installed by the script for the chosen desktop
 
-# Fonts: https://wiki.alpinelinux.org/wiki/Fonts
-sudo apk add font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-awesome font-noto-extra font-noto-devanagari 
-fc-cache -fv # display the font locations and to update the cache
-
-
 # Audio - https://wiki.alpinelinux.org/wiki/PipeWire
 # your user should be in audio (to access audio devices) and video (to access webcam devices) groups
 doas addgroup nbhirud audio
