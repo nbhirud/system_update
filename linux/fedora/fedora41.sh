@@ -14,11 +14,21 @@ sudo sh ~/nb/CodeProjects/system_update/linux/fedora/run_first.sh
 sudo dnf remove -y ptyxis
 # remove the gnome terminal ptyxis as we have installed 
 
-############# bash
+
+#######################################
+
+# Intel/AMD/Nvidia drivers - https://wiki.archlinux.org/title/Hardware_video_acceleration
+
+# Which INTEL driver to install -  check above link
+sudo dnf install libva-intel-driver
+
+# For AMD, no need to install anything separately as mesa takes care of it. Check configurations
+
+############# Run on bash
 
 # Setup zsh - check linux/common/zsh.sh
 
-####################### zsh
+####################### Run on zsh
 echo $SHELL
 
 # Enable Minimize or Maximize Window Buttons

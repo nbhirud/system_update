@@ -1,5 +1,10 @@
 
+#######################################
 
+# Benefits:
+# 1. Don't have to manually type each command and make some mistakes
+# 2. Don't have to enter credentials lot of times, just once in the beginning is enough
+# 3. Save time
 
 #######################################
 
@@ -66,9 +71,6 @@ sudo dnf update @core
 ### Multimedia on Fedora - https://rpmfusion.org/Howto/Multimedia 
 sudo dnf swap ffmpeg-free ffmpeg --allowerasing
 sudo dnf update @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
-
-# Which intel driver to install -  https://wiki.archlinux.org/title/Hardware_video_acceleration
-sudo dnf install libva-intel-driver
 
 ### Codecs - https://docs.fedoraproject.org/en-US/quick-docs/installing-plugins-for-playing-movies-and-music/
 sudo dnf group install multimedia
