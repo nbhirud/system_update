@@ -1,14 +1,24 @@
-############# bash
+#######################################
 
-sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+sudo dnf install -y git
+mkdir -p ~/nb/CodeProjects
+cd ~/nb/CodeProjects
+git clone https://github.com/nbhirud/system_update.git
+
+
+# Run this first: linux/fedora/run_first.sh
+sudo sh ~/nb/CodeProjects/linux/fedora/run_first.sh
+
+#######################################
+
+
+
+############# bash
 
 # Setup zsh - check linux/common/zsh.sh
 
 ####################### zsh
 echo $SHELL
-
-# Change default downloads dir:
-xdg-user-dirs-update --set DOWNLOAD "/home/nbhirud/nb/Downloads"
 
 # Enable Minimize or Maximize Window Buttons
 gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
@@ -20,58 +30,25 @@ sudo umount /home/nbhirud/nb
 sudo chown -R nbhirud:nbhirud nb
 sudo mount -va
 
-### Fonts
-mkdir nb
-mkdir nb/CodeProjects
-cd nb/CodeProjects
+### Fonts Setup
+# Refer linux/common/nerd_fonts.sh
 
-git clone --depth 1 https://github.com/ryanoasis/nerd-fonts.git
+#######################################
 
-cd nerd-fonts
-find . -name "*.md" -type f -delete
-find . -name "*.txt" -type f -delete
-find . -name "LICENSE" -type f -delete
-find . -name ".uuid" -type f -delete
+### VSCode: (somethimes you need it)
+# https://code.visualstudio.com/docs/setup/linux#_rhel-fedora-and-centos-based-distributions
 
-mkdir -p ~/.local/share/fonts # this fonts folder is absent by default
-cp ~/nb/CodeProjects/nerd-fonts/patched-fonts ~/.local/share/fonts/nerd-fonts -r
-rm -rf ~/nb/CodeProjects/nerd-fonts
+# # Install the key and yum repository by running the following script:
+# sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+# echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
 
-fc-cache -fr
-fc-list | grep "JetBrains"
+# # Then update the package cache and install the package using dnf
+# dnf check-update
+# sudo dnf install code # or code-insiders
 
 
-### VSCodium
+#######################################
 
-sudo rpmkeys --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg
-
-printf "[gitlab.com_paulcarroty_vscodium_repo]\nname=download.vscodium.com\nbaseurl=https://download.vscodium.com/rpms/\nenabled=1\ngpgcheck=1\nrepo_gpgcheck=1\ngpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg\nmetadata_expire=1h" | sudo tee -a /etc/yum.repos.d/vscodium.repo
-
-sudo dnf install codium
-
-
-### Configuration of Repositories - https://rpmfusion.org/Configuration
-
-sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm # use bash, not zsh (done above)
-
-sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
-sudo dnf update @core
-
-### Multimedia on Fedora - https://rpmfusion.org/Howto/Multimedia 
-sudo dnf swap ffmpeg-free ffmpeg --allowerasing
-sudo dnf update @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
-
-# Which intel driver to install -  https://wiki.archlinux.org/title/Hardware_video_acceleration
-sudo dnf install libva-intel-driver
-
-### Codecs - https://docs.fedoraproject.org/en-US/quick-docs/installing-plugins-for-playing-movies-and-music/
-sudo dnf group install multimedia
-
-sudo dnf update -y && sudo dnf upgrade --refresh -y
-
-
-### Enable flatpak flathub
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 ### rename pc
 sudo hostnamectl set-hostname "nbFedora"
@@ -85,12 +62,6 @@ flatpak install -y flathub com.mattjakeman.ExtensionManager com.spotify.Client o
 # flatpak install -y flathub ca.desrt.dconf-editor 
 
 
-##### LibreWolf - https://librewolf.net/installation/fedora/
-# add the repo
-curl -fsSL https://repo.librewolf.net/librewolf.repo | pkexec tee /etc/yum.repos.d/librewolf.repo
-# install the package
-sudo dnf install librewolf
-
 #### Kodi
 sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rtmp kodi-platform kodi-pvr-iptvsimple kodi-visualization-spectrum kodi-eventclients kodi
 
@@ -98,10 +69,6 @@ sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rt
 
 # uninstall
 # sudo dnf remove kodi kodi-eventclients kodi-firewalld kodi-inputstream-adaptive kodi-inputstream-rtmp kodi-platform  kodi-pvr-iptvsimple kodi-visualization-spectrum 
-
-# remove stuff
-sudo dnf remove -y  totem yelp gnome-tour gnome-connections ptyxis 
-# remove the gnome terminal ptyxis as we have installed alacritty
 
 
 ######################
@@ -285,14 +252,6 @@ sudo systemctl status clamd@scan
 # Optimizing SSD Drive
 # sudo systemctl status fstrim.timer
 # sudo systemctl enable fstrim.timer
-
-
-
-# https://mullvad.net/en/download/browser/linux
-# Add the Mullvad repository server to dnf
-sudo dnf config-manager addrepo --from-repofile=https://repository.mullvad.net/rpm/stable/mullvad.repo
-# Install the package
-sudo dnf install mullvad-browser
 
 
 # https://brave.com/linux/

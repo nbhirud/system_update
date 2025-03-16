@@ -38,10 +38,8 @@ gedit system_update/linux/ubuntu/ubuntu_todo_after_fresh_install.sh
 
 #######################################################
 
-cd ~/nb/CodeProjects
-git clone --depth 1 https://github.com/ryanoasis/nerd-fonts.git
-
-# delete using script
+# Fonts Setup
+# Refer linux/common/nerd_fonts.sh
 
 #######################################################
 
@@ -557,19 +555,6 @@ alias nbtoroff=". torsocks off"
 
 # Wallpaper
 
-
-################################################################
-
-# Better Fonts:
-# sudo dnf copr enable dawid/better_fonts -y
-# sudo dnf install fontconfig-font-replacements -y
-# sudo dnf install fontconfig-enhanced-defaults -y
-
-# Change default fonts using GNOME Tweaks
-# Change app specific fonts 
-
-
-
 ###############################################################
 
 # https://linuxcapable.com/how-to-install-kodi-on-fedora-linux/
@@ -708,13 +693,6 @@ sudo dnf install -y torbrowser-launcher
 # clamav config
 # cd /usr/share/doc/clamd/
 sudo nano /usr/share/doc/clamd/clamd.conf
-
-
-# fonts
-mkdir -p ~/.local/share/fonts
-# paste folder 
-fc-cache -fr 
-# fc-list | grep "JetBrains" 
 
 
 # after reboot
