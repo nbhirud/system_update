@@ -60,6 +60,14 @@ sudo apk update && sudo apk upgrade
 
 # Configure Anti Virus - linux/security_os_level/clamav.sh
 
+# Configure hosts - linux/security_os_level/hosts.sh
+
+# linux/common/bleachbit.sh
+# linux/common/firefox.sh
+# linux/common/git.sh
+# linux/common/gnome_settings.sh
+# Configure Fonts - linux/common/nerd_fonts.sh
+# linux/common/zsh.sh
 
 #######################################################
 

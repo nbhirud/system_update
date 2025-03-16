@@ -17,12 +17,12 @@ archinstall
     # Locale encoding - UTF-8
 # Disk configuration - Use a best-effort default partition layout
     # Select one or more devices to use and configure - select the appropriate one
-    # filesystem - ext4
+    # filesystem - ext4 (if btrfs, then use compression)
 
 # Bootloader - Grub
 # Swap - True
 # Hostname - nbArch
-# Root password - <set something strong and complicqated)
+# Root password - <set something strong and complicated)
 # User account - 
     # Add a user
         # Enter username - abc
@@ -44,7 +44,7 @@ archinstall
 # Optional repositories - multilib
 
 ## Save configuration (to create a re-usable config - optional), then Install
-
+# https://bbs.archlinux.org/viewtopic.php?pid=2139798#p2139798
 
 
 
@@ -106,16 +106,37 @@ yay -Sua # Upgrading (only) the AUR packages:
 ########## 
 ##########################################################################
 
-## aura
-# https://fosskers.github.io/aura/install.html
-git clone https://aur.archlinux.org/aura.git
-cd aura
-makepkg -s
-sudo pacman -U <the-package-file-that-makepkg-produces>
-aura check
-aura conf --gen > ~/.config/aura/config.toml
-aura stats --lang
-aura -Au # Updating your AUR Packages - run without sudo
+# ## aura
+# # https://fosskers.github.io/aura/install.html
+# git clone https://aur.archlinux.org/aura.git
+# cd aura
+# makepkg -s
+# sudo pacman -U <the-package-file-that-makepkg-produces>
+# aura check
+# aura conf --gen > ~/.config/aura/config.toml
+# aura stats --lang
+# aura -Au # Updating your AUR Packages - run without sudo
+
+##########################################################################
+########## 
+##########################################################################
+
+# Configure dns - linux/security_os_level/dns.sh
+
+# Configure firewall - linux/security_os_level/ufw.sh
+
+# Configure tor - linux/security_os_level/tor.sh
+
+# Configure Anti Virus - linux/security_os_level/clamav.sh
+
+# Configure hosts - linux/security_os_level/hosts.sh
+
+# linux/common/bleachbit.sh
+# linux/common/firefox.sh
+# linux/common/git.sh
+# linux/common/gnome_settings.sh
+# linux/common/nerd_fonts.sh
+# linux/common/zsh.sh
 
 ##########################################################################
 ########## 
@@ -162,3 +183,18 @@ sudo pacman -Syu && yay -Sua && sudo freshclam && omz update && fastfetch
 
 
 # https://wiki.archlinux.org/title/Improving_performance
+
+##########################################################################
+########## 
+##########################################################################
+
+
+##########################################################################
+########## 
+##########################################################################
+
+
+##########################################################################
+########## 
+##########################################################################
+

@@ -86,9 +86,11 @@ sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rt
 
 # Configure dns - linux/security_os_level/dns.sh
 
+# Configure firewall - linux/security_os_level/firewalld.sh
 
 # Configure tor - linux/security_os_level/tor.sh
 
+# Configure Anti Virus - linux/security_os_level/clamav.sh
 
 # Configure hosts - linux/security_os_level/hosts.sh
 
