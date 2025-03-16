@@ -63,17 +63,17 @@ sudo dnf remove -y  totem yelp gnome-tour gnome-connections firefox
 
 ### Configuration of Repositories - https://rpmfusion.org/Configuration
 
-sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm # use bash, not zsh (done above)
+sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm # use bash, not zsh (done above)
 
 sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
-sudo dnf update @core
+sudo dnf update -y @core
 
 ### Multimedia on Fedora - https://rpmfusion.org/Howto/Multimedia 
-sudo dnf swap ffmpeg-free ffmpeg --allowerasing
-sudo dnf update @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
+sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
+sudo dnf update -y @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
 
 ### Codecs - https://docs.fedoraproject.org/en-US/quick-docs/installing-plugins-for-playing-movies-and-music/
-sudo dnf group install multimedia
+sudo dnf group install -y multimedia
 
 #######################################
 

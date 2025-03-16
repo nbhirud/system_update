@@ -24,11 +24,11 @@ sudo dnf install libva-intel-driver
 
 # For AMD, no need to install anything separately as mesa takes care of it. Check configurations
 
-############# Run on bash
+####################################### Run on bash
 
 # Setup zsh - check linux/common/zsh.sh
 
-####################### Run on zsh
+####################################### Run on zsh
 echo $SHELL
 
 # Enable Minimize or Maximize Window Buttons
@@ -82,7 +82,7 @@ sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rt
 # sudo dnf remove kodi kodi-eventclients kodi-firewalld kodi-inputstream-adaptive kodi-inputstream-rtmp kodi-platform  kodi-pvr-iptvsimple kodi-visualization-spectrum 
 
 
-######################
+#######################################
 sudo nano /etc/yum.repos.d/tor.repo
 
 # [tor]
@@ -112,6 +112,7 @@ source torsocks on
 echo ". torsocks on" >> ~/.bashrc
 echo ". torsocks on" >> ~/.zshrc
 
+#######################################
 
 #### GSConnect
 # Help - https://github.com/GSConnect/gnome-shell-extension-gsconnect/wiki/Help
@@ -121,6 +122,7 @@ dconf write /org/gnome/shell/disable-user-extensions false
 gapplication launch org.gnome.Shell.Extensions.GSConnect # if error, run next line
 systemctl --user reload dbus-broker.service
 
+#######################################
 
 ###### clamav
 
@@ -230,7 +232,7 @@ sudo systemctl start clamd@scan
 sudo systemctl enable clamd@scan
 sudo systemctl status clamd@scan
 
-###########################
+#######################################
 
 # Firefox
 # First thing to do (STEP 1):
@@ -239,7 +241,7 @@ sudo systemctl status clamd@scan
 # Review all settings including labs
 # and then:
 
-
+#######################################
 
 # Ublock Origin - Enable relevant filters
 # https://github.com/mchangrh/yt-neuter - Add this filter to ublock origin
@@ -247,7 +249,7 @@ sudo systemctl status clamd@scan
 # replace hosts file - check ../security_os_level/
 
 
-##### Privacy/youtube extensions - reference: https://www.youtube.com/watch?v=rteYHxcLCZk
+####################################### Privacy/youtube extensions - reference: https://www.youtube.com/watch?v=rteYHxcLCZk
 # https://github.com/mchangrh/yt-neuter
 #Return YouTube Dislike: https://returnyoutubedislike.com/
 #SponsorBlock: https://sponsor.ajay.app/
@@ -259,11 +261,14 @@ sudo systemctl status clamd@scan
 #Hide YouTube Shorts: https://github.com/gijsdev/ublock-hid...
 #NewPipe: https://newpipe.net/
 
+#######################################
 
 # Optimizing SSD Drive
 # sudo systemctl status fstrim.timer
 # sudo systemctl enable fstrim.timer
 
+
+#######################################
 
 # https://brave.com/linux/
 sudo dnf install dnf-plugins-core
