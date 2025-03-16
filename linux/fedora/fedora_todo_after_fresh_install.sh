@@ -264,82 +264,7 @@ sudo dnf install codium
 
 #######################################################
 
-# https://support.torproject.org/rpm/
-
-
-sudo nano /etc/yum.repos.d/tor.repo
-
-## Paste the following:
-# [tor]
-# name=Tor for Fedora $releasever - $basearch
-# baseurl=https://rpm.torproject.org/fedora/$releasever/$basearch
-# enabled=1
-# gpgcheck=1
-# gpgkey=https://rpm.torproject.org/fedora/public_gpg.key
-# cost=100
-
-sudo dnf install tor -y
-
-sudo nano /etc/tor/torrc
-## Paste the following, and modify as necessary:
-EntryNodes {ca}{us}{uk} StrictNodes 1
-ExitNodes {ca}{us}{uk} StrictNodes 1
-sudo systemctl reload tor
-
-
-source torsocks on
-echo ". torsocks on" >> ~/.bashrc
-echo ". torsocks on" >> ~/.zshrc
-
-
-## DNS over Tor
-
-# Step 1
-# Download cloudflared from here: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/
-# TLDR: download this for Fedora: https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-x86_64.rpm
-
-# Step 2:
-# https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/dns-over-https-client/
-# TLDR: 
-cloudflared --version  # verify if its installed
-
-###
-sudo tee /etc/systemd/system/cloudflared-proxy-dns.service >/dev/null <<EOF
-[Unit]
-Description=DNS over HTTPS (DoH) proxy client
-Wants=network-online.target nss-lookup.target
-Before=nss-lookup.target
-
-[Service]
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
-DynamicUser=yes
-ExecStart=/usr/local/bin/cloudflared proxy-dns
-
-[Install]
-WantedBy=multi-user.target
-EOF
-###
-
-sudo systemctl enable --now cloudflared-proxy-dns
-sudo rm -f /etc/resolv.conf
-echo nameserver 127.0.0.1 | sudo tee /etc/resolv.conf >/dev/null
-dig +short @127.0.0.1 cloudflare.com AAAA # verify if it works
-
-# Step 3"
-# https://blog.cloudflare.com/welcome-hidden-resolver/
-# https://developers.cloudflare.com/1.1.1.1/other-ways-to-use-1.1.1.1/dns-over-tor/
-dnf install -y socat
-sudo socat TCP4-LISTEN:443,reuseaddr,fork SOCKS4A:127.0.0.1:dns4torpnlfs2ifuz2s2yf3fc7rdmsbhm6rw75euj35pac6ap25zgqad.onion:443,socksport=9150
-
-###
-cat << EOF >> /etc/hosts
-127.0.0.1 dns4torpnlfs2ifuz2s2yf3fc7rdmsbhm6rw75euj35pac6ap25zgqad.onion
-EOF
-
-###
-
-cloudflared proxy-dns --upstream "https://dns4torpnlfs2ifuz2s2yf3fc7rdmsbhm6rw75euj35pac6ap25zgqad.onion/dns-query"
+# Configure tor - linux/security_os_level/tor.sh
 
 #######################################################
 
@@ -580,26 +505,6 @@ sudo dnf update -y && sudo dnf upgrade --refresh -y
 
 curl -fsSL https://rpm.librewolf.net/librewolf-repo.repo | pkexec tee /etc/yum.repos.d/librewolf.repo
 sudo dnf install -y librewolf
-
-
-
-
-
-# tor
-sudo nano /etc/yum.repos.d/tor.repo
-# put stuff there
-# don't install tor
-sudo dnf update -y && sudo dnf upgrade --refresh -y
-
-# install tor browser
-sudo dnf install -y torbrowser-launcher
-
-
-
-
-# clamav config
-# cd /usr/share/doc/clamd/
-sudo nano /usr/share/doc/clamd/clamd.conf
 
 
 # after reboot

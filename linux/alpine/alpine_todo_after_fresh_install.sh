@@ -50,7 +50,15 @@ sudo apk add --upgrade apk-tools
 
 sudo apk update && sudo apk upgrade
 
+#######################################################
 
+# Configure dns - linux/security_os_level/dns.sh
+
+# Configure firewall - linux/security_os_level/ufw.sh
+
+# Configure tor - linux/security_os_level/tor.sh
+
+# Configure Anti Virus - linux/security_os_level/clamav.sh
 
 
 #######################################################

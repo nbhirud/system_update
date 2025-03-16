@@ -67,7 +67,7 @@ sudo hostnamectl set-hostname "nbFedora"
 # Install software
 
 
-sudo dnf install -y gh keepassxc gnome-tweaks gnome-browser-connector vlc htop fastfetch gparted bleachbit transmission dnfdragora timeshift alacritty torbrowser-launcher
+sudo dnf install -y gh keepassxc gnome-tweaks gnome-browser-connector vlc htop fastfetch gparted bleachbit transmission dnfdragora timeshift alacritty
 
 flatpak install -y flathub com.mattjakeman.ExtensionManager com.spotify.Client org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.protonvpn.www me.proton.Mail me.proton.Pass com.bitwarden.desktop
 # flatpak install -y flathub ca.desrt.dconf-editor 
@@ -83,34 +83,21 @@ sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rt
 
 
 #######################################
-sudo nano /etc/yum.repos.d/tor.repo
 
-# [tor]
-# name=Tor for Fedora $releasever - $basearch
-# baseurl=https://rpm.torproject.org/fedora/$releasever/$basearch
-# enabled=1
-# gpgcheck=1
-# gpgkey=https://rpm.torproject.org/fedora/public_gpg.key
-# cost=100
+# Configure dns - linux/security_os_level/dns.sh
 
 
-dnf install tor -y
+# Configure tor - linux/security_os_level/tor.sh
 
 
-sudo nano /etc/tor/torrc
+# Configure hosts - linux/security_os_level/hosts.sh
 
-# Note: ExitNodes is what shows up as your location
-# LOL
-# EntryNodes {sg}{ae}{sa}{tr}{tw}{aq} StrictNodes 1
-# MiddleNodes {in}{ru}{su}{cn}{ir} StrictNodes 1
-# ExitNodes {ca}{us}{uk}{au} StrictNodes 1
-sudo systemctl enable tor
-sudo systemctl start tor
-# sudo systemctl reload tor
-
-source torsocks on
-echo ". torsocks on" >> ~/.bashrc
-echo ". torsocks on" >> ~/.zshrc
+# linux/common/bleachbit.sh
+# linux/common/firefox.sh
+# linux/common/git.sh
+# linux/common/gnome_settings.sh
+# linux/common/nerd_fonts.sh
+# linux/common/zsh.sh
 
 #######################################
 

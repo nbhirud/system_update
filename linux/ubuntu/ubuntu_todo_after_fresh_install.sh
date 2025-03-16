@@ -369,41 +369,6 @@ jetbrains/jetbrains-toolbox # Open JetBrains Toolbox (and installs?)
 ###########################################
 ###########################################
 
-# Install Tor
-#https://support.torproject.org/apt/tor-deb-repo/
-#https://support.torproject.org/apt/
-#https://itsfoss.com/install-tar-browser-linux/
-dpkg --print-architecture # ARCHITECTURE - Verify the CPU architecture - returns amd64 for Intel i3, i5, i7
-lsb_release -c # DISTRIBUTION - Check distribution - returns noble for Ubuntu 24
-cat /etc/debian_version # DISTRIBUTION - Check base debian distribution - returns trixie/sid for Ubuntu 24
-apt install apt-transport-https
-sudo nano /etc/apt/sources.list.d/tor.list # Create this file  and paste the following in te file (replace DISTRIBUTION with appropriate architecture):
-
-### For debian - not sure if this is to be used for ubuntu too. TODO - check
-#   deb     [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org <DISTRIBUTION> main
-#   deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org <DISTRIBUTION> main
-### Following is mentioned for ubuntu, but for 32 bit versions, maybe to be used with 64 bit also? TODO - check
-#   deb     [arch=<ARCHITECTURE> signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org focal main
-#   deb-src [arch=<ARCHITECTURE> signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org focal main
-
-### So, maybe try till something works in following order: TODO - check
-# Option 1
-#   deb     [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org noble main
-#   deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org noble main
-### Option 2 - So maybe try this (Also changed focal to noble):
-#   deb     [arch=amd64 signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org noble main
-#   deb-src [arch=amd64 signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org noble main
-### Option 3
-#   deb     [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org trixie/sid main
-#   deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org trixie/sid main
-
-wget -qO- https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg >/dev/null
-sudo apt update
-sudo apt install tor deb.torproject.org-keyring
-
-###########################################
-###########################################
-
 # Install useful software
 
 sudo apt install -y unattended-upgrades # Configurations in settings section
@@ -571,22 +536,18 @@ sudo ubuntu-report -f send no
 
 # Configure firewall - linux/security_os_level/ufw.sh
 
+# Configure tor - linux/security_os_level/tor.sh
 
+# Configure Anti Virus - linux/security_os_level/clamav.sh
 
-# TOR Network (Tor browser is different)
-source torsocks on
-echo ". torsocks on" >> ~/.bashrc
-echo ". torsocks on" >> ~/.zshrc
-# source torsocks off #  toggle torsocks mode off again
-# TODO - Refer this for configuring tor network next steps - https://linuxconfig.org/install-tor-proxy-on-ubuntu-20-04-linux
-# Also refer https://help.ubuntu.com/community/Tor
-# https://community.torproject.org/relay/setup/bridge/debian-ubuntu/
-# https://www.wikihow.com/Set-a-Specific-Country-in-a-Tor-Browser
+# Configure hosts - linux/security_os_level/hosts.sh
 
-
-# For changing tor config:
-sudo nano /etc/tor/torrc
-sudo systemctl reload tor
+# linux/common/bleachbit.sh
+# linux/common/firefox.sh
+# linux/common/git.sh
+# linux/common/gnome_settings.sh
+# linux/common/nerd_fonts.sh
+# linux/common/zsh.sh
 
 ##########################################
 
@@ -677,10 +638,6 @@ sudo systemctl restart unattended-upgrades
 # https://github.com/mchangrh/yt-neuter - Add this filter to ublock origin
 # https://github.com/StevenBlack/hosts - modify hosts file - sudo nano /etc/hosts
 # https://github.com/arkenfox/user.js - The arkenfox user.js is a template which aims to provide as much privacy and enhanced security as possible, and to reduce tracking and fingerprinting as much as possible - while minimizing any loss of functionality and breakage (but it will happen).
-
-##### Tor Browser
-# Open "Tor Browser Launcher Settings" app -> enable "Download over System Tor"
-# Open "Tor Browser" app -> It will download and install
 
 ##### Jetbrains Toolbox
 # login to the toolbox app
