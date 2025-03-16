@@ -1,0 +1,32 @@
+
+# https://github.com/mxpv/podsync
+
+podman pull mxpv/podsync:latest
+
+################
+config.toml
+################
+
+[server]
+port = 8080
+
+[storage]
+  [storage.local]
+  data_dir = "/data/podsync/"
+
+[tokens]
+youtube = "PASTE YOUR API KEY HERE"
+
+[feeds]
+    [feeds.ID1]
+    url = "https://www.youtube.com/channel/UCxC5Ls6DwqV0e-CYcAKkExQ"
+
+################
+
+podman run \
+    -p 8080:8080 \
+    -v $(pwd)/data:/app/data/ \
+    -v $(pwd)/config.toml:/app/config.toml \
+    mxpv/podsync:latest
+
+
