@@ -1,44 +1,7 @@
 # Basics:
 # https://www.baeldung.com/linux/gnome-shell-extension
 
-##### Settings
-
-# Network -> Click the gear box next to the connection in use -> IPV4 tab -> Disable "Automatic" for
-# DNS -> Paste the following in the box and apply:
-# 1.1.1.2, 1.0.0.2, 1.1.1.1, 1.0.0.1, 8.8.8.8, 8.8.4.4
-
-# Network -> Click the gear box next to the connection in use -> IPV6 tab -> "Additional DNS servers" -> Paste
-# the following in the box and apply:
-# 2606:4700:4700::1112, 2606:4700:4700::1002, 2606:4700:4700::1111, 2606:4700:4700::1001, 2001:4860:4860::8888, 2001:4860:4860::8844
-
-# Useful links abot DNS:
-# https://developers.cloudflare.com/1.1.1.1/ip-addresses/
-# https://pkg.cloudflare.com/index.html
-# https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/dns-over-https-client/
-# https://developers.cloudflare.com/1.1.1.1/setup/linux/
-# https://developers.cloudflare.com/1.1.1.1/setup/router/
-# https://developers.cloudflare.com/1.1.1.1/other-ways-to-use-1.1.1.1/dns-over-tor/
-# https://blog.cloudflare.com/welcome-hidden-resolver/
-
-
-
-########################
-
-## HTTPS (DoH) Servers in this order:
-## Setup on Router and/or PC
-# https://security.cloudflare-dns.com/dns-query
-# https://dns.quad9.net/dns-query
-# https://cloudflare-dns.com/dns-query
-
-########################
-
-## Time servers
-# time.cloudflare.com
-# time.nist.gov
-# time-nw.nist.gov
-# pool.ntp.org
-
-########################
+###########################33
 
 # Network -> Click the gear box next to the connection in use -> IPV6 tab -> "IPV6 Method" = Disabled (reduce attack surface area unless explicitly needed)
 
