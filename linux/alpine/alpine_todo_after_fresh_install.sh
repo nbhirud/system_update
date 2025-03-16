@@ -28,11 +28,6 @@ sudo setup-desktop
 # choose gnome
 # cat /sbin/setup-desktop # view all the packages that are installed by the script for the chosen desktop
 
-# Fonts: https://wiki.alpinelinux.org/wiki/Fonts
-sudo apk add font-terminus font-inconsolata font-dejavu font-noto font-noto-cjk font-awesome font-noto-extra font-noto-devanagari 
-fc-cache -fv # display the font locations and to update the cache
-
-
 # Audio - https://wiki.alpinelinux.org/wiki/PipeWire
 # your user should be in audio (to access audio devices) and video (to access webcam devices) groups
 doas addgroup nbhirud audio
@@ -55,8 +50,24 @@ sudo apk add --upgrade apk-tools
 
 sudo apk update && sudo apk upgrade
 
+#######################################################
 
+# Configure dns - linux/security_os_level/dns.sh
 
+# Configure firewall - linux/security_os_level/ufw.sh
+
+# Configure tor - linux/security_os_level/tor.sh
+
+# Configure Anti Virus - linux/security_os_level/clamav.sh
+
+# Configure hosts - linux/security_os_level/hosts.sh
+
+# linux/common/bleachbit.sh
+# linux/common/firefox.sh
+# linux/common/git.sh
+# linux/common/gnome_settings.sh
+# Configure Fonts - linux/common/nerd_fonts.sh
+# linux/common/zsh.sh
 
 #######################################################
 
@@ -111,11 +122,7 @@ apk autoremove && apk cache clean
 
 #######################################################
 
-# Clamav
-sudo apk add clamav
-sudo freshclam
-# update the config files
-sudo clamscan -i -r /home
+
 
 #######################################################
 

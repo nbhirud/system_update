@@ -67,7 +67,7 @@ sudo hostnamectl set-hostname "nbFedora"
 # Install software
 
 
-sudo dnf install -y gh keepassxc gnome-tweaks gnome-browser-connector vlc htop fastfetch gparted bleachbit transmission dnfdragora timeshift alacritty torbrowser-launcher
+sudo dnf install -y gh keepassxc gnome-tweaks gnome-browser-connector vlc htop fastfetch gparted bleachbit transmission dnfdragora timeshift alacritty
 
 flatpak install -y flathub com.mattjakeman.ExtensionManager com.spotify.Client org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.protonvpn.www me.proton.Mail me.proton.Pass com.bitwarden.desktop
 # flatpak install -y flathub ca.desrt.dconf-editor 
@@ -83,34 +83,23 @@ sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rt
 
 
 #######################################
-sudo nano /etc/yum.repos.d/tor.repo
 
-# [tor]
-# name=Tor for Fedora $releasever - $basearch
-# baseurl=https://rpm.torproject.org/fedora/$releasever/$basearch
-# enabled=1
-# gpgcheck=1
-# gpgkey=https://rpm.torproject.org/fedora/public_gpg.key
-# cost=100
+# Configure dns - linux/security_os_level/dns.sh
 
+# Configure firewall - linux/security_os_level/firewalld.sh
 
-dnf install tor -y
+# Configure tor - linux/security_os_level/tor.sh
 
+# Configure Anti Virus - linux/security_os_level/clamav.sh
 
-sudo nano /etc/tor/torrc
+# Configure hosts - linux/security_os_level/hosts.sh
 
-# Note: ExitNodes is what shows up as your location
-# LOL
-# EntryNodes {sg}{ae}{sa}{tr}{tw}{aq} StrictNodes 1
-# MiddleNodes {in}{ru}{su}{cn}{ir} StrictNodes 1
-# ExitNodes {ca}{us}{uk}{au} StrictNodes 1
-sudo systemctl enable tor
-sudo systemctl start tor
-# sudo systemctl reload tor
-
-source torsocks on
-echo ". torsocks on" >> ~/.bashrc
-echo ". torsocks on" >> ~/.zshrc
+# linux/common/bleachbit.sh
+# linux/common/firefox.sh
+# linux/common/git.sh
+# linux/common/gnome_settings.sh
+# linux/common/nerd_fonts.sh
+# linux/common/zsh.sh
 
 #######################################
 
@@ -124,113 +113,7 @@ systemctl --user reload dbus-broker.service
 
 #######################################
 
-###### clamav
 
-sudo dnf upgrade --refresh
-sudo dnf -y install clamav clamd clamav-update clamtk
-clamscan --version
-sudo systemctl stop clamav-freshclam 
-sudo freshclam
-sudo systemctl start clamav-freshclam
-sudo systemctl enable clamav-freshclam --now
-
-
-# Generate config files:
-clamconf -g freshclam.conf > freshclam.conf
-clamconf -g clamd.conf > clamd.conf
-clamconf -g clamav-milter.conf > clamav-milter.conf
-
-# Create log files:
-sudo touch /var/log/freshclam.log
-sudo chmod 600 /var/log/freshclam.log
-sudo chown clamupdate /var/log/freshclam.log
-
-sudo touch /var/log/clamav.log
-sudo chmod 600 /var/log/clamav.log
-sudo chown clamscan /var/log/clamav.log
-
-# Configurations:
-
-
-## freshclam
-sudo nano /etc/freshclam.conf
-# LogFileMaxSize 20M
-# LogTime yes
-# LogRotate yes
-# DatabaseMirror database.clamav.net
-# UpdateLogFile /var/log/freshclam.log
-# DatabaseOwner clamupdate
-# NotifyClamd yes
-
-
-## clamd
-sudo nano /etc/clamd.d/scan.conf
-
-# Comment the "Example"
-# LogFile /var/log/clamav.log
-# LogFileMaxSize 20M
-# LogTime yes
-# LogRotate yes
-# ExitOnOOM yes # Not sure if this is a good thing to do
-# LocalSocket /var/run/clamd.scan/clamd.sock
-# User clamscan
-# DetectPUA yes
-# TLDR of - https://docs.clamav.net/manual/OnAccess.html
-# OnAccessIncludePath /home # Figure out if this is the best option
-# OnAccessExcludeUname clamscan
-# OnAccessPrevention yes
-# OnAccessDisableDDD yes
-
-
-## Automatated update scheduling:
-
-# 1. create a systemd timer
-sudo nano /etc/systemd/system/freshclam.timer
-
-# Add the following content:
-
-# [Unit]
-# Description=freshclam database updates
-
-# [Timer]
-# OnCalendar=daily
-# Persistent=true
-
-# [Install]
-# WantedBy=timers.target
-
-# 2. create the corresponding service file
-sudo nano /etc/systemd/system/freshclam.service
-
-# Add the following content:
-
-# [Unit]
-# Description=freshclam database updater
-
-# [Service]
-# Type=oneshot
-# ExecStart=/usr/bin/freshclam --quiet
-
-# 3. enable and start the timer
-sudo systemctl enable freshclam.timer
-sudo systemctl start freshclam.timer
-
-
-## scheduled scans
-
-# create a cron job
-sudo crontab -e
-
-# Add a line to run a daily scan at 2 AM
-# 0 2 * * * /usr/bin/clamscan -r /home > /var/log/clamav/daily_scan.log
-
-
-## Service Management
-
-#  start the ClamAV daemon and enable it to start automatically on boot:
-sudo systemctl start clamd@scan
-sudo systemctl enable clamd@scan
-sudo systemctl status clamd@scan
 
 #######################################
 
@@ -346,52 +229,8 @@ flatpak install flathub io.dbeaver.DBeaverCommunity
 #################################################################
 
 
-# # UFW
-# # Recommended rules from https://christitus.com/linux-security-mistakes/
-# sudo ufw limit 22/tcp
-# sudo ufw allow 80/tcp
-# sudo ufw allow 443/tcp
-# sudo ufw default deny incoming
-# sudo ufw default allow outgoing
-# # Enable ufw
-# sudo ufw enable
-# #sudo systemctl enable ufw # Didn't work for some reason
-# #sudo systemctl start ufw # Didn't work for some reason
-# # sudo ufw status numbered
-# # sudo ufw delete 7 # Use numbers from above numbered command
 
-
-
-###### firewalld #TODO
-# https://www.redhat.com/en/blog/how-to-configure-firewalld
-
-sudo dnf install firewall-config # GUI
-
-## basic commands
-systemctl status firewalld
-# systemctl start --now firewalld
-systemctl enable --now firewalld
-# systemctl stop firewalld
-# systemctl restart firewalld
-
-## config
-
-firewall-cmd --state
-# firewall-cmd --reload
-firewall-cmd --list-all
-
-
-
-
-
-
-# GSConnect firewalld rules
-firewall-cmd --permanent --zone=public --add-service=kdeconnect 
-firewall-cmd --reload
-
-
-# SELinux
-
+#################################################
 sudo dnf update -y && sudo dnf upgrade --refresh -y
 
 # reboot

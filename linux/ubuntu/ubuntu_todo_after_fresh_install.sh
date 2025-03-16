@@ -46,8 +46,6 @@ sudo apt install solaar logiops
 ###########################################
 ###########################################
 
-##### Fonts setup early to make zsh look good from beginning (needs nerd fonts)
-
 # Commonly used media codecs and fonts for Ubuntu
 # Need to click ok and then yes manually
 sudo apt install -y ubuntu-restricted-extras
@@ -55,71 +53,8 @@ sudo apt install -y ubuntu-restricted-extras
 # Commonly used restricted packages for Ubuntu
 sudo apt install -y ubuntu-restricted-addons
 
-# Install some fonts
-# sudo apt install fonts-jetbrains-mono fonts-roboto fonts-cascadia-code fonts-firacode # Covered by nerd-fonts below, so skip this
-
-# https://needforbits.wordpress.com/2017/07/19/install-microsoft-windows-fonts-on-ubuntu-the-ultimate-guide/
-sudo apt install ttf-mscorefonts-installer # Windows Core fonts (2007) like Arial, Times New Roman, etc
-wget https://gist.github.com/maxwelleite/10774746/raw/ttf-vista-fonts-installer.sh -q -O - | sudo bash # Installs Microsoft’s ClearType fonts (Windows Vista Fonts) like Calibri, Consolas, etc
-wget https://gist.githubusercontent.com/maxwelleite/913b6775e4e408daa904566eb375b090/raw/cbfd8eb70184fa509fcab37dad7905676c93d587/ttf-ms-tahoma-installer.sh -q -O - | sudo bash # Install Tahoma fonts
-# install the full pack of Segoe UI fonts
-sudo mkdir -p /usr/share/fonts/truetype/msttcorefonts/
-cd /usr/share/fonts/truetype/msttcorefonts/
-sudo wget -q https://github.com/martinring/clide/blob/master/doc/fonts/segoeui.ttf?raw=true -O segoeui.ttf # regular
-sudo wget -q https://github.com/martinring/clide/blob/master/doc/fonts/segoeuib.ttf?raw=true -O segoeuib.ttf # bold
-sudo wget -q https://github.com/martinring/clide/blob/master/doc/fonts/segoeuib.ttf?raw=true -O segoeuii.ttf # italic
-sudo wget -q https://github.com/martinring/clide/blob/master/doc/fonts/segoeuiz.ttf?raw=true -O segoeuiz.ttf # bold italic
-sudo wget -q https://github.com/martinring/clide/blob/master/doc/fonts/segoeuil.ttf?raw=true -O segoeuil.ttf # light
-sudo wget -q https://github.com/martinring/clide/blob/master/doc/fonts/seguili.ttf?raw=true -O seguili.ttf # light italic
-sudo wget -q https://github.com/martinring/clide/blob/master/doc/fonts/segoeuisl.ttf?raw=true -O segoeuisl.ttf # semilight
-sudo wget -q https://github.com/martinring/clide/blob/master/doc/fonts/seguisli.ttf?raw=true -O seguisli.ttf # semilight italic
-sudo wget -q https://github.com/martinring/clide/blob/master/doc/fonts/seguisb.ttf?raw=true -O seguisb.ttf # semibold
-sudo wget -q https://github.com/martinring/clide/blob/master/doc/fonts/seguisbi.ttf?raw=true -O seguisbi.ttf # semibold italic
-fc-cache -f /usr/share/fonts/truetype/msttcorefonts/
-# WPS Office Fonts (Symbol fonts) - Will install them here: /usr/share/fonts/wps-fonts
-cd /tmp
-wget -O ttf-wps-fonts-master.zip https://github.com/IamDH4/ttf-wps-fonts/archive/master.zip
-unzip -LL ttf-wps-fonts-master.zip
-cd ttf-wps-fonts-master
-sudo ./install.sh
-
-# Also install these:
-# https://github.com/ryanoasis/nerd-fonts
-# https://github.com/powerline/fonts
-
-cd ~/Downloads
-git clone --depth 1 https://github.com/ryanoasis/nerd-fonts.git
-
-
-
-# [nbhirud@nbFedora]~/Downloads/nerd-fonts% ls
-# AnonymousPro     CascadiaCode  CodeNewRoman     DejaVuSansMono  FiraCode  Gohu  HeavyData  IBMPlexMono  InconsolataGo   JetBrainsMono   Meslo   Mononoki              Noto          ProFont      RobotoMono     SpaceMono  Tinos   UbuntuMono
-# BigBlueTerminal  CascadiaMono  ComicShannsMono  EnvyCodeR       FiraMono  Hack  Hermit     Inconsolata  InconsolataLGC  LiberationMono  Monoid  NerdFontsSymbolsOnly  OpenDyslexic  ProggyClean  SourceCodePro  Terminus   Ubuntu  UbuntuSans
-# [nbhirud@nbFedora]~/Downloads/nerd-fonts% 
-
-# To delete unnecessary files, run the following:
-# find . -name "*.md" -type f -delete
-# find . -name "*.txt" -type f -delete
-# find . -name "LICENSE" -type f -delete
-# find . -name ".uuid" -type f -delete
-
-# But first verify without the -delete option like following:
-find . -name "*.bak" -type f
-
-# Copy above folders from patched-fonts dir into a new directory called "nerd_fonts" -> Delete all files that are
-# not either *.ttf or *.otf -> move the nerd_fonts directory to ~/.local/share/fonts:
-mkdir -p ~/.local/share/fonts # this fonts folder is absent by default
-cp ~/Downloads/nerd-fonts ~/.local/share/fonts/ -r
-rm ~/Downloads/nerd-fonts
-
-fc-cache -fr # clear font cache
-# sudo fc-cache -f -v # Find out difference
-fc-list | grep "JetBrains" # To check if jetbrains fond was installed successfully
-
-# ~/config/fontconfig/fonts.conf # Did not find this. Use GNOME Tweaks app instead
-# set multiple <family> tags with different font families under <prefer> section
-# This is a way to set preferred font and fall-back fonts
-
+# Fonts Setup
+# Refer linux/common/nerd_fonts.sh
 
 ###########################################
 ###########################################
@@ -196,13 +131,6 @@ source ~/.bashrcf
 # Nordic Theme - https://www.pling.com/p/1267246/
 #gsettings set org.gnome.desktop.interface gtk-theme Nordic
 #gsettings set org.gnome.desktop.wm.preferences theme Nordic
-
-# # Use Gnome-Tweaks -> Appearance -> Choose individual themes to set these themes.
-# Fonts:
-# Interface Text = Ubuntu Nerd Font Regular
-# Document Text = JetBrainsMono Nerd Font Regular
-# Monospace Text = JetBrainsMono Nerd Font Mono Regular
-# reboot
 
 ###########################################
 ###########################################
@@ -441,41 +369,6 @@ jetbrains/jetbrains-toolbox # Open JetBrains Toolbox (and installs?)
 ###########################################
 ###########################################
 
-# Install Tor
-#https://support.torproject.org/apt/tor-deb-repo/
-#https://support.torproject.org/apt/
-#https://itsfoss.com/install-tar-browser-linux/
-dpkg --print-architecture # ARCHITECTURE - Verify the CPU architecture - returns amd64 for Intel i3, i5, i7
-lsb_release -c # DISTRIBUTION - Check distribution - returns noble for Ubuntu 24
-cat /etc/debian_version # DISTRIBUTION - Check base debian distribution - returns trixie/sid for Ubuntu 24
-apt install apt-transport-https
-sudo nano /etc/apt/sources.list.d/tor.list # Create this file  and paste the following in te file (replace DISTRIBUTION with appropriate architecture):
-
-### For debian - not sure if this is to be used for ubuntu too. TODO - check
-#   deb     [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org <DISTRIBUTION> main
-#   deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org <DISTRIBUTION> main
-### Following is mentioned for ubuntu, but for 32 bit versions, maybe to be used with 64 bit also? TODO - check
-#   deb     [arch=<ARCHITECTURE> signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org focal main
-#   deb-src [arch=<ARCHITECTURE> signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org focal main
-
-### So, maybe try till something works in following order: TODO - check
-# Option 1
-#   deb     [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org noble main
-#   deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org noble main
-### Option 2 - So maybe try this (Also changed focal to noble):
-#   deb     [arch=amd64 signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org noble main
-#   deb-src [arch=amd64 signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org noble main
-### Option 3
-#   deb     [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org trixie/sid main
-#   deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org trixie/sid main
-
-wget -qO- https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg >/dev/null
-sudo apt update
-sudo apt install tor deb.torproject.org-keyring
-
-###########################################
-###########################################
-
 # Install useful software
 
 sudo apt install -y unattended-upgrades # Configurations in settings section
@@ -575,9 +468,6 @@ sudo apt install -y bleachbit
 # https://docs.bleachbit.org/doc/command-line-interface.html
 # sudo apt install -y stacer # Another system cleaner
 
-# Firewall
-sudo apt install -y ufw
-
 # KDE Connect
 # find out
 
@@ -642,44 +532,22 @@ gsettings set org.gnome.shell.extensions.dash-to-dock click-action 'minimize'
 # disable Ubuntu backend reporting
 sudo ubuntu-report -f send no
 
-# UFW
-# Recommended rules from https://christitus.com/linux-security-mistakes/
-sudo ufw limit 22/tcp
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-# Enable ufw
-sudo ufw enable
-#sudo systemctl enable ufw # Didn't work for some reason
-#sudo systemctl start ufw # Didn't work for some reason
-# sudo ufw status numbered
-# sudo ufw delete 7 # Use numbers from above numbered command
+# Configure dns - linux/security_os_level/dns.sh
 
-# AppArmor
-# https://ubuntu.com/server/docs/security-apparmor
-sudo apt install apparmor-profiles
-sudo apparmor_status
-# sudo systemctl reload apparmor.service
-sudo systemctl enable apparmor.service
-sudo systemctl start apparmor.service
+# Configure firewall - linux/security_os_level/ufw.sh
 
+# Configure tor - linux/security_os_level/tor.sh
 
+# Configure Anti Virus - linux/security_os_level/clamav.sh
 
-# TOR Network (Tor browser is different)
-source torsocks on
-echo ". torsocks on" >> ~/.bashrc
-echo ". torsocks on" >> ~/.zshrc
-# source torsocks off #  toggle torsocks mode off again
-# TODO - Refer this for configuring tor network next steps - https://linuxconfig.org/install-tor-proxy-on-ubuntu-20-04-linux
-# Also refer https://help.ubuntu.com/community/Tor
-# https://community.torproject.org/relay/setup/bridge/debian-ubuntu/
-# https://www.wikihow.com/Set-a-Specific-Country-in-a-Tor-Browser
+# Configure hosts - linux/security_os_level/hosts.sh
 
-
-# For changing tor config:
-sudo nano /etc/tor/torrc
-sudo systemctl reload tor
+# linux/common/bleachbit.sh
+# linux/common/firefox.sh
+# linux/common/git.sh
+# linux/common/gnome_settings.sh
+# linux/common/nerd_fonts.sh
+# linux/common/zsh.sh
 
 ##########################################
 
@@ -770,10 +638,6 @@ sudo systemctl restart unattended-upgrades
 # https://github.com/mchangrh/yt-neuter - Add this filter to ublock origin
 # https://github.com/StevenBlack/hosts - modify hosts file - sudo nano /etc/hosts
 # https://github.com/arkenfox/user.js - The arkenfox user.js is a template which aims to provide as much privacy and enhanced security as possible, and to reduce tracking and fingerprinting as much as possible - while minimizing any loss of functionality and breakage (but it will happen).
-
-##### Tor Browser
-# Open "Tor Browser Launcher Settings" app -> enable "Download over System Tor"
-# Open "Tor Browser" app -> It will download and install
 
 ##### Jetbrains Toolbox
 # login to the toolbox app
@@ -926,52 +790,6 @@ sudo apt -y autoclean && sudo apt -y autoremove && sudo apt -y clean
 
 ###########################################
 ###########################################
-
-# clamav and clamtk
-sudo apt install -y clamav clamav-daemon clamtk # Found clamtk to be very un-intuitive, but still install
-# Configure using - https://docs.clamav.net/manual/Usage/Configuration.html
-# TLDR:
-
-# Generate config files:
-clamconf -g freshclam.conf > freshclam.conf
-clamconf -g clamd.conf > clamd.conf
-clamconf -g clamav-milter.conf > clamav-milter.conf
-
-# Create log files:
-sudo touch /var/log/freshclam.log
-sudo chmod 600 /var/log/freshclam.log
-sudo chown clamav /var/log/freshclam.log
-
-sudo touch /var/log/clamav.log
-sudo chmod 600 /var/log/clamav.log
-sudo chown clamav /var/log/clamav.log
-
-# Configurations:
-
-## freshclam
-# Do these configs in ~/freshclam.conf
-# LogFileMaxSize 20M
-# LogTime yes
-# LogRotate yes
-# UpdateLogFile /var/log/freshclam.log
-# DatabaseOwner clamav
-# NotifyClamd yes
-
-## clamd
-# Do these configs in ~/clamd.conf
-# Comment the "Example"
-# LogFile /var/log/clamav.log
-# LogFileMaxSize 20M
-# LogTime yes
-# LogRotate yes
-# ExitOnOOM yes # Not sure if this is a good thing to do
-# User clamav
-# DetectPUA yes
-# TLDR of - https://docs.clamav.net/manual/OnAccess.html
-# OnAccessIncludePath /home # Figure out if this is the best option
-# OnAccessExcludeUname clamav
-# OnAccessPrevention yes
-# OnAccessDisableDDD yes
 
 
 ###############################################3

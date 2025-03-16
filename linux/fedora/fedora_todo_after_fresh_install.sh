@@ -264,93 +264,11 @@ sudo dnf install codium
 
 #######################################################
 
-# https://support.torproject.org/rpm/
-
-
-sudo nano /etc/yum.repos.d/tor.repo
-
-## Paste the following:
-# [tor]
-# name=Tor for Fedora $releasever - $basearch
-# baseurl=https://rpm.torproject.org/fedora/$releasever/$basearch
-# enabled=1
-# gpgcheck=1
-# gpgkey=https://rpm.torproject.org/fedora/public_gpg.key
-# cost=100
-
-sudo dnf install tor -y
-
-sudo nano /etc/tor/torrc
-## Paste the following, and modify as necessary:
-EntryNodes {ca}{us}{uk} StrictNodes 1
-ExitNodes {ca}{us}{uk} StrictNodes 1
-sudo systemctl reload tor
-
-
-source torsocks on
-echo ". torsocks on" >> ~/.bashrc
-echo ". torsocks on" >> ~/.zshrc
-
-
-## DNS over Tor
-
-# Step 1
-# Download cloudflared from here: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/
-# TLDR: download this for Fedora: https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-x86_64.rpm
-
-# Step 2:
-# https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/dns-over-https-client/
-# TLDR: 
-cloudflared --version  # verify if its installed
-
-###
-sudo tee /etc/systemd/system/cloudflared-proxy-dns.service >/dev/null <<EOF
-[Unit]
-Description=DNS over HTTPS (DoH) proxy client
-Wants=network-online.target nss-lookup.target
-Before=nss-lookup.target
-
-[Service]
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
-DynamicUser=yes
-ExecStart=/usr/local/bin/cloudflared proxy-dns
-
-[Install]
-WantedBy=multi-user.target
-EOF
-###
-
-sudo systemctl enable --now cloudflared-proxy-dns
-sudo rm -f /etc/resolv.conf
-echo nameserver 127.0.0.1 | sudo tee /etc/resolv.conf >/dev/null
-dig +short @127.0.0.1 cloudflare.com AAAA # verify if it works
-
-# Step 3"
-# https://blog.cloudflare.com/welcome-hidden-resolver/
-# https://developers.cloudflare.com/1.1.1.1/other-ways-to-use-1.1.1.1/dns-over-tor/
-dnf install -y socat
-sudo socat TCP4-LISTEN:443,reuseaddr,fork SOCKS4A:127.0.0.1:dns4torpnlfs2ifuz2s2yf3fc7rdmsbhm6rw75euj35pac6ap25zgqad.onion:443,socksport=9150
-
-###
-cat << EOF >> /etc/hosts
-127.0.0.1 dns4torpnlfs2ifuz2s2yf3fc7rdmsbhm6rw75euj35pac6ap25zgqad.onion
-EOF
-
-###
-
-cloudflared proxy-dns --upstream "https://dns4torpnlfs2ifuz2s2yf3fc7rdmsbhm6rw75euj35pac6ap25zgqad.onion/dns-query"
+# Configure tor - linux/security_os_level/tor.sh
 
 #######################################################
 
-# ufw
-
-# https://linuxconfig.org/how-to-install-and-use-ufw-firewall-on-linux
-# https://www.baeldung.com/linux/uncomplicated-firewall
-
-
-# Fedora comes with firewalld
-# Figure out which is better and learn an configure
+# Configure firewall - linux/security_os_level/firewalld.sh
 
 #######################################################
 
@@ -403,94 +321,8 @@ sudo dnf upgrade -y
 
 ######################################################
 
-# Reference: https://www.linuxcapable.com/install-clamav-on-fedora-linux/
-sudo dnf upgrade --refresh # Refresh Fedora System Packages
-# sudo dnf install -y clamav clamav-daemon clamtk 
-sudo dnf install clamav clamd clamav-update clamtk #  Install ClamAV  and ClamTK GUI
-
-# Update the ClamAV Virus Database
-sudo systemctl stop clamav-freshclam 
-sudo freshclam
-sudo systemctl enable clamav-freshclam --now
-sudo systemctl start clamav-freshclam
-# ls -l /var/lib/clamav/ # Check ClamAV directory and the dates of the files
-
-# Scanning:
-# sudo clamscan [options] [file/directory/-]
-sudo clamscan -h # Help
-sudo clamscan /home/script.sh # Scan a file
-sudo clamscan /home/ # Scan a dir
-sudo clamscan -i /home/ # Print only infected files
-sudo clamscan -o /home/ # Exclude printing OK files
-sudo clamscan --bell -i /home # bell notification upon virus detection
-sudo clamscan --bell -i -r /home # Scan directories recursively 
-sudo clamscan --bell -i -r /home -l output.txt # Save the scan report to file 
-sudo clamscan -i -f /tmp/scan # Scan files listed line-by-line in a specified file 
-sudo clamscan -r --remove /home/USER # automatically remove infected files detected during the scan
-sudo clamscan -r -i --move=/home/USER/infected /home/ # Move all files requiring quarantine into the specified location
-sudo nice -n 15 clamscan && sudo clamscan --bell -i -r /home # To limit CPU usage during the scan, use the nice command
-
-# Scheduled ClamAV Scans
-crontab -e
-# sudo dnf install cronie # IF ABOVE DOESN'T WORK
-# add following line to add daily scan
-# 0 1 * * * /usr/bin/clamscan -r --quiet --move=/home/USER/infected /home/
-
-# ClamAV configuration file located at /etc/clamav/clamd.conf
-
-    MaxFileSize: Adjust the maximum file size that ClamAV will scan.
-    MaxScanSize: Change the maximum data size that ClamAV will scan within an archive or a file.
-    HeuristxxicScanPrecedence: Enable or disable heuristic scanning, which uses techniques to detect unknown malware.
 
 
-
-# Configure using - https://docs.clamav.net/manual/Usage/Configuration.html
-# TLDR:
-
-# Generate config files:
-clamconf -g freshclam.conf > freshclam.conf
-clamconf -g clamd.conf > clamd.conf
-clamconf -g clamav-milter.conf > clamav-milter.conf
-
-# Create log files:
-sudo touch /var/log/freshclam.log
-sudo chmod 600 /var/log/freshclam.log
-sudo chown clamupdate /var/log/freshclam.log
-
-sudo touch /var/log/clamav.log
-sudo chmod 600 /var/log/clamav.log
-sudo chown clamscan /var/log/clamav.log
-
-# Configurations:
-
-## freshclam
-# Do these configs in ~/freshclam.conf
-# LogFileMaxSize 20M
-# LogTime yes
-# LogRotate yes
-# UpdateLogFile /var/log/freshclam.log
-# DatabaseOwner clamupdate
-# NotifyClamd yes
-
-## clamd
-# Do these configs in ~/clamd.conf 
-# TODO - find correct path (/etc/clamav/clamd.conf ?)
-# Comment the "Example"
-# LogFile /var/log/clamav.log
-# LogFileMaxSize 20M
-# LogTime yes
-# LogRotate yes
-# ExitOnOOM yes # Not sure if this is a good thing to do
-# User clamscan
-# DetectPUA yes
-# TLDR of - https://docs.clamav.net/manual/OnAccess.html
-# OnAccessIncludePath /home # Figure out if this is the best option
-# OnAccessExcludeUname clamscan
-# OnAccessPrevention yes
-# OnAccessDisableDDD yes
-
-
-# also check /etc/clamd.d/scan.conf
 
 ######################################################
 
@@ -666,33 +498,13 @@ printf "[gitlab.com_paulcarroty_vscodium_repo]\nname=download.vscodium.com\nbase
 sudo dnf install codium -y
 
 # software
-sudo dnf install -y git gh htop bleachbit neofetch vlc transmission gparted chromium steam clamav clamd clamav-update clamtk
+sudo dnf install -y git gh htop bleachbit neofetch vlc transmission gparted chromium steam 
 
 sudo dnf update -y && sudo dnf upgrade --refresh -y
 
 
 curl -fsSL https://rpm.librewolf.net/librewolf-repo.repo | pkexec tee /etc/yum.repos.d/librewolf.repo
 sudo dnf install -y librewolf
-
-
-
-
-
-# tor
-sudo nano /etc/yum.repos.d/tor.repo
-# put stuff there
-# don't install tor
-sudo dnf update -y && sudo dnf upgrade --refresh -y
-
-# install tor browser
-sudo dnf install -y torbrowser-launcher
-
-
-
-
-# clamav config
-# cd /usr/share/doc/clamd/
-sudo nano /usr/share/doc/clamd/clamd.conf
 
 
 # after reboot
@@ -709,8 +521,6 @@ sudo efibootmgr -v
 
 
 # TODO:
-
-# clamav config
 
 # signal - check flatpak - https://www.signal.org/download/linux/
 flatpak install flathub org.signal.Signal

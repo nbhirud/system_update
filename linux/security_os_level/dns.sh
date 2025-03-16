@@ -51,7 +51,7 @@ resolvectl status
 # 1.1.1.3, 1.0.0.3 - Cloudflare DNS - Block malware and adult content (https://family.cloudflare-dns.com/dns-query)
 # 1.1.1.2, 1.0.0.2 - Cloudflare DNS - Block malware (https://security.cloudflare-dns.com/dns-query)
 # 9.9.9.9, 149.112.112.112 -quad9 DNS - Malware Blocking, DNSSEC Validation (https://dns.quad9.net/dns-query)
-
+# Rethink DNS - create DNS over HTTPS url from here - https://rethinkdns.com/configure
 
 # Network -> Click the gear box next to the connection in use -> IPV6 tab -> "Additional DNS servers" -> Paste
 # the following in the box and apply:
@@ -66,7 +66,7 @@ resolvectl status
 # https://developers.cloudflare.com/1.1.1.1/setup/router/
 # https://developers.cloudflare.com/1.1.1.1/other-ways-to-use-1.1.1.1/dns-over-tor/
 # https://blog.cloudflare.com/welcome-hidden-resolver/
-# Rethink DNS - create DNS over HTTPS url from here - https://rethinkdns.com/configure
+
 
 
 
