@@ -106,11 +106,7 @@ apk autoremove && apk cache clean
 
 #######################################################
 
-# Clamav
-sudo apk add clamav
-sudo freshclam
-# update the config files
-sudo clamscan -i -r /home
+
 
 #######################################################
 

@@ -855,52 +855,6 @@ sudo apt -y autoclean && sudo apt -y autoremove && sudo apt -y clean
 ###########################################
 ###########################################
 
-# clamav and clamtk
-sudo apt install -y clamav clamav-daemon clamtk # Found clamtk to be very un-intuitive, but still install
-# Configure using - https://docs.clamav.net/manual/Usage/Configuration.html
-# TLDR:
-
-# Generate config files:
-clamconf -g freshclam.conf > freshclam.conf
-clamconf -g clamd.conf > clamd.conf
-clamconf -g clamav-milter.conf > clamav-milter.conf
-
-# Create log files:
-sudo touch /var/log/freshclam.log
-sudo chmod 600 /var/log/freshclam.log
-sudo chown clamav /var/log/freshclam.log
-
-sudo touch /var/log/clamav.log
-sudo chmod 600 /var/log/clamav.log
-sudo chown clamav /var/log/clamav.log
-
-# Configurations:
-
-## freshclam
-# Do these configs in ~/freshclam.conf
-# LogFileMaxSize 20M
-# LogTime yes
-# LogRotate yes
-# UpdateLogFile /var/log/freshclam.log
-# DatabaseOwner clamav
-# NotifyClamd yes
-
-## clamd
-# Do these configs in ~/clamd.conf
-# Comment the "Example"
-# LogFile /var/log/clamav.log
-# LogFileMaxSize 20M
-# LogTime yes
-# LogRotate yes
-# ExitOnOOM yes # Not sure if this is a good thing to do
-# User clamav
-# DetectPUA yes
-# TLDR of - https://docs.clamav.net/manual/OnAccess.html
-# OnAccessIncludePath /home # Figure out if this is the best option
-# OnAccessExcludeUname clamav
-# OnAccessPrevention yes
-# OnAccessDisableDDD yes
-
 
 ###############################################3
 
