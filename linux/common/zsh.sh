@@ -177,7 +177,7 @@ poetry completions zsh > $ZSH_CUSTOM/plugins/poetry/_poetry
 # misc: isodate jsontools rsync rust thefuck timer torrent transfer universalarchive urltools vscode web-search wp-cli zsh-interactive-cd zsh-navigation-tools
 
 # use this:
-# plugins=(git sudo dnf yum safe-paste screen autojump github postgres docker pip python poetry repo themes zsh-aut>
+# plugins=(git sudo dnf yum safe-paste screen autojump github postgres docker pip python poetry repo themes zsh-aut)
 
 
 
