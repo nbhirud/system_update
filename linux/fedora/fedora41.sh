@@ -156,10 +156,10 @@ systemctl --user reload dbus-broker.service
 # https://brave.com/linux/
 sudo dnf install dnf-plugins-core
 sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
-sudo dnf install brave-browser
+sudo dnf install -y brave-browser
 
 # Thunderbird
-sudo dnf install thunderbird
+# sudo dnf install thunderbird
 
 # calendar
 
@@ -204,7 +204,8 @@ alias nbtoroff=". torsocks off"
 
 # spyder, meld, poetry
 
-sudo dnf install -y python3-spyder meld
+# sudo dnf install -y python3-spyder # spyder wants to install 599 total packages if installed on my fedora 41, so skip it
+# sudo dnf install -y meld
 # sudo dnf install -y python3-poetry # install using pipx instead as below?
 
 # pipx - https://pipx.pypa.io/stable/installation/
