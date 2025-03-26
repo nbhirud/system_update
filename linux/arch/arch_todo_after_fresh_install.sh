@@ -188,11 +188,18 @@ sudo pacman -Syu && yay -Sua && sudo freshclam && omz update && fastfetch
 ########## 
 ##########################################################################
 
+# https://wiki.archlinux.org/title/Hardware_video_acceleration
+# https://wiki.archlinux.org/title/Hardware_video_acceleration#Configuring_Vulkan_Video
+# https://wiki.archlinux.org/title/Kodi#Hardware_video_acceleration
+# https://wiki.archlinux.org/title/VLC_media_player#Hardware_video_acceleration
+# https://wiki.archlinux.org/title/Firefox#Hardware_video_acceleration
+
 
 ##########################################################################
 ########## 
 ##########################################################################
 
+# https://wiki.archlinux.org/title/List_of_applications/Utilities
 
 ##########################################################################
 ########## 
