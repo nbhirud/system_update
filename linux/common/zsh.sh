@@ -1,6 +1,7 @@
 
 sudo dnf install -y zsh
-chsh -s $(which zsh) 
+# chsh -s $(which zsh) 
+chsh -s $(which zsh) nbhirud
 
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
@@ -8,7 +9,7 @@ cd $ZSH_CUSTOM/plugins
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
 git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
 
-nano ~/.zshrc
+# nano ~/.zshrc
 
 # tee -a = append
 tee -a ~/.zshrc <<EOL
