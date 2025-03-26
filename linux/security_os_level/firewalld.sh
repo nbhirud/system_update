@@ -58,6 +58,8 @@ firewall-cmd --reload
 # Fedora comes with firewalld
 # Figure out which is better and learn an configure
 
+# https://docs.fedoraproject.org/en-US/quick-docs/selinux-getting-started/
+
 ######################################################
 #
 ######################################################
