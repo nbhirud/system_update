@@ -67,11 +67,12 @@ sudo hostnamectl set-hostname "nbFedora"
 # Install software
 
 
-sudo dnf install -y gh keepassxc gnome-tweaks gnome-browser-connector vlc htop fastfetch gparted bleachbit transmission dnfdragora timeshift alacritty
+sudo dnf install -y gh fzf keepassxc gnome-tweaks gnome-browser-connector vlc htop fastfetch gparted bleachbit transmission dnfdragora timeshift alacritty
 
 flatpak install -y flathub com.mattjakeman.ExtensionManager com.spotify.Client org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.protonvpn.www me.proton.Mail me.proton.Pass com.bitwarden.desktop
 # flatpak install -y flathub ca.desrt.dconf-editor 
 
+# TODO - configure fzf
 
 #### Kodi
 sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rtmp kodi-platform kodi-pvr-iptvsimple kodi-visualization-spectrum kodi-eventclients kodi
@@ -184,9 +185,11 @@ sudo dnf install -y brave-browser
 alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && omz update -y && . torsocks on && fastfetch"
 # alias nbdistu="sudo apt dist-upgrade -y && sudo do-release-upgrade"
 alias nbreload="systemctl daemon-reload && source ~/.zshrc"
-alias nbclean="dnf clean -y all && yum clean -y all && flatpak uninstall --unused"
+alias nbclean="sudo bleachbit --clean --preset && bleachbit --clean --preset && dnf clean -y all && yum clean -y all && flatpak uninstall --unused"
 alias nbtoron=". torsocks on"
 alias nbtoroff=". torsocks off"
+alias nbshutdown="nbupdate && nbclean && shutdown"
+alias nbreboot="nbupdate && nbclean && reboot"
 
 ### Stuff other than aliases:
 . torsocks on
