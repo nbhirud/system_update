@@ -1,6 +1,6 @@
 
 ######################################
-## from Gnome? 
+## Useful commands, etc
 ######################################
 
 
@@ -14,7 +14,8 @@ dconf write /org/gnome/desktop/interface/monospace-font-name "'JetBrainsMono Ner
 # Example font search for setting as default as monospace font for firefox
 # fc-list | grep Nerd | grep -v Propo | grep -v Bold | grep -v Condense | grep -v Extra | grep -v Light | grep -v Italic | grep -v Thin | grep -v Medium | grep -v Black | grep "Noto" 
 
-
+# print font family and style
+# fc-list : family style
 
 
 ######################################
