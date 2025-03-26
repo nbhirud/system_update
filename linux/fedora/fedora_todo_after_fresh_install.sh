@@ -545,7 +545,7 @@ https://artofcoding.dev/things-to-do-after-installing-fedora-40
 ###############################################################
 
 # Virtualization
-# https://docs.fedoraproject.org/en-US/quick-docs/virtualization-getting-started/
+# https://docs.fedoraproject.org/en-US/quick-docs/virtualization-an-overview/
 
 egrep '^flags.*(vmx|svm)' /proc/cpuinfo # Should return something - else hardware virtualization isn't supported
 
