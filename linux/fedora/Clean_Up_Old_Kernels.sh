@@ -13,3 +13,7 @@ fi
 
 echo "Removed old kernels"
 exit 0
+
+###################################################
+
+# https://docs.fedoraproject.org/en-US/quick-docs/kernel-overview/
