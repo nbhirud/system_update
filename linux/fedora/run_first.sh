@@ -1,3 +1,7 @@
+#!/bin/bash
+
+# https://www.baeldung.com/linux/set-command
+set -eux
 
 #######################################
 
@@ -17,9 +21,16 @@ echo "************************ Updating /etc/dnf/dnf.conf **********************
 # defaultyes=True
 
 # Another way
-echo 'fastestmirror=True' | sudo tee -a /etc/dnf/dnf.conf
-echo 'max_parallel_downloads=5' | sudo tee -a /etc/dnf/dnf.conf
-echo 'defaultyes=True' | sudo tee -a /etc/dnf/dnf.conf
+# echo 'fastestmirror=True' | sudo tee -a /etc/dnf/dnf.conf
+# echo 'max_parallel_downloads=5' | sudo tee -a /etc/dnf/dnf.conf
+# echo 'defaultyes=True' | sudo tee -a /etc/dnf/dnf.conf
+
+# Configure DNF settings
+sudo tee -a /etc/dnf/dnf.conf <<EOL
+max_parallel_downloads=5
+defaultyes=True
+fastestmirror=True
+EOL
 
 #######################################
 # LibreWolf, Mullvad browser and alacritty
@@ -105,4 +116,13 @@ xdg-user-dirs-update --set DOWNLOAD "/home/nbhirud/nb/Downloads"
 
 echo "************************ Update and upgrade everything ************************"
 sudo dnf update -y && sudo dnf upgrade --refresh -y
+
+#######################################
+
+echo "************************ Install and configure more packages ************************"
+
+sudo dnf install -y htop
+
+# TODO - check if the following invocation works
+sudo sh linux/common/zsh.sh
 
