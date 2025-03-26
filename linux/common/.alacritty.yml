@@ -1,0 +1,107 @@
+dimensions:
+  columns: 151
+  lines: 39
+position:
+  x: 300
+  y: 150
+
+selection:
+  save_to_clipboard: true # Copy On Select
+
+scrolling:
+  history: 2000 # Scrollback Buffer
+
+working_directory: "/home/ostechnix/Desktop/" # Startup Directory
+
+shell:
+  program: /bin/fish
+  args:
+    - --private
+
+# $ fc-list | grep -i "fira code"
+# fc-list | grep -i "ubuntu mono"
+# /usr/share/fonts/truetype/ubuntu/UbuntuMono-RI.ttf: Ubuntu Mono:style=Italic
+# /usr/share/fonts/truetype/ubuntu/UbuntuMono-B.ttf: Ubuntu Mono:style=Bold
+# /usr/share/fonts/truetype/ubuntu/UbuntuMono-BI.ttf: Ubuntu Mono:style=Bold Italic
+# /usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf: Ubuntu Mono:style=Regular
+
+font:
+  size: 13
+  offset: 
+    x: 0
+    y: 1
+  normal:
+    family: Ubuntu Mono
+    style: Regular
+  bold:
+    family: Ubuntu Mono
+    style: Bold
+  italic:
+    family: Ubuntu Mono
+    style: Regular Italic
+  bold_italic:
+    family: Ubuntu Mono
+    style: Bold Italic
+
+schemes:
+
+  darcula: &darcula
+    primary:
+      background: '0x282a36'
+      foreground: '0xf8f8f2'
+    normal:
+      black:   '0x000000'
+      red:     '0xff5555'
+      green:   '0x50fa7b'
+      yellow:  '0xf1fa8c'
+      blue:    '0xcaa9fa'
+      magenta: '0xff79c6'
+      cyan:    '0x8be9fd'
+      white:   '0xbfbfbf'
+    bright:
+      black:   '0x282a35'
+      red:     '0xff6e67'
+      green:   '0x5af78e'
+      yellow:  '0xf4f99d'
+      blue:    '0xcaa9fa'
+      magenta: '0xff92d0'
+      cyan:    '0x9aedfe'
+      white:   '0xe6e6e6'
+
+  atom_one_light: &atom_one_light
+    primary:
+      background: '0xf8f8f8'
+      foreground: '0x2a2b33'
+    normal:
+      black:   '0x000000'
+      red:     '0xde3d35'
+      green:   '0x3e953a'
+      yellow:  '0xd2b67b'
+      blue:    '0x2f5af3'
+      magenta: '0xa00095'
+      cyan:    '0x3e953a'
+      white:   '0xbbbbbb'
+    bright:
+      black:   '0x000000'
+      red:     '0xde3d35'
+      green:   '0x3e953a'
+      yellow:  '0xd2b67b'
+      blue:    '0x2f5af3'
+      magenta: '0xa00095'
+      cyan:    '0x3e953a'
+      white:   '0xffffff'
+      
+colors: *atom_one_light
+
+# mkdir -p ~/.config/alacritty/themes
+# git clone https://github.com/alacritty/alacritty-theme ~/.config/alacritty/themes
+
+# syntax
+# import:
+#  - ~/.config/alacritty/themes/themes/{theme}.yaml     
+
+import: 
+  - ~/.config/alacritty/themes/themes/argonaut.yaml
+
+key_bindings:
+  - { key: Space,mods: Control,mode: ~Search,action: ToggleViMode }

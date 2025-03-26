@@ -1,0 +1,19 @@
+# https://alacritty.org/config-alacritty.html
+# https://wiki.archlinux.org/title/Alacritty
+# https://wiki.archlinux.org/title/List_of_applications/Utilities#Terminal_emulators
+
+[cursor.style]
+# Supported => Never, off, on, Always
+#blinking = "off"
+# Supported => ▇ Block, _ Underline, | Beam
+shape = "Block"
+#vi_mode_style = "Beam"
+
+[window]
+# static title
+# title: nb-Alacritty
+dynamic_title = true
+# Supported => 0.0(fully transparent) -> 1.0(opaque)
+opacity = 0.9
+# Supported => Windowed, Maximized, Fullscreen
+startup_mode = "Maximized"
