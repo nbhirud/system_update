@@ -129,6 +129,11 @@ sudo dnf update -y && sudo dnf upgrade --refresh -y
 
 #######################################
 
+echo "************************ Update hosts file ************************"
+sudo sh linux/security_os_level/hosts.sh
+
+#######################################
+
 echo "************************ Install and configure more packages ************************"
 
 sudo dnf install -y htop
