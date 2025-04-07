@@ -161,7 +161,7 @@ sudo dnf install -y brave-browser
 alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && omz update -y && . torsocks on && fastfetch"
 # alias nbdistu="sudo apt dist-upgrade -y && sudo do-release-upgrade"
 alias nbreload="systemctl daemon-reload && source ~/.zshrc"
-alias nbclean="sudo bleachbit --clean --preset && bleachbit --clean --preset && dnf clean -y all && yum clean -y all && flatpak uninstall --unused"
+alias nbclean="sync && sudo bleachbit --clean --preset && bleachbit --clean --preset && dnf clean -y all && yum clean -y all && flatpak uninstall --unused"
 alias nbtoron=". torsocks on"
 alias nbtoroff=". torsocks off"
 alias nbshutdown="nbupdate && nbclean && shutdown"
