@@ -29,6 +29,11 @@ fc-cache -fv # display the font locations and to update the cache
 ######################################
 ## from Fedora 40 
 ######################################
+# Also check
+# https://github.com/powerline/fonts
+# https://github.com/powerline/fonts/blob/master/install.sh
+
+
 
 cd ~/nb/CodeProjects
 git clone --depth 1 https://github.com/ryanoasis/nerd-fonts.git
