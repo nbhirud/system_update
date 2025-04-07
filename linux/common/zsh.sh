@@ -19,15 +19,15 @@ zstyle ':omz:update' mode auto # Uncomment this
 zstyle ':omz:update' frequency 7 # Uncomment and change value
 ENABLE_CORRECTION="true" # Uncomment - Give it a try
 COMPLETION_WAITING_DOTS="true"
-plugins=(git branch gh github gitignore pre-commit dnf yum sudo safe-paste python pip poetry repo zsh-autosuggestions zsh-syntax-highlighting colorize history history-substring-search aws docker docker-compose helm kops kubectl podman mongocli postgres rsync rust timer rsync vscode zsh-interactive-cd zsh-navigation-tools screen)
+plugins=(git branch gh github gitignore pre-commit dnf yum sudo safe-paste python pip poetry repo zsh-autosuggestions zsh-syntax-highlighting colorize history history-substring-search aws docker docker-compose helm kops kubectl podman mongocli postgres rsync rust timer rsync vscode zsh-interactive-cd zsh-navigation-tools screen fzf-tab)
 # At the bottom of oh-my-zsh stuff:
 #ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#ff00ff,bg=cyan,bold,underline"
 ZSH_AUTOSUGGEST_STRATEGY=(history completion match_prev_cmd)
 ZSH_HIGHLIGHT_HIGHLIGHTERS+=(main brackets pattern cursor)
 EOL
 
-omz update
-source .zshrc 
+# omz update
+# source .zshrc 
 
 echo $SHELL
 

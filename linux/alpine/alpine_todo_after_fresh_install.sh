@@ -126,9 +126,7 @@ apk autoremove && apk cache clean
 
 #######################################################
 
-# https://support.mozilla.org/en-US/kb/install-firefox-linux?as=u&utm_source=inproduct#w_security-features-warning
-
-#######################################################
+# Firefox, Librewolf, Mullvad browsers - refer linux/common/firefox.sh
 
 
 

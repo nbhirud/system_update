@@ -85,8 +85,12 @@ poetry completions zsh > $ZSH_CUSTOM/plugins/poetry/_poetry
 # from fedora
 ####################################################
 
+# https://github.com/MNMaqsood/oh-my-zsh-installer/
+
 sudo dnf install -y zsh 
-chsh -s $(which zsh) 
+# chsh -s $(which zsh) 
+chsh -s $(which zsh) nbhirud
+# sudo chsh -s "$(command -v zsh)" "${USER}"
 zsh
 
 
@@ -99,6 +103,22 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 cd $ZSH_CUSTOM/plugins
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
 git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+
+# fzf - there are 2 different plugin options:
+### 1. https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/fzf
+# # add fzf to omz plugins list
+# # add the following to .zshrc:
+# # export FZF_BASE=$(which fzf)
+# # #export FZF_DEFAULT_COMMAND='<your fzf default command>'
+# # #DISABLE_FZF_AUTO_COMPLETION="true"
+# # #DISABLE_FZF_KEY_BINDINGS="true"
+### 2. https://github.com/unixorn/fzf-zsh-plugin
+
+### Also see: https://dev.to/budavariam/supercharge-your-command-line-2c9b
+# add to zshrc:
+# export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
+# Install https://github.com/Aloxaf/fzf-tab#install and add fzf-tab to plugins
+# git clone https://github.com/Aloxaf/fzf-tab ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab
 
 #cd
 #nano .zshrc
