@@ -41,6 +41,8 @@ gedit system_update/linux/ubuntu/ubuntu_todo_after_fresh_install.sh
 # Fonts Setup
 # Refer linux/common/nerd_fonts.sh
 
+# Firefox, Librewolf, Mullvad browsers - refer linux/common/firefox.sh
+
 #######################################################
 
 
@@ -155,20 +157,6 @@ sudo rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-core.asc
 sudo dnf install -y brave-browser
 
 # sudo dnf install -y kdenlive gimp chromium
-
-# LibreWolf
-# https://librewolf.net/installation/
-# add the repo
-curl -fsSL https://rpm.librewolf.net/librewolf-repo.repo | pkexec tee /etc/yum.repos.d/librewolf.repo
-# install the package
-sudo dnf install -y librewolf
-
-# another privacy browser:
-# https://mullvad.net/en/download/browser/linux
-# Add the Mullvad repository server to dnf
-sudo dnf config-manager --add-repo https://repository.mullvad.net/rpm/stable/mullvad.repo
-# Install the package
-sudo dnf install mullvad-browser
 
 # auto-cpufreq # Install for better battery management on laptops
 
@@ -366,12 +354,6 @@ alias nbtoroff=". torsocks off"
 ### App specific Settings
 
 
-### Firefox Tweaks:
-# about:config
-# layers.acceleration.force-enabled
-# gfx.webrender.all
-
-### 
 
 ################################################################
 
@@ -503,10 +485,6 @@ sudo dnf install -y git gh htop bleachbit neofetch vlc transmission gparted chro
 sudo dnf update -y && sudo dnf upgrade --refresh -y
 
 
-curl -fsSL https://rpm.librewolf.net/librewolf-repo.repo | pkexec tee /etc/yum.repos.d/librewolf.repo
-sudo dnf install -y librewolf
-
-
 # after reboot
 sudo reboot
 omz update
@@ -526,7 +504,6 @@ sudo efibootmgr -v
 flatpak install flathub org.signal.Signal
 # flatpak run org.signal.Signal
 
-# firefox privacy
 # hosts file
 
 # configure app specific settings

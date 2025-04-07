@@ -131,8 +131,9 @@ yay -Sua # Upgrading (only) the AUR packages:
 
 # Configure hosts - linux/security_os_level/hosts.sh
 
+# Firefox, Librewolf, Mullvad browsers - refer linux/common/firefox.sh
+
 # linux/common/bleachbit.sh
-# linux/common/firefox.sh
 # linux/common/git.sh
 # linux/common/gnome_settings.sh
 # linux/common/nerd_fonts.sh
@@ -192,7 +193,6 @@ sudo pacman -Syu && yay -Sua && sudo freshclam && omz update && fastfetch
 # https://wiki.archlinux.org/title/Hardware_video_acceleration#Configuring_Vulkan_Video
 # https://wiki.archlinux.org/title/Kodi#Hardware_video_acceleration
 # https://wiki.archlinux.org/title/VLC_media_player#Hardware_video_acceleration
-# https://wiki.archlinux.org/title/Firefox#Hardware_video_acceleration
 
 
 ##########################################################################

@@ -172,30 +172,8 @@ sudo snap refresh # updates all snap apps
 ###########################################
 ###########################################
 
-# remove snap firefox and install deb firefox
-# Do this now because Firefox will be needed during the installing steps for general searching, version check, etc
-sudo snap remove firefox
-rm -r ~/snap/firefox
 
-# https://support.mozilla.org/en-US/kb/install-firefox-linux
-# Copying steps from above link here because I need to be able to run these steps after removing snap firefox
-sudo install -d -m 0755 /etc/apt/keyrings # Create a directory to store APT repository keys if it doesn't exist
-sudo apt install wget
-wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null # Import the Mozilla APT repository signing key
-gpg -n -q --import --import-options import-show /etc/apt/keyrings/packages.mozilla.org.asc | awk '/pub/{getline; gsub(/^ +| +$/,""); if($0 == "35BAA0B33E9EB396F59CA838C0BA5CE6DC6315A3") print "\nThe key fingerprint matches ("$0").\n"; else print "\nVerification failed: the fingerprint ("$0") does not match the expected one.\n"}' # Check the fingerprint from above command
-echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | sudo tee -a /etc/apt/sources.list.d/mozilla.list > /dev/null # add the Mozilla APT repository to your sources list
-# Configure APT to prioritize packages from the Mozilla repository
-echo '
-Package: *
-Pin: origin packages.mozilla.org
-Pin-Priority: 1000
-' | sudo tee /etc/apt/preferences.d/mozilla
 
-sudo apt update -y && sudo apt install -y firefox #  install the Firefox .deb package
-
-# pin firefox again to Dash/Dock
-
-# Login -> Let it stay open for a while as everything syncs and extensions install
 
 ###########################################
 ###########################################
@@ -416,38 +394,6 @@ sudo apt remove -y totem
 # sudo dpkg -i google_chrome_stable_current_amd64.deb
 sudo apt install -y chromium-browser
 
-##########
-# LibreWolf
-# https://librewolf.net/installation/
-sudo apt update && sudo apt install -y wget gnupg lsb-release apt-transport-https ca-certificates
-distro=$(if echo " una bookworm vanessa focal jammy bullseye vera uma " | grep -q " $(lsb_release -sc) "; then lsb_release -sc; else echo focal; fi)
-wget -O- https://deb.librewolf.net/keyring.gpg | sudo gpg --dearmor -o /usr/share/keyrings/librewolf.gpg
-
-sudo tee /etc/apt/sources.list.d/librewolf.sources << EOF > /dev/null
-Types: deb
-URIs: https://deb.librewolf.net
-Suites: $distro
-Components: main
-Architectures: amd64
-Signed-By: /usr/share/keyrings/librewolf.gpg
-EOF
-
-sudo apt update
-sudo apt install librewolf -y
-###########
-
-# another privacy browser:
-# https://mullvad.net/en/download/browser/linux
-
-# Download the Mullvad signing key
-sudo curl -fsSLo /usr/share/keyrings/mullvad-keyring.asc https://repository.mullvad.net/deb/mullvad-keyring.asc
-
-# Add the Mullvad repository server to apt
-echo "deb [signed-by=/usr/share/keyrings/mullvad-keyring.asc arch=$( dpkg --print-architecture )] https://repository.mullvad.net/deb/stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/mullvad.list
-
-# Install the package
-sudo apt update
-sudo apt install mullvad-browser
 
 ###########
 
@@ -542,8 +488,9 @@ sudo ubuntu-report -f send no
 
 # Configure hosts - linux/security_os_level/hosts.sh
 
+# Firefox, Librewolf, Mullvad browsers - refer linux/common/firefox.sh
+
 # linux/common/bleachbit.sh
-# linux/common/firefox.sh
 # linux/common/git.sh
 # linux/common/gnome_settings.sh
 # linux/common/nerd_fonts.sh
@@ -619,26 +566,6 @@ sudo nano /etc/apt/apt.conf.d/50unattended-upgrades # Configure here
 # sudo systemctl enabe unattended-upgrades
 sudo systemctl restart unattended-upgrades
 
-##### Firefox:
-
-# about:config
-# layers.acceleration.force-enabled -> toggle to true
-# gfx.webrender.all -> toggle to true
-
-# UI Settings:
-# General -> Startup -> enable "open previous windows and tabs"
-# General -> Performance -> Enable "Use Hardware acceleration when available" and enable "Use recommended performance settings"
-# General -> enable "Play DRM-controlled content" (find out whats this first)
-
-# Privacy - 
-    # Enhanced Tracking Protection = Strict
-    # Websitr Privacy Preferences - enable both options (sell/share data and do not track)
-
-# Ublock Origin - Enable relevant filters
-# https://github.com/mchangrh/yt-neuter - Add this filter to ublock origin
-# https://github.com/StevenBlack/hosts - modify hosts file - sudo nano /etc/hosts
-# https://github.com/arkenfox/user.js - The arkenfox user.js is a template which aims to provide as much privacy and enhanced security as possible, and to reduce tracking and fingerprinting as much as possible - while minimizing any loss of functionality and breakage (but it will happen).
-
 ##### Jetbrains Toolbox
 # login to the toolbox app
 # Toolbox -> Settings -> Enable auto update
@@ -682,13 +609,6 @@ sudo systemctl restart unattended-upgrades
 #   tool = vscodium
 # [mergetool "vscodium"]
 #   cmd = codium --wait $MERGED
-
-##### Firefox:
-# Login
-
-# Privacy
-
-# General -> Language and appearance -> Choose dark/light to Automatic 
 
 ##### Terminal
 # Terminal -> Preferences -> Profiles (unnamed) -> Colors -> disable "Use Transparency from System Theme" -> Enable "Use Transparent Background" and set it to around 5%

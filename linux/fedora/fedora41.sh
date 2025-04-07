@@ -95,8 +95,9 @@ sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rt
 
 # Configure hosts - linux/security_os_level/hosts.sh
 
+# Firefox, Librewolf, Mullvad browsers - refer linux/common/firefox.sh
+
 # linux/common/bleachbit.sh
-# linux/common/firefox.sh
 # linux/common/git.sh
 # linux/common/gnome_settings.sh
 # linux/common/nerd_fonts.sh
@@ -118,32 +119,7 @@ systemctl --user reload dbus-broker.service
 
 #######################################
 
-# Firefox
-# First thing to do (STEP 1):
-# https://github.com/arkenfox/user.js - The arkenfox user.js is a template which aims to provide as much privacy and enhanced security as possible, and to reduce tracking and fingerprinting as much as possible - while minimizing any loss of functionality and breakage (but it will happen).
-# And then:
-# Review all settings including labs
-# and then:
 
-#######################################
-
-# Ublock Origin - Enable relevant filters
-# https://github.com/mchangrh/yt-neuter - Add this filter to ublock origin
-
-# replace hosts file - check ../security_os_level/
-
-
-####################################### Privacy/youtube extensions - reference: https://www.youtube.com/watch?v=rteYHxcLCZk
-# https://github.com/mchangrh/yt-neuter
-#Return YouTube Dislike: https://returnyoutubedislike.com/
-#SponsorBlock: https://sponsor.ajay.app/
-#Dearrow (clickbait remover): https://dearrow.ajay.app/
-#Unhook: https://unhook.app/
-#uBlock Origin: https://ublockorigin.com/
-#uBO troubleshooting:   / megathread
-#uBO status: https://drhyperion451.github.io/does-...
-#Hide YouTube Shorts: https://github.com/gijsdev/ublock-hid...
-#NewPipe: https://newpipe.net/
 
 #######################################
 
