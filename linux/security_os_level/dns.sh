@@ -16,12 +16,12 @@ sudo nano /usr/lib/systemd/resolved.conf
 
 # Add the following lines in the bottom under [Resolve]. Remove one # from the beginning of a line with the DNS option that you want to use:
 
-# #DNS=194.242.2.2#dns.mullvad.net
-# #DNS=194.242.2.3#adblock.dns.mullvad.net
-# #DNS=194.242.2.4#base.dns.mullvad.net
-# #DNS=194.242.2.5#extended.dns.mullvad.net
-# DNS=194.242.2.6#family.dns.mullvad.net
-# #DNS=194.242.2.9#all.dns.mullvad.net
+# #DNS=194.242.2.2 #dns.mullvad.net
+# #DNS=194.242.2.3 #adblock.dns.mullvad.net
+# #DNS=194.242.2.4 #base.dns.mullvad.net
+# #DNS=194.242.2.5 #extended.dns.mullvad.net
+# DNS=194.242.2.6 #family.dns.mullvad.net
+# #DNS=194.242.2.9 #all.dns.mullvad.net
 # DNSSEC=no
 # DNSOverTLS=yes
 # Domains=~.
