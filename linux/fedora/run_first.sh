@@ -120,7 +120,8 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 echo "************************ Changing default downloads dir ************************"
 # Change default downloads dir:
 mkdir -p /home/nbhirud/nb/Downloads
-xdg-user-dirs-update --set DOWNLOAD "/home/nbhirud/nb/Downloads"
+# TODO - add condition to check if current DE is Gnome
+xdg-user-dirs-update --set DOWNLOAD "/home/nbhirud/nb/Downloads" # Gnome specific
 
 #######################################
 
@@ -139,5 +140,5 @@ echo "************************ Install and configure more packages *************
 sudo dnf install -y htop
 
 # TODO - check if the following invocation works
-sudo sh linux/common/zsh.sh
+# sudo sh linux/common/zsh.sh
 
