@@ -137,6 +137,7 @@ echo "************************ Update hosts file ************************"
 sudo sh linux/security_os_level/hosts.sh
 
 echo "************************ Setup nerd fonts ************************"
+# Experimental
 sh linux/common/fonts.sh
 
 #######################################
