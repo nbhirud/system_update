@@ -45,5 +45,5 @@ cd $HOME_DIR
 echo "syncing"
 sync
 
-# fc-cache -fr
+fc-cache -fr
 # fc-list | grep "JetBrains"
