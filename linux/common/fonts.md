@@ -50,7 +50,7 @@ fc-cache -fr
 
 
 
-# Better Fonts:
+# Better Fonts repo:
 # sudo dnf copr enable dawid/better_fonts -y
 # sudo dnf install fontconfig-font-replacements -y
 # sudo dnf install fontconfig-enhanced-defaults -y

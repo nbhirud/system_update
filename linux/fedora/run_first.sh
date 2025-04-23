@@ -119,12 +119,20 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 
 echo "************************ Changing default downloads dir ************************"
 # Change default downloads dir:
-mkdir -p /home/nbhirud/nb/Downloads
-# TODO - add condition to check if current DE is Gnome
-echo $XDG_CURRENT_DESKTOP
-echo $DESKTOP_SESSION
-echo $GDMSESSION
-xdg-user-dirs-update --set DOWNLOAD "/home/nbhirud/nb/Downloads" # Gnome specific
+HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+DOWNLOADS_DIR="/home/nbhirud/nb/Downloads"
+mkdir -p 
+
+echo "************************ Identify Desktop Environment ************************"
+DESKTOP=$(sh linux/common/check_desktop_env.sh)
+echo "Desktop Environment is $DESKTOP"
+
+if [ "$DESKTOP" = "gnome" ]
+then
+    echo "************************ Setting default UI fonts to Ubuntu and monospace font to Jetbrains ************************"
+    xdg-user-dirs-update --set DOWNLOAD "/home/nbhirud/nb/Downloads" # Gnome specific
+fi
+
 
 #######################################
 
