@@ -23,7 +23,7 @@
 # hosts - on startup and shutdown - don't just blindly replace. Figure out checking if there is really an update available
 
 
-# nerd fonts - update when updates are available on startup and shutdown
+# nerd fonts - update when updates are available (on startup and) shutdown
 
 
 # clean up old kernels - once a week

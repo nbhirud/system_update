@@ -121,6 +121,9 @@ echo "************************ Changing default downloads dir ******************
 # Change default downloads dir:
 mkdir -p /home/nbhirud/nb/Downloads
 # TODO - add condition to check if current DE is Gnome
+echo $XDG_CURRENT_DESKTOP
+echo $DESKTOP_SESSION
+echo $GDMSESSION
 xdg-user-dirs-update --set DOWNLOAD "/home/nbhirud/nb/Downloads" # Gnome specific
 
 #######################################
