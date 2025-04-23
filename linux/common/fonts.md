@@ -1,4 +1,6 @@
 
+#TODO - currently not a markdown file. Do the formatting, etc
+
 ######################################
 ## Useful commands, etc
 ######################################
@@ -68,7 +70,7 @@ fc-cache -fr
 mkdir nb
 mkdir nb/CodeProjects
 cd nb/CodeProjects
-
+    
 git clone --depth 1 https://github.com/ryanoasis/nerd-fonts.git
 
 cd nerd-fonts
