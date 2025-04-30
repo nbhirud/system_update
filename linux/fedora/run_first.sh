@@ -74,8 +74,9 @@ EOF
 
 
 echo "************************ Installing packages ************************"
-# install the package
-sudo dnf install -y librewolf alacritty git mullvad-browser codium
+# install the packages
+sudo dnf install -y librewolf alacritty git mullvad-browser codium flatpak
+# Note: flatpak and git may not come already installed on some flavors like xfce, etc.
 
 #######################################
 
