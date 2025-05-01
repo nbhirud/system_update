@@ -159,3 +159,6 @@ sh linux/common/zsh.sh
 
 # EXPERIMENTAL
 sh linux/common/alacritty.sh
+
+# EXPERIMENTAL
+sh linux/common/git.sh
