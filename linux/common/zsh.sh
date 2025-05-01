@@ -1,18 +1,26 @@
 
+echo "************************ Install zsh ************************"
 sudo dnf install -y zsh
-# chsh -s $(which zsh) 
-chsh -s $(which zsh) nbhirud
 
+echo "************************ Make zsh the default shell ************************"
+# chsh -s $(which zsh) 
+# chsh -s $(which zsh) nbhirud
+chsh -s $(which zsh) $USER
+
+echo "************************ Install omz (Oh My zsh) unattended ************************"
 # sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended || {
   echo "Could not install Oh My Zsh" >/dev/stderr
   exit 1
-} # EXPERIMENTAL
+}
 
+echo "************************ Install omz plugins ************************"
 cd $ZSH_CUSTOM/plugins
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
 git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
 
+
+# echo "************************ Configure omz ************************"
 # nano ~/.zshrc
 
 # # tee -a = append
@@ -30,8 +38,10 @@ git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-m
 # ZSH_HIGHLIGHT_HIGHLIGHTERS+=(main brackets pattern cursor)
 # EOL
 
+# echo "************************ Update omz ************************"
 # omz update
 # source .zshrc 
 
 echo $SHELL
+echo "************************ Reboot/Re-login to see changes ************************"
 
