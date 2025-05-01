@@ -33,7 +33,7 @@ fastestmirror=True
 EOL
 
 #######################################
-# LibreWolf, Mullvad browser and alacritty
+# LibreWolf, Mullvad browser, codium, etc
 #######################################
 
 echo "************************ Adding Librewolf repo ************************"
@@ -75,7 +75,7 @@ EOF
 
 echo "************************ Installing packages ************************"
 # install the packages
-sudo dnf install -y librewolf alacritty git mullvad-browser codium flatpak
+sudo dnf install -y librewolf git mullvad-browser codium flatpak
 # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
 
 #######################################
@@ -143,7 +143,7 @@ sudo dnf update -y && sudo dnf upgrade --refresh -y
 #######################################
 
 echo "************************ Update hosts file ************************"
-sudo sh linux/security_os_level/hosts.sh
+sh linux/security_os_level/hosts.sh
 
 echo "************************ Setup nerd fonts ************************"
 sh linux/common/fonts.sh
@@ -154,6 +154,8 @@ echo "************************ Install and configure more packages *************
 
 sudo dnf install -y htop
 
-# TODO - check if the following invocation works
-# sudo sh linux/common/zsh.sh
+# EXPERIMENTAL
+sh linux/common/zsh.sh
 
+# EXPERIMENTAL
+sh linux/common/alacritty.sh
