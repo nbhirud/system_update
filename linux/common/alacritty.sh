@@ -1,4 +1,6 @@
 
+# Alacritty config
+# https://alacritty.org/config-alacritty.html
 
 echo "************************ Install alacritty ************************"
 sudo dnf install -y alacritty
