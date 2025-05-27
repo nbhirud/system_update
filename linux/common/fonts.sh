@@ -8,6 +8,7 @@
 # HOME_DIR="/home/$USERNAME/"
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
 CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects"
+SYSUPDATE_CODE_DIR="$CODE_BASE_DIR/system_update"
 DEST_DIR="$HOME_DIR/.local/share/fonts/nerd-fonts"
 # DEST_DIR="$HOME_DIR/nb/test02/dest"
 NERD_FONTS_DIR="$CODE_BASE_DIR/nerd-fonts"
@@ -15,8 +16,7 @@ PATCHED_FONTS_DIR="$NERD_FONTS_DIR/patched-fonts"
 
 BASEDIR=$(dirname "$0")
 # echo "BASEDIR = $BASEDIR" # outputs "linux/common"
-FONT_NAMES_FILE_PATH="$CODE_BASE_DIR/system_update/$BASEDIR/data/fonts.txt"
-
+FONT_NAMES_FILE_PATH="$SYSUPDATE_CODE_DIR/$BASEDIR/data/fonts.txt"
 
 
 mkdir -p $CODE_BASE_DIR
@@ -55,7 +55,7 @@ fc-cache -fr
 # fc-list | grep "JetBrains"
 
 echo "************************ Identify Desktop Environment ************************"
-DESKTOP=$(sh linux/common/check_desktop_env.sh)
+DESKTOP=$(sh $SYSUPDATE_CODE_DIR/linux/common/check_desktop_env.sh)
 echo "Desktop Environment is $DESKTOP"
 
 if [ "$DESKTOP" = "gnome" ]
