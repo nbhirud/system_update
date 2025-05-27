@@ -45,3 +45,7 @@ flatpak install flathub org.signal.Signal
 
 # Facebook Messenger app
 flatpak install flathub com.sindresorhus.Caprine
+
+# Telegram - https://desktop.telegram.org/
+flatpak install flathub org.telegram.desktop
+# flatpak run org.telegram.desktop
