@@ -1,4 +1,5 @@
 # Script to setup git on a new machine or new installation of OS
+echo "************************ Configure git ************************"
 
 # https://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration
 git config --global user.name "Nikhil Bhirud"
