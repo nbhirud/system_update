@@ -19,6 +19,11 @@ dconf write /org/gnome/desktop/interface/monospace-font-name "'JetBrainsMono Ner
 # print font family and style
 # fc-list : family style
 
+# List one file per line instead of multiple on same line. Use the -1 option (note this is a "one" digit, not a lowercase letter "L")
+# ls -1a
+# Or use the following:
+# ls | less
+
 
 ######################################
 ## from Alpine 

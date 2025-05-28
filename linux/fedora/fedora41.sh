@@ -20,7 +20,7 @@ sudo dnf remove -y ptyxis
 # Intel/AMD/Nvidia drivers - https://wiki.archlinux.org/title/Hardware_video_acceleration
 
 # Which INTEL driver to install -  check above link
-sudo dnf install libva-intel-driver
+# sudo dnf install libva-intel-driver
 
 # For AMD, no need to install anything separately as mesa takes care of it. Check configurations
 
@@ -31,12 +31,9 @@ sudo dnf install libva-intel-driver
 ####################################### Run on zsh
 echo $SHELL
 
-# Enable Minimize or Maximize Window Buttons
-gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
-
-
 ### mount nb HDD and change ownership
 # Disks app -> select nb HDD -> 3 gears -> edit mountpoint -> set mountpoint as /home/nbhirud/nb
+# At this point, open Files app and click the disk (NBHOMENB) and enter password to mount it.
 sudo umount /home/nbhirud/nb
 sudo chown -R nbhirud:nbhirud nb
 sudo mount -va
@@ -60,20 +57,6 @@ sudo mount -va
 
 #######################################
 
-
-### rename pc
-sudo hostnamectl set-hostname "nbFedora"
-
-# Install software
-
-
-sudo dnf install -y gh fzf keepassxc gnome-tweaks gnome-browser-connector vlc htop fastfetch gparted bleachbit transmission dnfdragora timeshift alacritty
-
-flatpak install -y flathub com.mattjakeman.ExtensionManager com.spotify.Client org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.protonvpn.www me.proton.Mail me.proton.Pass com.bitwarden.desktop
-# flatpak install -y flathub ca.desrt.dconf-editor 
-
-# TODO - configure fzf
-
 #### Kodi
 sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rtmp kodi-platform kodi-pvr-iptvsimple kodi-visualization-spectrum kodi-eventclients kodi
 
@@ -85,23 +68,7 @@ sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rt
 
 #######################################
 
-# Configure dns - linux/security_os_level/dns.sh
 
-# Configure firewall - linux/security_os_level/firewalld.sh
-
-# Configure tor - linux/security_os_level/tor.sh
-
-# Configure Anti Virus - linux/security_os_level/clamav.sh
-
-# Configure hosts - linux/security_os_level/hosts.sh
-
-# Firefox, Librewolf, Mullvad browsers - refer linux/common/firefox.sh
-
-# linux/common/bleachbit.sh
-# linux/common/git.sh
-# linux/common/gnome_settings.sh
-# linux/common/nerd_fonts.sh
-# linux/common/zsh.sh
 
 #######################################
 
@@ -115,62 +82,9 @@ systemctl --user reload dbus-broker.service
 
 #######################################
 
-
-
-#######################################
-
-
-
-#######################################
-
 # Optimizing SSD Drive
 # sudo systemctl status fstrim.timer
 # sudo systemctl enable fstrim.timer
-
-
-#######################################
-
-# https://brave.com/linux/
-sudo dnf install dnf-plugins-core
-sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
-sudo dnf install -y brave-browser
-
-# Thunderbird
-# sudo dnf install thunderbird
-
-# calendar
-
-# timeshift
-
-# preload equivalent
-
-
-
-#################################################################
-# Added by nbhirud manually:
-#################################################################
-
-### Custom linux aliases - add to ~/.zshrc
-
-# Application shortcuts:
-# alias codium="flatpak run com.vscodium.codium "
-
-# Update/Upgrade related:
-# alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && sudo freshclam && omz update -y && . torsocks on && fastfetch"
-# freshclam is a service now
-alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && omz update -y && . torsocks on && fastfetch"
-# alias nbdistu="sudo apt dist-upgrade -y && sudo do-release-upgrade"
-alias nbreload="systemctl daemon-reload && source ~/.zshrc"
-alias nbclean="sync && sudo bleachbit --clean --preset && bleachbit --clean --preset && dnf clean -y all && yum clean -y all && flatpak uninstall --unused"
-alias nbtoron=". torsocks on"
-alias nbtoroff=". torsocks off"
-alias nbshutdown="nbupdate && nbclean && shutdown"
-alias nbreboot="nbupdate && nbclean && reboot"
-
-### Stuff other than aliases:
-. torsocks on
-
-
 
 
 ##############################################################
@@ -214,7 +128,7 @@ flatpak install flathub io.dbeaver.DBeaverCommunity
 sudo dnf update -y && sudo dnf upgrade --refresh -y
 
 # reboot
-sudo reboot
+reboot
 
 
 ###################################################
@@ -231,12 +145,6 @@ sudo reboot
 # btop like htop
 
 ###################################################
-
-# Alacritty config
-# https://alacritty.org/config-alacritty.html
-
-
-#############
 
 
 # Also see
