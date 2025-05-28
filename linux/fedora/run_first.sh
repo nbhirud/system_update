@@ -26,7 +26,7 @@ echo "************************ Updating /etc/dnf/dnf.conf **********************
 # echo 'defaultyes=True' | sudo tee -a /etc/dnf/dnf.conf
 
 # Configure DNF settings
-sudo tee -a /etc/dnf/dnf.conf <<EOL
+sudo tee /etc/dnf/dnf.conf <<EOL
 max_parallel_downloads=5
 defaultyes=True
 fastestmirror=True
@@ -61,7 +61,7 @@ echo "************************ Adding VSCodium repo ************************"
 ### VSCodium
 # https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo
 
-sudo tee -a /etc/yum.repos.d/vscodium.repo << 'EOF'
+sudo tee /etc/yum.repos.d/vscodium.repo << 'EOF'
 [gitlab.com_paulcarroty_vscodium_repo]
 name=gitlab.com_paulcarroty_vscodium_repo
 baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/
@@ -72,11 +72,43 @@ gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
 metadata_expire=1h
 EOF
 
+echo "************************ Adding Tor repo ************************"
+# Tor - https://community.torproject.org/relay/setup/bridge/fedora/
+
+sudo tee /etc/yum.repos.d/tor.repo << 'EOF'
+[tor]
+name=Tor for Fedora $releasever - $basearch
+baseurl=https://rpm.torproject.org/fedora/$releasever/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://rpm.torproject.org/fedora/public_gpg.key
+cost=100
+EOF
+
+echo "************************ Adding brave browser repo ************************"
+# https://brave.com/linux/
+sudo dnf install dnf-plugins-core
+sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
 
 echo "************************ Installing packages ************************"
 # install the packages
-sudo dnf install -y librewolf git mullvad-browser codium flatpak
+sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher brave-browser # obfs4
 # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
+
+
+
+
+# echo "************************ Edit your Tor config ************************"
+# echo "************************ TODO - Don't forget to change the TODO1 options in Tor config. ************************"
+# sudo tee /etc/tor/torrc << 'EOF'
+# RunAsDaemon 1
+# BridgeRelay 1
+
+# # Replace "TODO1" with a Tor port of your choice.  This port must be externally
+# # reachable.  Avoid port 9001 because it's commonly associated with Tor and
+# # censors may be scanning the Internet for this port.
+# ORPort TODO1
+# EOF
 
 #######################################
 
@@ -118,11 +150,10 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 
 #######################################
 
-echo "************************ Changing default downloads dir ************************"
 # Change default downloads dir:
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
 DOWNLOADS_DIR="/home/nbhirud/nb/Downloads"
-mkdir -p 
+mkdir -p $DOWNLOADS_DIR
 
 echo "************************ Identify Desktop Environment ************************"
 DESKTOP=$(sh linux/common/check_desktop_env.sh)
@@ -130,15 +161,16 @@ echo "Desktop Environment is $DESKTOP"
 
 if [ "$DESKTOP" = "gnome" ]
 then
-    echo "************************ Setting default UI fonts to Ubuntu and monospace font to Jetbrains ************************"
+    echo "************************ Changing default downloads directory ************************"
     xdg-user-dirs-update --set DOWNLOAD "/home/nbhirud/nb/Downloads" # Gnome specific
+
+    echo "************************ Enable Minimize or Maximize Window Buttons ************************"
+    gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
 fi
 
-
-#######################################
-
-echo "************************ Update and upgrade everything ************************"
-sudo dnf update -y && sudo dnf upgrade --refresh -y
+echo "************************ Rename pc ************************"
+HOSTNAME="nbFedora"
+sudo hostnamectl set-hostname $HOSTNAME
 
 #######################################
 
@@ -150,9 +182,15 @@ sh linux/common/fonts.sh
 
 #######################################
 
-echo "************************ Install and configure more packages ************************"
+echo "************************ Install and configure more dnf packages ************************"
+sudo dnf install -y htop gh fzf keepassxc gnome-tweaks vlc fastfetch gparted bleachbit transmission timeshift
+# sudo dnf install -y  gnome-browser-connector dnfdragora
+# TODO - configure fzf
 
-sudo dnf install -y htop
+echo "************************ Install and configure more flatpak packages ************************"
+flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.protonvpn.www me.proton.Mail me.proton.Pass com.bitwarden.desktop flatpak install flathub org.telegram.desktop com.sindresorhus.Caprine
+# flatpak install -y flathub ca.desrt.dconf-editor com.spotify.Client
+
 
 # EXPERIMENTAL
 sh linux/common/zsh.sh
@@ -162,3 +200,75 @@ sh linux/common/alacritty.sh
 
 # EXPERIMENTAL
 sh linux/common/git.sh
+
+
+###############################
+# Configure dns - linux/security_os_level/dns.sh
+
+# Configure firewall - linux/security_os_level/firewalld.sh
+
+# Configure tor - linux/security_os_level/tor.sh
+
+# Configure Anti Virus - linux/security_os_level/clamav.sh
+
+# Configure hosts - linux/security_os_level/hosts.sh
+
+# Firefox, Librewolf, Mullvad browsers - refer linux/common/firefox.sh
+
+# linux/common/bleachbit.sh
+# linux/common/git.sh
+# linux/common/gnome_settings.sh
+# linux/common/nerd_fonts.sh
+# linux/common/zsh.sh
+
+# Thunderbird
+# sudo dnf install thunderbird
+
+# calendar
+
+# timeshift
+
+# preload equivalent
+
+
+###############################
+
+
+
+sudo tee -a ~/.zshrc << 'ZSHRC_EOF'
+
+#################################################################
+# Added by nbhirud manually:
+#################################################################
+
+### Custom linux aliases - add to ~/.zshrc
+
+# Application shortcuts:
+# alias codium="flatpak run com.vscodium.codium "
+
+# Update/Upgrade related:
+# alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && sudo freshclam && omz update -y && . torsocks on && fastfetch"
+# freshclam is a service now
+alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && omz update -y && . torsocks on && fastfetch"
+# alias nbdistu="sudo apt dist-upgrade -y && sudo do-release-upgrade"
+alias nbreload="systemctl daemon-reload && source ~/.zshrc"
+alias nbclean="sync && sudo bleachbit --clean --preset && bleachbit --clean --preset && dnf clean -y all && yum clean -y all && flatpak uninstall --unused"
+alias nbtoron=". torsocks on"
+alias nbtoroff=". torsocks off"
+alias nbshutdown="nbupdate && nbclean && shutdown"
+alias nbreboot="nbupdate && nbclean && reboot"
+
+### Stuff other than aliases:
+autoload -U compinit; compinit
+source ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh
+. torsocks on
+
+#################################################################
+
+ZSHRC_EOF
+
+
+#######################################
+
+echo "************************ Update and upgrade everything ************************"
+sudo dnf update -y && sudo dnf upgrade --refresh -y
