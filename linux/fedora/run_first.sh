@@ -12,6 +12,15 @@ set -eux
 
 #######################################
 
+echo "************************ Setting literals and constants ************************"
+HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
+SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
+
+echo "************************ HOME_DIR = $HOME_DIR ************************"
+echo "************************ DOWNLOADS_DIR = $DOWNLOADS_DIR ************************"
+echo "************************ SYSUPDATE_CODE_BASE_DIR = $SYSUPDATE_CODE_BASE_DIR ************************"
+
 echo "************************ Updating /etc/dnf/dnf.conf ************************"
 # Configurations to dnf
 # https://dnf.readthedocs.io/en/latest/conf_ref.html
@@ -27,9 +36,13 @@ echo "************************ Updating /etc/dnf/dnf.conf **********************
 
 # Configure DNF settings
 sudo tee /etc/dnf/dnf.conf <<EOL
+# see `man dnf.conf` for defaults and possible options
+
+[main]
 max_parallel_downloads=5
 defaultyes=True
-fastestmirror=True
+fastestmirror=True    
+
 EOL
 
 #######################################
@@ -147,22 +160,22 @@ sudo dnf group install -y multimedia
 echo "************************ Enabling flatpak flathub ************************"
 ### Enable flatpak flathub
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+# flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
 #######################################
 
 # Change default downloads dir:
-HOME_DIR=$(getent passwd $USER | cut -d: -f6)
-DOWNLOADS_DIR="/home/nbhirud/nb/Downloads"
 mkdir -p $DOWNLOADS_DIR
+echo "************************ Home directory is: $HOME_DIR ************************"
 
 echo "************************ Identify Desktop Environment ************************"
-DESKTOP=$(sh linux/common/check_desktop_env.sh)
+DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
 echo "Desktop Environment is $DESKTOP"
 
 if [ "$DESKTOP" = "gnome" ]
 then
     echo "************************ Changing default downloads directory ************************"
-    xdg-user-dirs-update --set DOWNLOAD "/home/nbhirud/nb/Downloads" # Gnome specific
+    xdg-user-dirs-update --set DOWNLOAD "#$DOWNLOADS_DIR" # Gnome specific
 
     echo "************************ Enable Minimize or Maximize Window Buttons ************************"
     gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
@@ -175,10 +188,10 @@ sudo hostnamectl set-hostname $HOSTNAME
 #######################################
 
 echo "************************ Update hosts file ************************"
-sh linux/security_os_level/hosts.sh
+sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/hosts.sh
 
 echo "************************ Setup nerd fonts ************************"
-sh linux/common/fonts.sh
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
 
 #######################################
 
@@ -193,33 +206,33 @@ flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal or
 
 
 # EXPERIMENTAL
-sh linux/common/zsh.sh
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh
 
 # EXPERIMENTAL
-sh linux/common/alacritty.sh
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty.sh
 
 # EXPERIMENTAL
-sh linux/common/git.sh
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh
 
 
 ###############################
-# Configure dns - linux/security_os_level/dns.sh
+# Configure dns - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh
 
-# Configure firewall - linux/security_os_level/firewalld.sh
+# Configure firewall - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/firewalld.sh
 
-# Configure tor - linux/security_os_level/tor.sh
+# Configure tor - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/tor.sh
 
-# Configure Anti Virus - linux/security_os_level/clamav.sh
+# Configure Anti Virus - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/clamav.sh
 
-# Configure hosts - linux/security_os_level/hosts.sh
+# Configure hosts - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/hosts.sh
 
-# Firefox, Librewolf, Mullvad browsers - refer linux/common/firefox.sh
+# Firefox, Librewolf, Mullvad browsers - refer $SYSUPDATE_CODE_BASE_DIR/linux/common/firefox.sh
 
-# linux/common/bleachbit.sh
-# linux/common/git.sh
-# linux/common/gnome_settings.sh
-# linux/common/nerd_fonts.sh
-# linux/common/zsh.sh
+# $SYSUPDATE_CODE_BASE_DIR/linux/common/bleachbit.sh
+# $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh
+# $SYSUPDATE_CODE_BASE_DIR/linux/common/gnome_settings.sh
+# $SYSUPDATE_CODE_BASE_DIR/linux/common/nerd_fonts.sh
+# $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh
 
 # Thunderbird
 # sudo dnf install thunderbird
