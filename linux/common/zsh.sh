@@ -44,5 +44,6 @@ git clone https://github.com/Aloxaf/fzf-tab ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/p
 # source .zshrc 
 
 echo $SHELL
-echo "************************ Reboot/Re-login to see changes ************************"
+echo "************************ NOTE: Reboot/Re-login to see changes ************************"
+sleep 5s
 
