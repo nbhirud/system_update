@@ -16,7 +16,7 @@ PATCHED_FONTS_DIR="$NERD_FONTS_DIR/patched-fonts"
 
 BASEDIR=$(dirname "$0")
 # echo "BASEDIR = $BASEDIR" # outputs "linux/common"
-FONT_NAMES_FILE_PATH="$SYSUPDATE_CODE_DIR/$BASEDIR/data/fonts.txt"
+FONT_NAMES_FILE_PATH="$SYSUPDATE_CODE_DIR/linux/common/data/fonts.txt"
 
 
 mkdir -p $CODE_BASE_DIR
