@@ -180,7 +180,7 @@ echo "Desktop Environment is $DESKTOP"
 if [ "$DESKTOP" = "gnome" ]
 then
     echo "************************ Changing default downloads directory ************************"
-    xdg-user-dirs-update --set DOWNLOAD "#$DOWNLOADS_DIR" # Gnome specific
+    xdg-user-dirs-update --set DOWNLOAD "$DOWNLOADS_DIR" # Gnome specific
 
     echo "************************ Enable Minimize or Maximize Window Buttons ************************"
     gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
