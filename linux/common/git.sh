@@ -7,6 +7,9 @@ git config --global user.name "Nikhil Bhirud"
 # TODO replace with correct email
 # git config --global user.email "<place xyz@users.noreply.github.com from github here>"
 
+echo "************************ NOTE: Need to run - git config --global user.email <xyz@users.noreply.github.com> ************************"
+sleep 5s
+
 # https://code.visualstudio.com/docs/sourcecontrol/overview#_vs-code-as-git-difftool-and-mergetool
 git config --global core.editor "codium --wait" # # https://git-scm.com/book/en/v2/Appendix-C:-Git-Commands-Setup-and-Config
 git config --global merge.tool codium # codium might not be supported. vscode is supported

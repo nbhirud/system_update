@@ -11,6 +11,8 @@ set -eux
 # 3. Save time
 
 #######################################
+echo "************************ NOTE: The script will ask you to authenticate multiple times till the end. ************************"
+sleep 5s
 
 echo "************************ Setting literals and constants ************************"
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
@@ -22,6 +24,7 @@ echo "************************ HOME_DIR = $HOME_DIR ************************"
 echo "************************ DOWNLOADS_DIR = $DOWNLOADS_DIR ************************"
 echo "************************ SYSUPDATE_CODE_BASE_DIR = $SYSUPDATE_CODE_BASE_DIR ************************"
 echo "************************ RUN_FIRST_LOCATION = $RUN_FIRST_DIR ************************" # https://stackoverflow.com/a/246128
+sleep 5s
 
 echo "************************ Updating /etc/dnf/dnf.conf ************************"
 # Configurations to dnf
@@ -38,7 +41,7 @@ echo "************************ Updating /etc/dnf/dnf.conf **********************
 
 # Configure DNF settings
 sudo tee /etc/dnf/dnf.conf <<EOL
-# see `man dnf.conf` for defaults and possible options
+# see "man dnf.conf" for defaults and possible options
 
 [main]
 max_parallel_downloads=5
@@ -203,7 +206,7 @@ sudo dnf install -y htop gh fzf keepassxc gnome-tweaks vlc fastfetch gparted ble
 # TODO - configure fzf
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.protonvpn.www me.proton.Mail me.proton.Pass com.bitwarden.desktop flatpak install flathub org.telegram.desktop com.sindresorhus.Caprine
+flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.protonvpn.www me.proton.Mail me.proton.Pass com.bitwarden.desktop org.telegram.desktop com.sindresorhus.Caprine
 # flatpak install -y flathub ca.desrt.dconf-editor com.spotify.Client
 
 
