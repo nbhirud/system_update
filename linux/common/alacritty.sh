@@ -8,4 +8,5 @@ sudo dnf install -y alacritty
 
 echo "************************ Configure alacritty ************************"
 mkdir -p $HOME/.config/alacritty/
-cp linux/common/.alacritty.toml $HOME/.config/alacritty/alacritty.toml
+cp $HOME/nb/CodeProjects/system_update/linux/common/.alacritty.toml $HOME/.config/alacritty/alacritty.toml
+
