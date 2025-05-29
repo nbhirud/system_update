@@ -5,6 +5,8 @@
 
 
 # https://github.com/StevenBlack/hosts - modify hosts file - sudo nano /etc/hosts
+
+# TODO - create a literal HOSTSPLAY_DIR and use it
 mkdir -p hostsplay
 cd hostsplay
 echo "Created dir: $PWD"
