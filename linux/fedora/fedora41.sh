@@ -7,7 +7,7 @@ git clone https://github.com/nbhirud/system_update.git
 
 
 # Run this first: linux/fedora/run_first.sh
-sudo sh ~/nb/CodeProjects/system_update/linux/fedora/run_first.sh
+sh ~/nb/CodeProjects/system_update/linux/fedora/run_first.sh
 
 #######################################
 
