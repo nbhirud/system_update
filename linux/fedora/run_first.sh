@@ -171,6 +171,7 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 
 # Change default downloads dir:
 mkdir -p $DOWNLOADS_DIR
+sudo chown $USER:$USER $DOWNLOADS_DIR
 echo "************************ Home directory is: $HOME_DIR ************************"
 
 echo "************************ Identify Desktop Environment ************************"
