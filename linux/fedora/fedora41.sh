@@ -76,6 +76,7 @@ sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rt
 # Help - https://github.com/GSConnect/gnome-shell-extension-gsconnect/wiki/Help
 # https://github.com/GSConnect/gnome-shell-extension-gsconnect/wiki/Error#openssl-not-found
 sudo dnf install openssl
+# Install GSConnect extension via extension manager
 dconf write /org/gnome/shell/disable-user-extensions false
 gapplication launch org.gnome.Shell.Extensions.GSConnect # if error, run next line
 systemctl --user reload dbus-broker.service
@@ -118,6 +119,8 @@ flatpak install flathub io.dbeaver.DBeaverCommunity
 
 
 # vpn via network settings - skip
+
+# python uv 
 
 
 #################################################################
