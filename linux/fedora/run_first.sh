@@ -291,3 +291,20 @@ ZSHRC_EOF
 
 echo "************************ Update and upgrade everything ************************"
 sudo dnf update -y && sudo dnf upgrade --refresh -y
+
+
+# TODO
+# firefox
+# gnome
+# kde
+# dns (this is different from hosts)
+# firewalld
+# ufw
+# clamav
+# tor
+# aliases like nbupdate, etc
+# install dnf packages
+# install flatpak apps
+# TODO cron jobs - linux/common/cron_jobs.sh
+# brave
+
