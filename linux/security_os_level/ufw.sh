@@ -54,6 +54,25 @@ sudo apparmor_status
 sudo systemctl enable apparmor.service
 sudo systemctl start apparmor.service
 
+########################################3
+# from alpine
+##########################################
+
+doas apk add ufw
+
+doas ufw limit ssh/tcp
+sudo ufw allow http/tcp
+sudo ufw allow https/tcp
+doas ufw default deny incoming
+doas ufw default allow outgoing
+doas ufw enable
+doas ufw status
+
+# https://wiki.alpinelinux.org/wiki/OpenRC
+# doas rc-status # View status of all services
+# doas rc-status --list # View service list
+doas rc-update add ufw
+doas rc-service ufw start
 
 ######################################################
 # Originally in this file
