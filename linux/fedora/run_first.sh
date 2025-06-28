@@ -171,6 +171,7 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 
 # Change default downloads dir:
 mkdir -p $DOWNLOADS_DIR
+sudo chown $USER:$USER $DOWNLOADS_DIR
 echo "************************ Home directory is: $HOME_DIR ************************"
 
 echo "************************ Identify Desktop Environment ************************"
@@ -298,8 +299,23 @@ ZSHRC_EOF
 echo "************************ Update and upgrade everything ************************"
 sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y
 
-
 # Following was a failed attempt into opening alacritty via ptyxis and then removing ptyxis from alacritty
 # alacritty -e zsh -c "sudo dnf update -y && sudo dnf upgrade --refresh -y && sudo dnf remove -y ptyxis; exec zsh"
 # alacritty -e zsh -c "echo "Hi"; exec zsh"
 
+#######################################
+
+# TODO
+# firefox
+# gnome
+# kde
+# dns (this is different from hosts)
+# firewalld
+# ufw
+# clamav
+# tor
+# aliases like nbupdate, etc
+# install dnf packages
+# install flatpak apps
+# TODO cron jobs - linux/common/cron_jobs.sh
+# brave
