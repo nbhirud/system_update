@@ -201,13 +201,16 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
 #######################################
 
 echo "************************ Install and configure more dnf packages ************************"
-sudo dnf install -y htop gh fzf keepassxc gnome-tweaks vlc fastfetch gparted bleachbit transmission timeshift
-# sudo dnf install -y  gnome-browser-connector dnfdragora
+sudo dnf install -y htop gh fzf keepassxc gnome-tweaks vlc fastfetch gparted bleachbit timeshift qbittorrent liferea gpodder quiterss
+# sudo dnf install -y  gnome-browser-connector dnfdragora transmission
+# sudo dnf install -y akregator alligator kasts clementine
 # TODO - configure fzf
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.protonvpn.www me.proton.Mail me.proton.Pass com.bitwarden.desktop org.telegram.desktop com.sindresorhus.Caprine
+flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.protonvpn.www me.proton.Mail me.proton.Pass com.bitwarden.desktop org.telegram.desktop im.riot.Riot chat.simplex.simplex
 # flatpak install -y flathub ca.desrt.dconf-editor com.spotify.Client
+# Facebook messenger (deprecated) - com.sindresorhus.Caprine
+# element matrix client - im.riot.Riot
 
 
 # EXPERIMENTAL
@@ -247,6 +250,10 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh
 # timeshift
 
 # preload equivalent
+
+# set default apps like browser, terminal, etc
+# pin apps to dash in right seq
+# add apps to app folders in overview
 
 
 ###############################
@@ -289,4 +296,10 @@ ZSHRC_EOF
 #######################################
 
 echo "************************ Update and upgrade everything ************************"
-sudo dnf update -y && sudo dnf upgrade --refresh -y
+sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y
+
+
+# Following was a failed attempt into opening alacritty via ptyxis and then removing ptyxis from alacritty
+# alacritty -e zsh -c "sudo dnf update -y && sudo dnf upgrade --refresh -y && sudo dnf remove -y ptyxis; exec zsh"
+# alacritty -e zsh -c "echo "Hi"; exec zsh"
+
