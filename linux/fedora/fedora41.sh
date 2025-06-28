@@ -75,7 +75,7 @@ sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rt
 #### GSConnect
 # Help - https://github.com/GSConnect/gnome-shell-extension-gsconnect/wiki/Help
 # https://github.com/GSConnect/gnome-shell-extension-gsconnect/wiki/Error#openssl-not-found
-sudo dnf install openssl
+sudo dnf install -y openssl nautilus-python nautilus-extensions nautilus-gsconnect webextension-gsconnect gnome-shell-extension-gsconnect 
 dconf write /org/gnome/shell/disable-user-extensions false
 gapplication launch org.gnome.Shell.Extensions.GSConnect # if error, run next line
 systemctl --user reload dbus-broker.service
