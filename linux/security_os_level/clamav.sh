@@ -315,6 +315,9 @@ sudo chown clamav /var/log/clamav.log
 # Clamav
 sudo apk add clamav
 sudo freshclam
+
+# https://docs.clamav.net/manual/Usage/Configuration.html
+
 # update the config files
 sudo clamscan -i -r /home
 

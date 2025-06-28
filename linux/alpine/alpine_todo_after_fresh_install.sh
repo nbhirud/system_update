@@ -5,7 +5,35 @@
 
 # Install alpine as a desktop OS: https://wiki.alpinelinux.org/wiki/Installation#setup-alpine_based_System_Disk_Install
 setup-alpine # Command to initiate installation to disk
-# choose "sys"
+
+# keyboard layout = us
+# select variant = us
+# hostname = nbAlpine
+
+# Interface = eth0 (default)
+# ip address = dhcp (default)
+# manual network config = n
+
+# root password = <set something>
+
+# Timezone = America -> <city>
+
+# proxy = none
+# NTP client = busybox (default)
+
+# APK mirror = 1
+
+# User loginname = <enter something>
+# full name fir user = <>
+# ssh key for user = none (Check if this is ideal)
+# which ssh server = openssh
+
+# which disk would you like to use = sda (check the list displayed first)
+# how would you like to use it? = lvm (experiment this)
+# how would you like to use it? = sys
+# erase the above disk? = y
+
+# reboot
 
 #######################################################
 
@@ -16,16 +44,17 @@ adduser nbhirud wheel # add an existing user as admin user
 apk add doas # doas is a simplified and lightweight replacement for sudo
 
 # Repositories (from where you receive updates, etc)
-setup-apkrepos -cf
+doas setup-apkrepos -cf
 # Check if this supports https: https://mirrors.alpinelinux.org
 # For better security you should probably change the url's from http to https in /etc/apk/repositories manually if supported, else change mirror/repo
 
 
 # Graphics drivers - https://wiki.alpinelinux.org/wiki/Graphics_driver
+doas apk add mesa-dri-gallium mesa-va-gallium
 
 # setup Desktop Environment:
-sudo setup-desktop
-# choose gnome
+doas setup-desktop
+# choose xfce or gnome
 # cat /sbin/setup-desktop # view all the packages that are installed by the script for the chosen desktop
 
 # Audio - https://wiki.alpinelinux.org/wiki/PipeWire
@@ -89,14 +118,25 @@ apk cache clean
 doas apk add flatpak
 doas apk add gnome-software-plugin-flatpak
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
 # restart
+
+# # You can also restrict the repository, for example "only free libre open source" or "only verified apps". The Librewolf Flatpak is verified, so you can use the subset:
+# flatpak remote-add --subset=verified flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+# # or when already added, check if all your apps are verified, or they don't get updates!
+# flatpak remote-modify --subset=verified flathub
+
+# # to remove the subset:
+# flatpak remote-modify --subset= flathub
 
 
 # LibreWolf - https://librewolf.net/installation/linux/
 flatpak install flathub io.gitlab.librewolf-community
+# flatpak run io.gitlab.librewolf-community
 
 flatpak install org.bleachbit.BleachBit
-flatpak run org.bleachbit.BleachBit  # clean up using the UI that opens
+# flatpak run org.bleachbit.BleachBit  # clean up using the UI that opens
 
 #######################################################
 
