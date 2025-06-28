@@ -220,7 +220,8 @@ sudp pacman -S zsh
 
 
 sudo apk add  zsh
+chsh -s $(which zsh) # sets zsh as default
 
-adduser -g "Nikhil Bhirud" nbhirud -s /bin/zsh -S
+# adduser -g "Nikhil Bhirud" nbhirud -s /bin/zsh -S
 
 
