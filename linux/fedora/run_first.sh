@@ -26,183 +26,183 @@ echo "************************ SYSUPDATE_CODE_BASE_DIR = $SYSUPDATE_CODE_BASE_DI
 echo "************************ RUN_FIRST_LOCATION = $RUN_FIRST_DIR ************************" # https://stackoverflow.com/a/246128
 sleep 5s
 
-echo "************************ Updating /etc/dnf/dnf.conf ************************"
-# Configurations to dnf
-# https://dnf.readthedocs.io/en/latest/conf_ref.html
-# sudo nano /etc/dnf/dnf.conf
-# fastestmirror=True
+# echo "************************ Updating /etc/dnf/dnf.conf ************************"
+# # Configurations to dnf
+# # https://dnf.readthedocs.io/en/latest/conf_ref.html
+# # sudo nano /etc/dnf/dnf.conf
+# # fastestmirror=True
+# # max_parallel_downloads=5
+# # defaultyes=True
+
+# # Another way
+# # echo 'fastestmirror=True' | sudo tee -a /etc/dnf/dnf.conf
+# # echo 'max_parallel_downloads=5' | sudo tee -a /etc/dnf/dnf.conf
+# # echo 'defaultyes=True' | sudo tee -a /etc/dnf/dnf.conf
+
+# # Configure DNF settings
+# sudo tee /etc/dnf/dnf.conf <<EOL
+# # see "man dnf.conf" for defaults and possible options
+
+# [main]
 # max_parallel_downloads=5
 # defaultyes=True
+# fastestmirror=True    
 
-# Another way
-# echo 'fastestmirror=True' | sudo tee -a /etc/dnf/dnf.conf
-# echo 'max_parallel_downloads=5' | sudo tee -a /etc/dnf/dnf.conf
-# echo 'defaultyes=True' | sudo tee -a /etc/dnf/dnf.conf
+# EOL
 
-# Configure DNF settings
-sudo tee /etc/dnf/dnf.conf <<EOL
-# see "man dnf.conf" for defaults and possible options
+# #######################################
+# # LibreWolf, Mullvad browser, codium, etc
+# #######################################
 
-[main]
-max_parallel_downloads=5
-defaultyes=True
-fastestmirror=True    
+# echo "************************ Adding Librewolf repo ************************"
+# # LibreWolf - https://librewolf.net/installation/fedora/
+# # add the repo
 
-EOL
+# # cd
+# # mkdir -p nb/temp
+# # cd nb/temp
+# # wget https://librewolf.net/installation/fedora/
+# # cat index.html | grep pkexec
 
-#######################################
-# LibreWolf, Mullvad browser, codium, etc
-#######################################
-
-echo "************************ Adding Librewolf repo ************************"
-# LibreWolf - https://librewolf.net/installation/fedora/
-# add the repo
-
-# cd
-# mkdir -p nb/temp
-# cd nb/temp
-# wget https://librewolf.net/installation/fedora/
-# cat index.html | grep pkexec
-
-# add the repo
-curl -fsSL https://repo.librewolf.net/librewolf.repo | pkexec tee /etc/yum.repos.d/librewolf.repo
+# # add the repo
+# curl -fsSL https://repo.librewolf.net/librewolf.repo | pkexec tee /etc/yum.repos.d/librewolf.repo
 
 
-echo "************************ Adding Mullvad repo ************************"
-# https://mullvad.net/en/download/browser/linux
-# Add the Mullvad repository server to dnf
-# curl https://mullvad.net/en/download/browser/linux | grep addrepo
-sudo dnf config-manager addrepo --from-repofile=https://repository.mullvad.net/rpm/stable/mullvad.repo
+# echo "************************ Adding Mullvad repo ************************"
+# # https://mullvad.net/en/download/browser/linux
+# # Add the Mullvad repository server to dnf
+# # curl https://mullvad.net/en/download/browser/linux | grep addrepo
+# sudo dnf config-manager addrepo --from-repofile=https://repository.mullvad.net/rpm/stable/mullvad.repo
 
 
-echo "************************ Adding VSCodium repo ************************"
-### VSCodium
-# https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo
+# echo "************************ Adding VSCodium repo ************************"
+# ### VSCodium
+# # https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo
 
-sudo tee /etc/yum.repos.d/vscodium.repo << 'EOF'
-[gitlab.com_paulcarroty_vscodium_repo]
-name=gitlab.com_paulcarroty_vscodium_repo
-baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/
-enabled=1
-gpgcheck=1
-repo_gpgcheck=1
-gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
-metadata_expire=1h
-EOF
-
-echo "************************ Adding Tor repo ************************"
-# Tor - https://community.torproject.org/relay/setup/bridge/fedora/
-
-sudo tee /etc/yum.repos.d/tor.repo << 'EOF'
-[tor]
-name=Tor for Fedora $releasever - $basearch
-baseurl=https://rpm.torproject.org/fedora/$releasever/$basearch
-enabled=1
-gpgcheck=1
-gpgkey=https://rpm.torproject.org/fedora/public_gpg.key
-cost=100
-EOF
-
-echo "************************ Adding brave browser repo ************************"
-# https://brave.com/linux/
-sudo dnf install dnf-plugins-core
-sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
-
-echo "************************ Installing packages ************************"
-# install the packages
-sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher brave-browser # obfs4
-# Note: flatpak and git may not come already installed on some flavors like xfce, etc.
-
-
-
-
-# echo "************************ Edit your Tor config ************************"
-# echo "************************ TODO - Don't forget to change the TODO1 options in Tor config. ************************"
-# sudo tee /etc/tor/torrc << 'EOF'
-# RunAsDaemon 1
-# BridgeRelay 1
-
-# # Replace "TODO1" with a Tor port of your choice.  This port must be externally
-# # reachable.  Avoid port 9001 because it's commonly associated with Tor and
-# # censors may be scanning the Internet for this port.
-# ORPort TODO1
+# sudo tee /etc/yum.repos.d/vscodium.repo << 'EOF'
+# [gitlab.com_paulcarroty_vscodium_repo]
+# name=gitlab.com_paulcarroty_vscodium_repo
+# baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/
+# enabled=1
+# gpgcheck=1
+# repo_gpgcheck=1
+# gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
+# metadata_expire=1h
 # EOF
 
-#######################################
+# echo "************************ Adding Tor repo ************************"
+# # Tor - https://community.torproject.org/relay/setup/bridge/fedora/
 
-echo "************************ Removing packages ************************"
-# remove stuff
-sudo dnf remove -y  totem yelp gnome-tour gnome-connections firefox
-# remove the gnome terminal ptyxis as we have installed 
+# sudo tee /etc/yum.repos.d/tor.repo << 'EOF'
+# [tor]
+# name=Tor for Fedora $releasever - $basearch
+# baseurl=https://rpm.torproject.org/fedora/$releasever/$basearch
+# enabled=1
+# gpgcheck=1
+# gpgkey=https://rpm.torproject.org/fedora/public_gpg.key
+# cost=100
+# EOF
 
-#######################################
+# echo "************************ Adding brave browser repo ************************"
+# # https://brave.com/linux/
+# sudo dnf install dnf-plugins-core
+# sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
 
-echo "************************ Enabling RPM Fusion ************************"
-# Enable RPM Fusion
-# https://rpmfusion.org/Configuration
+# echo "************************ Installing packages ************************"
+# # install the packages
+# sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher brave-browser # obfs4
+# # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
 
-# curl https://rpmfusion.org/Configuration | grep "Fedora with dnf" | grep "sudo dnf install https"
 
-### Configuration of Repositories - https://rpmfusion.org/Configuration
 
-sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm # use bash, not zsh (done above)
 
-echo "************************ Configuring @core ************************"
-sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
-sudo dnf update -y @core
+# # echo "************************ Edit your Tor config ************************"
+# # echo "************************ TODO - Don't forget to change the TODO1 options in Tor config. ************************"
+# # sudo tee /etc/tor/torrc << 'EOF'
+# # RunAsDaemon 1
+# # BridgeRelay 1
 
-echo "************************ Configuring Multimedia on Fedora ************************"
-### Multimedia on Fedora - https://rpmfusion.org/Howto/Multimedia 
-sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
-sudo dnf update -y @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
+# # # Replace "TODO1" with a Tor port of your choice.  This port must be externally
+# # # reachable.  Avoid port 9001 because it's commonly associated with Tor and
+# # # censors may be scanning the Internet for this port.
+# # ORPort TODO1
+# # EOF
 
-echo "************************ Configuring Codecs ************************"
-### Codecs - https://docs.fedoraproject.org/en-US/quick-docs/installing-plugins-for-playing-movies-and-music/
-sudo dnf group install -y multimedia
+# #######################################
 
-#######################################
+# echo "************************ Removing packages ************************"
+# # remove stuff
+# sudo dnf remove -y  totem yelp gnome-tour gnome-connections firefox
+# # remove the gnome terminal ptyxis as we have installed 
 
-echo "************************ Enabling flatpak flathub ************************"
-### Enable flatpak flathub
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-# flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+# #######################################
 
-#######################################
+# echo "************************ Enabling RPM Fusion ************************"
+# # Enable RPM Fusion
+# # https://rpmfusion.org/Configuration
 
-# Change default downloads dir:
-mkdir -p $DOWNLOADS_DIR
-sudo chown $USER:$USER $DOWNLOADS_DIR
-echo "************************ Home directory is: $HOME_DIR ************************"
+# # curl https://rpmfusion.org/Configuration | grep "Fedora with dnf" | grep "sudo dnf install https"
 
-echo "************************ Identify Desktop Environment ************************"
-DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
-echo "Desktop Environment is $DESKTOP"
+# ### Configuration of Repositories - https://rpmfusion.org/Configuration
 
-if [ "$DESKTOP" = "gnome" ]
-then
-    echo "************************ Changing default downloads directory ************************"
-    xdg-user-dirs-update --set DOWNLOAD "$DOWNLOADS_DIR" # Gnome specific
+# sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm # use bash, not zsh (done above)
 
-    echo "************************ Enable Minimize or Maximize Window Buttons ************************"
-    gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
-fi
+# echo "************************ Configuring @core ************************"
+# sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
+# sudo dnf update -y @core
 
-echo "************************ Rename pc ************************"
-HOSTNAME="nbFedora"
-sudo hostnamectl set-hostname $HOSTNAME
+# echo "************************ Configuring Multimedia on Fedora ************************"
+# ### Multimedia on Fedora - https://rpmfusion.org/Howto/Multimedia 
+# sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
+# sudo dnf update -y @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
 
-#######################################
+# echo "************************ Configuring Codecs ************************"
+# ### Codecs - https://docs.fedoraproject.org/en-US/quick-docs/installing-plugins-for-playing-movies-and-music/
+# sudo dnf group install -y multimedia
 
-echo "************************ Update hosts file ************************"
-sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/hosts.sh
+# #######################################
 
-echo "************************ Setup nerd fonts ************************"
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
+# echo "************************ Enabling flatpak flathub ************************"
+# ### Enable flatpak flathub
+# flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+# # flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-#######################################
+# #######################################
+
+# # Change default downloads dir:
+# mkdir -p $DOWNLOADS_DIR
+# sudo chown $USER:$USER $DOWNLOADS_DIR
+# echo "************************ Home directory is: $HOME_DIR ************************"
+
+# echo "************************ Identify Desktop Environment ************************"
+# DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
+# echo "Desktop Environment is $DESKTOP"
+
+# if [ "$DESKTOP" = "gnome" ]
+# then
+#     echo "************************ Changing default downloads directory ************************"
+#     xdg-user-dirs-update --set DOWNLOAD "$DOWNLOADS_DIR" # Gnome specific
+
+#     echo "************************ Enable Minimize or Maximize Window Buttons ************************"
+#     gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
+# fi
+
+# echo "************************ Rename pc ************************"
+# HOSTNAME="nbFedora"
+# sudo hostnamectl set-hostname $HOSTNAME
+
+# #######################################
+
+# echo "************************ Update hosts file ************************"
+# sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/hosts.sh
+
+# echo "************************ Setup nerd fonts ************************"
+# sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
+
+# #######################################
 
 echo "************************ Install and configure more dnf packages ************************"
-sudo dnf install -y htop gh fzf keepassxc gnome-tweaks vlc fastfetch gparted bleachbit timeshift qbittorrent liferea gpodder quiterss
+sudo dnf install -y htop gh fzf keepassxc gnome-tweaks fastfetch gparted bleachbit timeshift qbittorrent liferea gpodder quiterss # vlc
 # sudo dnf install -y  gnome-browser-connector dnfdragora transmission
 # sudo dnf install -y akregator alligator kasts clementine
 # TODO - configure fzf
@@ -297,7 +297,7 @@ ZSHRC_EOF
 #######################################
 
 echo "************************ Update and upgrade everything ************************"
-sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y
+# sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y
 
 # Following was a failed attempt into opening alacritty via ptyxis and then removing ptyxis from alacritty
 # alacritty -e zsh -c "sudo dnf update -y && sudo dnf upgrade --refresh -y && sudo dnf remove -y ptyxis; exec zsh"
