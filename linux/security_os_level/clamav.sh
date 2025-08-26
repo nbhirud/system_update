@@ -128,7 +128,7 @@ sudo nano /etc/systemd/system/freshclam.service
 # 3. enable and start the timer
 sudo systemctl enable freshclam.timer
 sudo systemctl start freshclam.timer
-
+# sudo systemctl enable --now clamav-freshclam.service
 
 ## scheduled scans
 
@@ -147,7 +147,163 @@ sudo systemctl enable clamd@scan
 sudo systemctl status clamd@scan
 
 
+# TODO: For Web Browsing Related Security
 
+ScanOnAccess yes
+OnAccessIncludePath /home/user/Downloads
+OnAccessIncludePath /home/username/Downloads
+OnAccessIncludePath /home/username/.cache/mozilla
+OnAccessIncludePath /home/username/.cache/google-chrome
+OnAccessPrevention yes
+OnAccessExcludeUname clamav
+
+# Ensure clamav-clamonacc.service is enabled: sudo systemctl enable --now clamav-clamonacc.service
+
+# Test with the EICAR test file:
+# wget https://secure.eicar.org/eicar.com.txt -P ~/Downloads
+# cat ~/Downloads/eicar.com.txt
+# If configured correctly, ClamOnAcc will block access with an “Operation not permitted” error.
+
+# Enable Comprehensive File Scanning for file types commonly downloaded (clamd.conf):
+ScanPE yes
+ScanELF yes
+ScanPDF yes
+ScanHTML yes
+ScanArchive yes
+DetectPUA yes
+AlertBrokenExecutables yes
+AlertEncrypted yes
+
+
+# Phishing and DLP Settings:
+PhishingSignatures yes
+PhishingAlwaysBlockSSLMismatch yes
+PhishingAlwaysBlockCloak yes
+
+MinCreditCardCount 1
+SSNFormat yes
+MinSSNCount 1
+
+# Log Detailed Threat Information:
+LogTime yes
+ExtendedDetectionInfo yes
+
+# Add third-party signature databases (e.g., MalwarePatrol, SecuriteInfo) for enhanced detection using clamav-unofficial-sigs or fangfrisch:
+sudo apt install clamav-unofficial-sigs
+# Edit /etc/clamav-unofficial-sigs/user.conf with MalwarePatrol credentials if using their paid service.
+
+# Configure ClamAV with Squid via SquidClamAV - Proxy Integration for Web Scanning
+sudo apt install squid squidclamav
+
+# /etc/squid/squid.conf:
+icap_enable on
+icap_service clamav_scan reqmod_precache icap://127.0.0.1:1344/clamav
+icap_service clamav_scan respmod_precache icap://127.0.0.1:1344/clamav
+# Ensure clamd is running and configured for network access (TCPSocket in clamd.conf):
+TCPSocket 3310
+TCPAddr 127.0.0.1
+
+sudo systemctl restart squid clamav-daemon
+
+###
+# Manual Download Scanning
+# Set up automatic scanning of downloaded files:
+# Create a script to scan downloads
+#!/bin/bash
+inotifywait -m /home/username/Downloads -e create -e moved_to |
+while read path action file; do
+    clamdscan "$path$file"
+done
+
+###
+# https://wiki.archlinux.org/title/Clam_AntiVirus
+# Also see # https://wiki.archlinux.org/title/ClamAV (maybe duplicate)
+# See section 6 - Adding more databases/signatures repositories
+# Setup:
+
+# clamav-unofficial-sigs
+sudo dnf install clamav-unofficial-sigs
+# configure: /etc/clamav-unofficial-sigs/master.conf
+# Enable SaneSecurity, MalwarePatrol, Securiteinfo, Yara-Rules Project, and more
+# options include HIGH, MEDIUM, LOW, or DISABLED
+sanesecurity_dbs_rating="HIGH" 
+work_dir_sanesecurity="/var/lib/clamav"
+sudo clamav-unofficial-sigs.sh # Run the script after configuring and selecting specific databases
+# Automate update:
+sudo systemctl enable --now clamav-unofficial-sigs.timer
+sudo systemctl status clamav-unofficial-sigs.timer
+
+
+# Fangfrisch
+# Sign up for a free account at MalwarePatrol to obtain a receipt code.
+# Use clamav-unofficial-sigs or fangfrisch (a more secure alternative) to manage MalwarePatrol signatures.
+sudo dnf install epel-release python3-fangfrisch
+# Configure /etc/fangfrisch/fangfrisch.conf
+[malwarepatrol]
+enabled = true
+url = https://cdn.malwarepatrol.net/lists/clamav_basic
+receipt_code = YOUR-RECEIPT-NUMBER
+product_code = 8
+output = /var/lib/clamav/malwarepatrol.db
+# Run fangfrisch to download signatures:
+sudo fangfrisch --conf /etc/fangfrisch/fangfrisch.conf refresh
+# Enable the fangfrisch.timer for automatic updates:
+sudo systemctl enable --now fangfrisch.timer
+
+
+# SecuriteInfo
+# Register at SecuriteInfo to obtain an authorization code.
+# Use clamav-unofficial-sigs or fangfrisch to manage signatures.
+# For clamav-unofficial-sigs, edit /etc/clamav-unofficial-sigs/master.conf:
+securiteinfo_dbs_rating="HIGH"
+securiteinfo_authorisation_code="YOUR-AUTH-CODE"
+work_dir_securiteinfo="/var/lib/clamav"
+# run script:
+sudo clamav-unofficial-sigs.sh
+# For fangfrisch, configure /etc/fangfrisch/fangfrisch.conf:
+[securiteinfo]
+enabled = true
+url = https://www.securiteinfo.com/get/signatures/YOUR-AUTH-CODE/securiteinfo.hdb
+output = /var/lib/clamav/securiteinfo.hdb
+
+# MalwarePatrol - https://github.com/malwarepatrol/clamav-signatures - Broad coverage of newer ransomware & trojans.
+
+
+# YARA Rules (via YaraRulesProject or Custom Rules)
+# Use clamav-unofficial-sigs to add YaraRulesProject signatures:
+# Edit /etc/clamav-unofficial-sigs/master.conf
+yararulesproject_enabled="yes"
+work_dir_yararules="/var/lib/clamav"
+# Run the script:
+sudo clamav-unofficial-sigs.sh
+
+# Linux Malware Detect (LMD) Signatures
+sudo dnf install maldet
+# Configure LMD to share signatures with ClamAV by copying LMD’s signature files to /var/lib/clamav:
+sudo cp /usr/local/maldetect/sigs/*.ndb /var/lib/clamav/
+# Update LMD signatures:
+sudo maldet -u
+# Ensure ClamAV loads the signatures by restarting the service:
+sudo systemctl restart clamav-clamd.service
+
+
+# Add these to your freshclam.conf: - Already setup these?
+# DatabaseCustomURL http://www.malware.expert/clamav/
+# DatabaseCustomURL https://www.securiteinfo.com/get/clamav-unofficial/
+# Enable heuristic detection in clamd.conf:
+# HeuristicScanPrecedence yes
+# StructuredDataDetection yes
+
+
+# Ransomware‑Tracker - https://github.com/ytisf/ransomware-sig - Focused on ransomware hashes and filenames.
+
+# ESET‑NOD32‑Signatures - (not officially supported) - Adds a different vendor’s perspective on threats.
+
+# Sigs are usually .cvd or plain text .hdb/.mdb - Place them in /var/lib/clamav/ (or wherever your DatabaseDirectory points)
+
+# ClamAV‑Bytecode‑Repo - (https://github.com/Cisco-Talos/clamav-bytecode) - additional experimental Bytecode modules.
+# Enable in clamd.conf - Bytecode = Yes
+# place the .cbc files in the bytecode directory (default: /var/lib/clamav/bytecode/
 
 ######################################################
 # From Fedora 40
