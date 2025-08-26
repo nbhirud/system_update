@@ -60,7 +60,6 @@ echo "Desktop Environment is $DESKTOP"
 
 if [ "$DESKTOP" = "gnome" ]
 then
-    # EXPERIMENTAL
     echo "************************ Setting default UI fonts to Ubuntu and monospace font to Jetbrains ************************"
     dconf write /org/gnome/desktop/interface/font-name "'Ubuntu Nerd Font 11'"
     dconf write /org/gnome/desktop/interface/document-font-name "'Ubuntu Nerd Font 11'"

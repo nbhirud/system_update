@@ -1,4 +1,6 @@
 
+###### NOTE: Do not change firefox fonts. It is adds to the fingerprint ###############################################
+
 # change default font to 
 # Serif = "NotoSerif Nerd Font"
 # Sans serif = "NotoSans Nerd Font"
