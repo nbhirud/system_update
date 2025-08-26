@@ -1,3 +1,4 @@
+
 # Requirements
 # I tried nextdns and set it up on my android, linux, router, etc; basically everywhere. Then realized that the free plan has limitations on number of requests that I will reach quickly. So I need a Foss/free alternative to nextdns. Hosting on cloud platforms is not an option.
 # I should be able to:
@@ -9,7 +10,6 @@
 # - set it up on chrome browser on linux
 # - should be usable while not in my home WiFi too
 # - Use blocklists like StevenBlack hosts, and also manually block domains or tlds
-
 
 #########################################################
 ##### Testing - DNS over HTTPS/TLS
