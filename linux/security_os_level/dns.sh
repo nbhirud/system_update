@@ -1,3 +1,53 @@
+# Requirements
+# I tried nextdns and set it up on my android, linux, router, etc; basically everywhere. Then realized that the free plan has limitations on number of requests that I will reach quickly. So I need a Foss/free alternative to nextdns. Hosting on cloud platforms is not an option.
+# I should be able to:
+# - Set up this DNS IPs on my router
+# - Set up this DNS for DOH/DOT on my router
+# - Set it up on my linux desktops and laptops in WiFi/Ethernet config, and as a system wide DOH/DOT
+# - Set it up on my firefox and chrome browsers on linux
+# - set it up on android phones as private dns
+# - set it up on chrome browser on linux
+# - should be usable while not in my home WiFi too
+# - Use blocklists like StevenBlack hosts, and also manually block domains or tlds
+
+
+#########################################################
+##### Testing - DNS over HTTPS/TLS
+#########################################################
+
+resolvectl status # You can see the configured DNS
+
+dig fedoraproject.org # Check "SERVER" towards the bottom should indicate that the query was answered by the DNS service at 127.0.0.53 or similar
+
+nslookup fedoraproject.org
+# Would show something like:
+# Server:		<b>127.0.0.53</b>
+# Address:	<b>127.0.0.53#53</b>
+
+host -v fedoraproject.org
+# The last line of output woule be like:
+# Received 115 bytes from 127.0.0.53#53 in 65 ms  
+
+
+#########################################################
+##### NextDNS DNS over HTTPS/TLS
+#########################################################
+
+# Go to https://my.nextdns.io - and follow the Setup tab
+
+# Be sure to read "Identify your devices" section at the bottom of Setup page before starting
+
+# There would be details for linux, android , router, etc setups
+# Including:
+# DNS-over-TLS
+# DNS-over-HTTPS
+# IPv6
+# IPv4
+# DNS Servers
+
+# Setup Router, PC/Laptop resolved.conf, PC/Laptop Wired/Wireless connections, firefox browser, chrome browser,
+
+
 
 #########################################################
 ##### Mullvad DNS over HTTPS
