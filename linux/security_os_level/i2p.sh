@@ -1,0 +1,1 @@
+# flatpak install flathub website.i2pd.i2pd
