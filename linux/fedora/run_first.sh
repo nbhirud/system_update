@@ -42,7 +42,7 @@ echo "************************ Updating /etc/dnf/dnf.conf **********************
 
 # Configure DNF settings
 sudo tee /etc/dnf/dnf.conf <<EOL
-# see `man dnf.conf` for defaults and possible options
+# see "man dnf.conf" for defaults and possible options
 
 [main]
 max_parallel_downloads=5
