@@ -209,7 +209,8 @@ sudo dnf install -y htop gh fzf keepassxc gnome-tweaks fastfetch gparted bleachb
 # TODO - configure fzf
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.protonvpn.www me.proton.Mail me.proton.Pass com.bitwarden.desktop org.telegram.desktop flathub org.gnome.Fractal chat.simplex.simplex com.rtosta.zapzap io.freetubeapp.FreeTube
+flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.bitwarden.desktop org.telegram.desktop flathub org.gnome.Fractal chat.simplex.simplex com.rtosta.zapzap io.freetubeapp.FreeTube
+# com.protonvpn.www me.proton.Mail me.proton.Pass # installing using official instructions via script
 # flatpak install -y flathub ca.desrt.dconf-editor com.spotify.Client
 # Facebook messenger (deprecated) - com.sindresorhus.Caprine
 # element matrix client - im.riot.Riot - too heavy, so install Fluffychat or Fractal
@@ -218,6 +219,9 @@ flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal or
 
 sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal
 
+#######################################
+
+sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh
 
@@ -227,7 +231,8 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh
 
-###############################
+#######################################
+
 # Configure dns - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh
 
 # Configure firewall - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/firewalld.sh
@@ -281,7 +286,7 @@ sudo tee -a ~/.zshrc << 'ZSHRC_EOF'
 alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && omz update -y && . torsocks on && fastfetch"
 # alias nbdistu="sudo apt dist-upgrade -y && sudo do-release-upgrade"
 alias nbreload="systemctl daemon-reload && source ~/.zshrc"
-alias nbclean="sync && sudo bleachbit --clean --preset && bleachbit --clean --preset && dnf clean -y all && yum clean -y all && flatpak uninstall --unused" # 
+alias nbclean="sync && sudo bleachbit --clean --preset && bleachbit --clean --preset && dnf clean -y all && yum clean -y all && flatpak uninstall --unused && sudo resolvectl flush-caches && sudo resolvectl reset-statistics"
 alias nbtoron=". torsocks on"
 alias nbtoroff=". torsocks off"
 alias nbshutdown="nbupdate && nbclean && shutdown"
