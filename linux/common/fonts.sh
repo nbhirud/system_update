@@ -10,8 +10,8 @@
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
 CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects"
 SYSUPDATE_CODE_DIR="$CODE_BASE_DIR/system_update"
-# DEST_DIR="$HOME_DIR/.local/share/fonts/nerd-fonts"
-DEST_DIR="$HOME_DIR/nb/test02/dest"
+DEST_DIR="$HOME_DIR/.local/share/fonts/nerd-fonts"
+# DEST_DIR="$HOME_DIR/nb/test02/dest"
 NERD_FONTS_DIR="$CODE_BASE_DIR/nerd-fonts"
 PATCHED_FONTS_DIR="$NERD_FONTS_DIR/patched-fonts"
 
