@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # https://www.baeldung.com/linux/set-command
 set -eux

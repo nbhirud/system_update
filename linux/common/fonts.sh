@@ -1,3 +1,4 @@
+#!/bin/sh
 
 # Tested only by running from directory "system_update"
 # 1. as `sh linux/common/fonts.sh`

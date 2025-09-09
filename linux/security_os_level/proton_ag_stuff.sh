@@ -1,3 +1,4 @@
+#!/bin/sh
 
 echo "************************ Installing proton stuff ************************"
 cd $DOWNLOADS_DIR
