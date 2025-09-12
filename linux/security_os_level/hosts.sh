@@ -1,4 +1,4 @@
-
+#!/bin/sh
 
 # https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
 # https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn-social/hosts # can make basic social interaction a lot difficult
@@ -8,7 +8,7 @@
 
 # TODO - create a literal HOSTSPLAY_DIR and use it
 mkdir -p hostsplay
-cd hostsplay
+cd hostsplay || exit
 echo "Created dir: $PWD"
 wget https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
 
@@ -23,6 +23,9 @@ sudo mv hosts /etc/hosts
 # stat --format '%a' /etc/hosts  # for linux
 # stat -c '%a' <file>  # for busybox
 sudo chmod $PERM /etc/hosts
+
+# https://github.com/StevenBlack/hosts?tab=readme-ov-file#linux
+sudo systemctl restart NetworkManager.service
 
 # cd ..
 # sudo rm -r hostsplay
