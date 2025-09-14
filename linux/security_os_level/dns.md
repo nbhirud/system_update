@@ -135,10 +135,10 @@ Gork - just dnscrypt-proxy
 # FallbackDNS = Quad9
 
 [Resolve]
-DNS=45.90.28.0#nbMain-5efc56.dns.nextdns.io
-DNS=2a07:a8c0::#nbMain-5efc56.dns.nextdns.io
-DNS=45.90.30.0#nbMain-5efc56.dns.nextdns.io
-DNS=2a07:a8c1::#nbMain-5efc56.dns.nextdns.io
+DNS=45.90.28.0#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
+DNS=2a07:a8c0::#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
+DNS=45.90.30.0#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
+DNS=2a07:a8c1::#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
 FallbackDNS=9.9.9.9
 FallbackDNS=2620:fe::fe
 FallbackDNS=149.112.112.112

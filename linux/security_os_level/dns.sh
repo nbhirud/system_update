@@ -120,10 +120,10 @@ sleep 5s
 echo "[+] Configuring systemd-resolved for NextDNS DoT..."
 sudo tee /etc/systemd/resolved.conf > /dev/null <<EOF
 [Resolve]
-DNS=45.90.28.0#nbBoxes-5efc56.dns.nextdns.io
-DNS=2a07:a8c0::#nbBoxes-5efc56.dns.nextdns.io
-DNS=45.90.30.0#nbBoxes-5efc56.dns.nextdns.io
-DNS=2a07:a8c1::#nbBoxes-5efc56.dns.nextdns.io
+DNS=45.90.28.0#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
+DNS=2a07:a8c0::#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
+DNS=45.90.30.0#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
+DNS=2a07:a8c1::#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
 FallbackDNS=9.9.9.9
 FallbackDNS=2620:fe::fe
 FallbackDNS=149.112.112.112
