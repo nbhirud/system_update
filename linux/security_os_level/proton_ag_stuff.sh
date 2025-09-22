@@ -1,31 +1,73 @@
 #!/bin/sh
+set -eux
+
+echo "************************ Setting literals and constants ************************"
+HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
+
+CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects"
+SYSUPDATE_SEC_CODE_DIR="$CODE_BASE_DIR/system_update/linux/security_os_level/"
+
+DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
+DOWNLOADS_DIR_PROTON="$DOWNLOADS_DIR/proton_ag_downloads_$(date +%Y-%m-%d_%H-%M-%S)"
+
 
 echo "************************ Installing proton stuff ************************"
-cd $DOWNLOADS_DIR
+mkdir -p "$DOWNLOADS_DIR_PROTON"
+cd "$DOWNLOADS_DIR_PROTON" || exit
 
 echo "************************ Installing ProtonAuthenticator ************************"
 # https://proton.me/support/set-up-proton-authenticator-linux
 # Download the RPM file.
 wget https://proton.me/download/authenticator/linux/ProtonAuthenticator.rpm
+# Download the json with SHA
+JSON_ProtonAuthenticator="ProtonAuthenticator_version.json"
+wget -O $JSON_ProtonAuthenticator https://proton.me/download/authenticator/linux/version.json
+# Get SHA from JSON
+SHA_ProtonAuthenticator=$(sh "$SYSUPDATE_SEC_CODE_DIR"/proton_get_sha.sh "$DOWNLOADS_DIR_PROTON" $JSON_ProtonAuthenticator)
+# Remove any leading or trailing quotes
+SHA_ProtonAuthenticator=${SHA_ProtonAuthenticator%\"} # Remove a single quote from the end
+SHA_ProtonAuthenticator=${SHA_ProtonAuthenticator#\"} # Remove a single quote from the beginning
 # Confirm the package’s integrity
-echo "<SHA512CheckSum> ProtonAuthenticator.rpm" | sha512sum --check -
-wget -O ProtonAuthenticator_version.json https://proton.me/download/authenticator/linux/version.json
-echo "************************ To find the SHA512CheckSum for the latest version of this package, open the downloaded $DOWNLOADS_DIR/ProtonAuthenticator_version.json file in a text editor ************************"
-sleep 30s
+echo "$SHA_ProtonAuthenticator" ProtonAuthenticator.rpm | sha512sum --check -
 # Install it
 sudo dnf install ProtonAuthenticator.rpm
+
 
 echo "************************ Installing ProtonPass ************************"
 # https://proton.me/support/set-up-proton-pass-linux
 # Download the RPM file.
 wget https://proton.me/download/PassDesktop/linux/x64/ProtonPass.rpm
+# Download the json with SHA
+JSON_ProtonPass="ProtonPass_version.json"
+wget -O $JSON_ProtonPass https://proton.me/download/PassDesktop/linux/x64/version.json
+# Get SHA from JSON
+SHA_ProtonPass=$(sh "$SYSUPDATE_SEC_CODE_DIR"/proton_get_sha.sh "$DOWNLOADS_DIR_PROTON" $JSON_ProtonPass)
+# Remove any leading or trailing quotes
+SHA_ProtonPass=${SHA_ProtonPass%\"} # Remove a single quote from the end
+SHA_ProtonPass=${SHA_ProtonPass#\"} # Remove a single quote from the beginning
 # Confirm the package’s integrity
-echo "<SHA512CheckSum> ProtonPass.rpm" | sha512sum --check -
-wget -O ProtonPass_version.json https://proton.me/download/PassDesktop/linux/x64/version.json
-echo "************************ To find the SHA512CheckSum for the latest version of this package, open the downloaded $DOWNLOADS_DIR/ProtonPass_version.json file in a text editor ************************"
-sleep 30s
+echo "$SHA_ProtonPass ProtonPass.rpm" | sha512sum --check -
 # Install it
 sudo rpm -i --force ProtonPass.rpm
+
+
+echo "************************ Installing ProtonMail ************************"
+# https://proton.me/support/set-up-proton-mail-linux
+# Download the RPM file.
+wget https://proton.me/download/mail/linux/ProtonMail-desktop-beta.rpm
+# Download the json with SHA
+JSON_ProtonMail="ProtonMail_version.json"
+wget -O ProtonMail_version.json https://proton.me/download/mail/linux/version.json
+# Get SHA from JSON
+SHA_ProtonMail=$(sh "$SYSUPDATE_SEC_CODE_DIR"/proton_get_sha.sh "$DOWNLOADS_DIR_PROTON" $JSON_ProtonMail)
+# Remove any leading or trailing quotes from the variable
+SHA_ProtonMail=${SHA_ProtonMail%\"} # Remove a single quote from the end
+SHA_ProtonMail=${SHA_ProtonMail#\"} # Remove a single quote from the beginning
+# check the RPM file’s integrity
+echo "$SHA_ProtonMail ProtonMail-desktop-beta.rpm" | sha512sum --check -
+# Install it
+sudo dnf install ./ProtonMail-desktop-beta.rpm
+
 
 echo "************************ Installing ProtonVPN ************************"
 # https://protonvpn.com/support/official-linux-vpn-fedora/
@@ -37,17 +79,4 @@ sudo dnf install -y ./protonvpn-stable-release-1.0.3-1.noarch.rpm && sudo dnf ch
 sudo dnf install -y proton-vpn-gnome-desktop 
 # Enable GNOME desktop tray icons
 sudo dnf install -y libappindicator-gtk3 gnome-shell-extension-appindicator gnome-extensions-app
-echo "************************ Open the Extensions app and ensure that AppIndicator and KStatusNotifierItem Support is toggled on before opening the app ************************"
-sleep 30s
-
-echo "************************ Installing ProtonMail ************************"
-# https://proton.me/support/set-up-proton-mail-linux
-# Download the RPM file.
-wget https://proton.me/download/mail/linux/ProtonMail-desktop-beta.rpm
-# check the RPM file’s integrity
-echo "<SHA512CheckSum> ProtonMail-desktop-beta.rpm" | sha512sum --check -
-wget -O ProtonMail_version.json https://proton.me/download/mail/linux/version.json
-echo "************************ To find the SHA512CheckSum for the latest version of this package, open the downloaded $DOWNLOADS_DIR/ProtonMail_version.json file in a text editor ************************"
-sleep 30s
-# Install it
-sudo dnf install ./ProtonMail-desktop-beta.rpm
+echo "************************ TODO: Open the Extensions app and ensure that AppIndicator and KStatusNotifierItem Support is toggled on before opening the app ************************"
