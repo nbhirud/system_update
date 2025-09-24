@@ -111,7 +111,9 @@ sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-releas
 
 echo "************************ Installing packages ************************"
 # install the packages
-sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher brave-browser # obfs4
+sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher 
+# brave-browser - trying flatpak
+# obfs4
 # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
 
 
@@ -209,25 +211,26 @@ sudo dnf install -y htop gh fzf keepassxc gnome-tweaks fastfetch gparted bleachb
 # TODO - configure fzf
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.bitwarden.desktop org.telegram.desktop flathub org.gnome.Fractal chat.simplex.simplex com.rtosta.zapzap io.freetubeapp.FreeTube
+flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.bitwarden.desktop org.telegram.desktop flathub org.gnome.Fractal chat.simplex.simplex com.rtosta.zapzap io.freetubeapp.FreeTube com.brave.Browser 
 # com.protonvpn.www me.proton.Mail me.proton.Pass # installing using official instructions via script
 # flatpak install -y flathub ca.desrt.dconf-editor com.spotify.Client
 # Facebook messenger (deprecated) - com.sindresorhus.Caprine
-# element matrix client - im.riot.Riot - too heavy, so install Fluffychat or Fractal
+# element matrix client - im.riot.Riot - too heavy, so install Fractal (or Fluffychat)
 # im.fluffychat.Fluffychat
 # org.gnome.Fractal - prefer on Gnome
+# io.github.kolunmi.Bazaar - an alternative software store from flatpak/flathub
 
 sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal
 
 #######################################
-
-sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh
+
+sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh
 
@@ -296,6 +299,13 @@ alias nbreboot="nbupdate && nbclean && reboot"
 autoload -U compinit; compinit
 source ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh
 . torsocks on
+
+# TODO: ##############################
+# Add to nbclean - clean old kernels script invocation
+# Add to nbUpdate? - update fonts - invocation from this repo dir - use linux/common/git_repo_update_checker.sh maybe?
+# Add to nbReboot - update hosts
+# Add to nbReboot - update dnsmasq blocklists
+# Or maybe most of these just need to be cron jobs? (linux/common/cron_jobs.sh)
 
 #################################################################
 
