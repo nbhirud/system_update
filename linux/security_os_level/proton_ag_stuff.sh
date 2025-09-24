@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# set -eux
+set -eux
 
 echo "************************ Setting literals and constants ************************"
 HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
