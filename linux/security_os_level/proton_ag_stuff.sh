@@ -36,7 +36,7 @@ SHA_ProtonAuthenticator=${SHA_ProtonAuthenticator#\"} # Remove a single quote fr
 # Confirm the package’s integrity
 echo "$SHA_ProtonAuthenticator" ProtonAuthenticator.rpm | sha512sum --check -
 # Install it
-sudo dnf install ProtonAuthenticator.rpm
+sudo dnf install -y ProtonAuthenticator.rpm
 
 
 ######################### ProtonPass ###################################################################
@@ -56,7 +56,7 @@ SHA_ProtonPass=${SHA_ProtonPass#\"} # Remove a single quote from the beginning
 echo "$SHA_ProtonPass ProtonPass.rpm" | sha512sum --check -
 # Install it
 # sudo rpm -i --force ProtonPass.rpm # OFFICIAL way, but RedHat seems to discourage this usage
-sudo dnf install ProtonPass.rpm
+sudo dnf install -y ProtonPass.rpm
 
 
 ######################### ProtonMail ###################################################################
@@ -75,7 +75,7 @@ SHA_ProtonMail=${SHA_ProtonMail#\"} # Remove a single quote from the beginning
 # check the RPM file’s integrity
 echo "$SHA_ProtonMail ProtonMail-desktop-beta.rpm" | sha512sum --check -
 # Install it
-sudo dnf install ./ProtonMail-desktop-beta.rpm
+sudo dnf install -y ./ProtonMail-desktop-beta.rpm
 
 
 ########################## ProtonVPN ###################################################################
