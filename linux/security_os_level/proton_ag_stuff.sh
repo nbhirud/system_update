@@ -119,6 +119,6 @@ sudo dnf install -y ./protonvpn-stable-release-1.0.3-1.noarch.rpm && sudo dnf ch
 # Install the app and accept an OpenPGP key.
 sudo dnf install -y proton-vpn-gnome-desktop 
 # Enable GNOME desktop tray icons
-sudo dnf install -y libappindicator-gtk3 gnome-shell-extension-appindicator gnome-extensions-app
+sudo dnf install -y libappindicator-gtk3 gnome-shell-extension-appindicator # gnome-extensions-app
 echo "************************ TODO: Open the Extensions app and ensure that AppIndicator and KStatusNotifierItem Support is toggled on before opening the app ************************"
 
