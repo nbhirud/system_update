@@ -287,7 +287,10 @@ sudo tee -a ~/.zshrc << 'ZSHRC_EOF'
 # alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && sudo freshclam && omz update -y && . torsocks on && fastfetch"
 # freshclam is a service now
 alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && omz update -y && . torsocks on && fastfetch"
-# alias nbdistu="sudo apt dist-upgrade -y && sudo do-release-upgrade"
+
+
+# https://docs.fedoraproject.org/en-US/quick-docs/upgrading-fedora-offline/
+# alias nbdistu="sudo sudo dnf upgrade --refresh -y && sudo sudo dnf system-upgrade download --releasever=43 -y"
 alias nbreload="systemctl daemon-reload && source ~/.zshrc"
 alias nbclean="sync && sudo bleachbit --clean --preset && bleachbit --clean --preset && dnf clean -y all && yum clean -y all && flatpak uninstall --unused && sudo resolvectl flush-caches && sudo resolvectl reset-statistics"
 alias nbtoron=". torsocks on"
