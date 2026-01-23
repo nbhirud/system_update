@@ -1,3 +1,6 @@
+#!/bin/sh
+
+# set -eux
 
 # echo $XDG_CURRENT_DESKTOP
 # echo $DESKTOP_SESSION
@@ -12,5 +15,11 @@ else
   desktop=$XDG_CURRENT_DESKTOP
 fi
 
-desktop=${desktop,,}  # convert to lower case
-echo "$desktop"
+# desktop=${desktop,,}  # convert to lower case  # Not POSIX
+# echo "$desktop"
+
+# echo "$a" | tr '[:upper:]' '[:lower:]'  # POSIX option 1
+# echo "$a" | awk '{print tolower($0)}'  # POSIX  2
+
+
+echo "$desktop" | awk '{print tolower($0)}'
