@@ -20,6 +20,10 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:
 git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
 git clone https://github.com/Aloxaf/fzf-tab ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab
 
+# https://docs.docker.com/engine/install/fedora/
+# https://docs.docker.com/engine/cli/completion/#zsh
+# mkdir -p ~/.oh-my-zsh/completions
+# docker completion zsh > ~/.oh-my-zsh/completions/_docker
 
 # echo "************************ Configure omz ************************"
 # nano ~/.zshrc

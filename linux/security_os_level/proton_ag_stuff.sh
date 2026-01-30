@@ -1,5 +1,14 @@
 #!/bin/sh
 
+# Do not run as root
+# https://www.baeldung.com/linux/check-script-run-root
+if [ ${EUID:-0} -eq 0 ] || [ "$(id -u)" -eq 0 ]; then
+  echo "[-] Do not run as root (or with sudo)."
+  exit 1
+else
+    echo "You are running as $(whoami)"
+fi
+
 set -eux
 
 echo "************************ Setting literals and constants ************************"
@@ -10,7 +19,7 @@ SYSUPDATE_SEC_CODE_DIR="$CODE_BASE_DIR/system_update/linux/security_os_level/"
 SYSUPDATE_FEDORA_CODE_DIR="$CODE_BASE_DIR/system_update/linux/fedora/"
 
 DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
-DOWNLOADS_DIR_PROTON="$DOWNLOADS_DIR/proton_ag_downloads_$(date +%Y-%m-%d_%H-%M-%S)"
+DOWNLOADS_DIR_PROTON="$DOWNLOADS_DIR/ProtonAG/proton_ag_downloads_$(date +%Y-%m-%d_%H-%M-%S)"
 
 FEDORA_RELEASE_VERSION=$(sh "$SYSUPDATE_FEDORA_CODE_DIR"/get_fedora_release_version.sh)
 
@@ -115,7 +124,7 @@ wget "$PROTON_VPN_BASE_URL/$FILENAME"
 ############ Everything below this is same as the OFFICIAL way above
 
 # Install the Proton VPN repository containing the app
-sudo dnf install -y ./protonvpn-stable-release-1.0.3-1.noarch.rpm && sudo dnf check-update --refresh 
+sudo dnf install -y ./protonvpn-stable-release-1.0.3-1.noarch.rpm # && sudo dnf check-update --refresh 
 # Install the app and accept an OpenPGP key.
 sudo dnf install -y proton-vpn-gnome-desktop 
 # Enable GNOME desktop tray icons
