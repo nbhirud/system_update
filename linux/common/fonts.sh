@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -eux
+
 # Tested only by running from directory "system_update"
 # 1. as `sh linux/common/fonts.sh`
 # 2. invoked via `linux/fedora/run_first.sh`
@@ -11,7 +13,7 @@ HOME_DIR=$(getent passwd $USER | cut -d: -f6)
 CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects"
 SYSUPDATE_CODE_DIR="$CODE_BASE_DIR/system_update"
 DEST_DIR="$HOME_DIR/.local/share/fonts/nerd-fonts"
-# DEST_DIR="$HOME_DIR/nb/test02/dest"
+# DEST_DIR="$HOME_DIR/nb/test/fonts_dest"
 NERD_FONTS_DIR="$CODE_BASE_DIR/nerd-fonts"
 PATCHED_FONTS_DIR="$NERD_FONTS_DIR/patched-fonts"
 
@@ -19,6 +21,9 @@ PATCHED_FONTS_DIR="$NERD_FONTS_DIR/patched-fonts"
 # echo "BASEDIR = $BASEDIR" # outputs "linux/common"
 FONT_NAMES_FILE_PATH="$SYSUPDATE_CODE_DIR/linux/common/data/fonts.txt"
 
+# TODO - Figure out a way to check first:
+# 1. Whether there has been any update in the repo at all
+# 2. If yes, whether there has been any change to the folders (fonts) I am using
 
 mkdir -p "$CODE_BASE_DIR"
 cd "$CODE_BASE_DIR"  || exit
@@ -36,6 +41,9 @@ cd "$PATCHED_FONTS_DIR" || exit
 
 echo "************************ Setting up fonts ************************"
 # TODO - check whether this already exists, and decide what to do
+# For now, delete it first if it exists.
+rm -rf $DEST_DIR
+
 mkdir -p $DEST_DIR  # fonts folder is absent by default
 # cp ~/nb/CodeProjects/nerd-fonts/patched-fonts ~/.local/share/fonts/nerd-fonts -r
 
