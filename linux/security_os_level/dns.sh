@@ -5,6 +5,17 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+
+# Run as root
+# https://www.baeldung.com/linux/check-script-run-root
+if [ ${EUID:-0} -ne 0 ] || [ "$(id -u)" -ne 0 ]; then
+  echo "[-] Please run as root (or with sudo). You are running as $(whoami)"
+  exit 1
+else
+  echo "You are running as $(whoami)"
+fi
+
+
 set -eux
 
 NEXTDNS_ID="<YOUR_NEXTDNS_ID>"   # Replace with your NextDNS ID
