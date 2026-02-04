@@ -234,9 +234,10 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh
 
-#######################################
+# Configure dns
+sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh
 
-# Configure dns - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh
+#######################################
 
 # Configure firewall - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/firewalld.sh
 
