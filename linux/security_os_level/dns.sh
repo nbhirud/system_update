@@ -37,7 +37,7 @@ DNSOverTLS=yes
 Domains=~.
 #DNSSEC=no
 Cache=yes
-# ReadEtcHosts=yes
+ReadEtcHosts=yes
 # Disables local network discovery protocols to enhance privacy and security (prevents leaks)
 LLMNR=no
 MulticastDNS=no
