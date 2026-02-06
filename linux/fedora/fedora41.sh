@@ -65,6 +65,8 @@ sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rt
 # uninstall
 # sudo dnf remove kodi kodi-eventclients kodi-firewalld kodi-inputstream-adaptive kodi-inputstream-rtmp kodi-platform  kodi-pvr-iptvsimple kodi-visualization-spectrum 
 
+# https://kodi.wiki/view/Userdata
+# https://wiki.archlinux.org/title/Kodi
 
 #######################################
 
@@ -172,3 +174,7 @@ reboot
 # https://www.linuxtoday.com/developer/how-to-install-fedora-41-server-with-screenshots/
 # https://www.linuxquestions.org/questions/linux-general-1/fedora-41-minimal-install-guide-with-samba-and-windows-shares-active-4175746330/
 # https://oracle-base.com/articles/linux/fedora-41-installation
+
+
+# Dotfiles repos for inspiration:
+# https://github.com/harperreed/dotfiles
