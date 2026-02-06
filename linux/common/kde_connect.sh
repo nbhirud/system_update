@@ -16,3 +16,9 @@ dconf write /org/gnome/shell/disable-user-extensions false
 
 # gapplication launch org.gnome.Shell.Extensions.GSConnect # if error, run next line
 systemctl --user reload dbus-broker.service
+
+
+# GSConnect firewalld rules
+firewall-cmd --permanent --zone=public --add-service=kdeconnect 
+firewall-cmd --reload
+
