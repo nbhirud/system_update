@@ -25,7 +25,10 @@ sudo mv hosts /etc/hosts
 sudo chmod $PERM /etc/hosts
 
 # https://github.com/StevenBlack/hosts?tab=readme-ov-file#linux
+# sudo ipconfig /flushdns
+sudo resolvectl flush-caches
 sudo systemctl restart NetworkManager.service
+sudo systemctl restart systemd-resolved
 
 # cd ..
 # sudo rm -r hostsplay
