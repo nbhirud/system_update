@@ -234,7 +234,6 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh
 
-# Configure dns
 sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh
 
 #######################################
@@ -245,15 +244,10 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh
 
 # Configure Anti Virus - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/clamav.sh
 
-# Configure hosts - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/hosts.sh
-
 # Firefox, Librewolf, Mullvad browsers - refer $SYSUPDATE_CODE_BASE_DIR/linux/common/firefox.sh
 
 # $SYSUPDATE_CODE_BASE_DIR/linux/common/bleachbit.sh
-# $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh
 # $SYSUPDATE_CODE_BASE_DIR/linux/common/gnome_settings.sh
-# $SYSUPDATE_CODE_BASE_DIR/linux/common/nerd_fonts.sh
-# $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh
 
 # Thunderbird
 # sudo dnf install thunderbird
