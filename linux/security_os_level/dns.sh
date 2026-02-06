@@ -50,6 +50,7 @@ sudo systemctl enable --now systemd-resolved
 
 echo "Restarting services..."
 sudo systemctl daemon-reload # Reload systemd
+sudo resolvectl flush-caches
 sudo systemctl restart NetworkManager
 sudo systemctl restart systemd-resolved
 
@@ -59,5 +60,5 @@ echo "https://dns.nextdns.io/$NEXTDNS_ID/${NEXTDNS_DEVICE_ID}_Brave"
 echo "https://dns.nextdns.io/$NEXTDNS_ID/${NEXTDNS_DEVICE_ID}_Librewolf"
 
 echo "########## DNS-over-TLS/QUIC ##########"
-echo "RouterName-$NEXTDNS_ID.dns.nextdns.io"
-echo "AndroidDeviceName-$NEXTDNS_ID.dns.nextdns.io"
+echo "${NEXTDNS_DEVICE_ID}_RouterName-$NEXTDNS_ID.dns.nextdns.io"
+echo "${NEXTDNS_DEVICE_ID}_AndroidDeviceName-$NEXTDNS_ID.dns.nextdns.io"
