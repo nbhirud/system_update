@@ -206,13 +206,14 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
 #######################################
 
 echo "************************ Install and configure more dnf packages ************************"
-sudo dnf install -y htop gh fzf keepassxc gnome-tweaks fastfetch gparted bleachbit timeshift qbittorrent liferea gpodder quiterss # vlc
+sudo dnf install -y htop gh fzf keepassxc gnome-tweaks fastfetch gparted bleachbit timeshift qbittorrent liferea quiterss vlc
 # sudo dnf install -y  gnome-browser-connector dnfdragora transmission
 # sudo dnf install -y akregator alligator kasts clementine
 # TODO - configure fzf
+# Podcasts - gpodder
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.bitwarden.desktop org.telegram.desktop flathub org.gnome.Fractal chat.simplex.simplex com.rtosta.zapzap io.freetubeapp.FreeTube com.brave.Browser 
+flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.bitwarden.desktop org.telegram.desktop flathub org.gnome.Fractal chat.simplex.simplex com.rtosta.zapzap io.freetubeapp.FreeTube com.brave.Browser org.kde.kasts dev.fredol.open-tv app.grayjay.Grayjay
 # com.protonvpn.www me.proton.Mail me.proton.Pass # installing using official instructions via script
 # flatpak install -y flathub ca.desrt.dconf-editor com.spotify.Client
 # Facebook messenger (deprecated) - com.sindresorhus.Caprine
@@ -220,8 +221,14 @@ flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal or
 # im.fluffychat.Fluffychat
 # org.gnome.Fractal - prefer on Gnome
 # io.github.kolunmi.Bazaar - an alternative software store from flatpak/flathub
+# flatpak install flathub app.grayjay.Grayjay
 
-sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal
+#######################################
+# Some configs
+
+# export CHROME_EXECUTABLE=/usr/bin/brave-browser
+export CHROME_EXECUTABLE="flatpak run com.brave.Browser"
+sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal # do something similar for Element, Telegram, etc
 
 #######################################
 
