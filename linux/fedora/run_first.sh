@@ -116,8 +116,10 @@ sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-
 # obfs4
 # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
 
-
-
+echo "************************ Adding docker browser repo (not installing) ************************"
+# https://docs.docker.com/engine/install/fedora/
+sudo dnf -y install dnf-plugins-core
+sudo dnf-3 config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
 
 # echo "************************ Edit your Tor config ************************"
 # echo "************************ TODO - Don't forget to change the TODO1 options in Tor config. ************************"
