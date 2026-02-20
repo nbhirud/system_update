@@ -18,7 +18,7 @@ echo "************************ Setting literals and constants ******************
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
 DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
 SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
-RUN_FIRST_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+RUN_FIRST_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
 echo "************************ HOME_DIR = $HOME_DIR ************************"
 echo "************************ DOWNLOADS_DIR = $DOWNLOADS_DIR ************************"
@@ -68,19 +68,17 @@ echo "************************ Adding Librewolf repo ************************"
 # add the repo
 curl -fsSL https://repo.librewolf.net/librewolf.repo | pkexec tee /etc/yum.repos.d/librewolf.repo
 
-
 echo "************************ Adding Mullvad repo ************************"
 # https://mullvad.net/en/download/browser/linux
 # Add the Mullvad repository server to dnf
 # curl https://mullvad.net/en/download/browser/linux | grep addrepo
 sudo dnf config-manager addrepo --from-repofile=https://repository.mullvad.net/rpm/stable/mullvad.repo
 
-
 echo "************************ Adding VSCodium repo ************************"
 ### VSCodium
 # https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo
 
-sudo tee /etc/yum.repos.d/vscodium.repo << 'EOF'
+sudo tee /etc/yum.repos.d/vscodium.repo <<'EOF'
 [gitlab.com_paulcarroty_vscodium_repo]
 name=gitlab.com_paulcarroty_vscodium_repo
 baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/
@@ -94,7 +92,7 @@ EOF
 echo "************************ Adding Tor repo ************************"
 # Tor - https://community.torproject.org/relay/setup/bridge/fedora/
 
-sudo tee /etc/yum.repos.d/tor.repo << 'EOF'
+sudo tee /etc/yum.repos.d/tor.repo <<'EOF'
 [tor]
 name=Tor for Fedora $releasever - $basearch
 baseurl=https://rpm.torproject.org/fedora/$releasever/$basearch
@@ -111,7 +109,7 @@ sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-releas
 
 echo "************************ Installing packages ************************"
 # install the packages
-sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher 
+sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher
 # brave-browser - trying flatpak
 # obfs4
 # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
@@ -135,8 +133,8 @@ sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-
 
 echo "************************ Removing packages ************************"
 # remove stuff
-sudo dnf remove -y  totem yelp gnome-tour gnome-connections firefox
-# remove the gnome terminal ptyxis as we have installed 
+sudo dnf remove -y totem yelp gnome-tour gnome-connections firefox
+# remove the gnome terminal ptyxis as we have installed
 
 #######################################
 
@@ -155,7 +153,7 @@ sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
 sudo dnf update -y @core
 
 echo "************************ Configuring Multimedia on Fedora ************************"
-### Multimedia on Fedora - https://rpmfusion.org/Howto/Multimedia 
+### Multimedia on Fedora - https://rpmfusion.org/Howto/Multimedia
 sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
 sudo dnf update -y @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
 
@@ -181,13 +179,12 @@ echo "************************ Identify Desktop Environment ********************
 DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
 echo "Desktop Environment is $DESKTOP"
 
-if [ "$DESKTOP" = "gnome" ]
-then
-    echo "************************ Changing default downloads directory ************************"
-    xdg-user-dirs-update --set DOWNLOAD "$DOWNLOADS_DIR" # Gnome specific
+if [ "$DESKTOP" = "gnome" ]; then
+  echo "************************ Changing default downloads directory ************************"
+  xdg-user-dirs-update --set DOWNLOAD "$DOWNLOADS_DIR" # Gnome specific
 
-    echo "************************ Enable Minimize or Maximize Window Buttons ************************"
-    gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
+  echo "************************ Enable Minimize or Maximize Window Buttons ************************"
+  gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
 fi
 
 echo "************************ Rename pc ************************"
@@ -262,12 +259,9 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh
 # pin apps to dash in right seq
 # add apps to app folders in overview
 
-
 ###############################
 
-
-
-sudo tee -a ~/.zshrc << 'ZSHRC_EOF'
+sudo tee -a ~/.zshrc <<'ZSHRC_EOF'
 
 #################################################################
 # Added by nbhirud manually:
@@ -308,7 +302,6 @@ source ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh
 #################################################################
 
 ZSHRC_EOF
-
 
 #######################################
 
