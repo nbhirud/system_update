@@ -41,13 +41,15 @@ echo "************************ Updating /etc/dnf/dnf.conf **********************
 # echo 'defaultyes=True' | sudo tee -a /etc/dnf/dnf.conf
 
 # Configure DNF settings
+# https://www.man7.org/linux/man-pages/man5/dnf.conf.5.html
 sudo tee /etc/dnf/dnf.conf <<EOL
 # see "man dnf.conf" for defaults and possible options
 
 [main]
 max_parallel_downloads=5
 defaultyes=True
-fastestmirror=True    
+fastestmirror=True
+clean_requirements_on_remove=True
 
 EOL
 
