@@ -18,7 +18,7 @@ echo "************************ Setting literals and constants ******************
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
 DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
 SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
-RUN_FIRST_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+RUN_FIRST_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
 echo "************************ HOME_DIR = $HOME_DIR ************************"
 echo "************************ DOWNLOADS_DIR = $DOWNLOADS_DIR ************************"
@@ -41,13 +41,15 @@ echo "************************ Updating /etc/dnf/dnf.conf **********************
 # echo 'defaultyes=True' | sudo tee -a /etc/dnf/dnf.conf
 
 # Configure DNF settings
+# https://www.man7.org/linux/man-pages/man5/dnf.conf.5.html
 sudo tee /etc/dnf/dnf.conf <<EOL
 # see "man dnf.conf" for defaults and possible options
 
 [main]
 max_parallel_downloads=5
 defaultyes=True
-fastestmirror=True    
+fastestmirror=True
+clean_requirements_on_remove=True
 
 EOL
 
@@ -68,19 +70,17 @@ echo "************************ Adding Librewolf repo ************************"
 # add the repo
 curl -fsSL https://repo.librewolf.net/librewolf.repo | pkexec tee /etc/yum.repos.d/librewolf.repo
 
-
 echo "************************ Adding Mullvad repo ************************"
 # https://mullvad.net/en/download/browser/linux
 # Add the Mullvad repository server to dnf
 # curl https://mullvad.net/en/download/browser/linux | grep addrepo
 sudo dnf config-manager addrepo --from-repofile=https://repository.mullvad.net/rpm/stable/mullvad.repo
 
-
 echo "************************ Adding VSCodium repo ************************"
 ### VSCodium
 # https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo
 
-sudo tee /etc/yum.repos.d/vscodium.repo << 'EOF'
+sudo tee /etc/yum.repos.d/vscodium.repo <<'EOF'
 [gitlab.com_paulcarroty_vscodium_repo]
 name=gitlab.com_paulcarroty_vscodium_repo
 baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/
@@ -94,7 +94,7 @@ EOF
 echo "************************ Adding Tor repo ************************"
 # Tor - https://community.torproject.org/relay/setup/bridge/fedora/
 
-sudo tee /etc/yum.repos.d/tor.repo << 'EOF'
+sudo tee /etc/yum.repos.d/tor.repo <<'EOF'
 [tor]
 name=Tor for Fedora $releasever - $basearch
 baseurl=https://rpm.torproject.org/fedora/$releasever/$basearch
@@ -111,13 +111,15 @@ sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-releas
 
 echo "************************ Installing packages ************************"
 # install the packages
-sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher 
+sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher
 # brave-browser - trying flatpak
 # obfs4
 # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
 
-
-
+echo "************************ Adding docker browser repo (not installing) ************************"
+# https://docs.docker.com/engine/install/fedora/
+sudo dnf -y install dnf-plugins-core
+sudo dnf-3 config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
 
 # echo "************************ Edit your Tor config ************************"
 # echo "************************ TODO - Don't forget to change the TODO1 options in Tor config. ************************"
@@ -135,8 +137,8 @@ sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-
 
 echo "************************ Removing packages ************************"
 # remove stuff
-sudo dnf remove -y  totem yelp gnome-tour gnome-connections firefox
-# remove the gnome terminal ptyxis as we have installed 
+sudo dnf remove -y totem yelp gnome-tour gnome-connections firefox
+# remove the gnome terminal ptyxis as we have installed
 
 #######################################
 
@@ -155,7 +157,7 @@ sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
 sudo dnf update -y @core
 
 echo "************************ Configuring Multimedia on Fedora ************************"
-### Multimedia on Fedora - https://rpmfusion.org/Howto/Multimedia 
+### Multimedia on Fedora - https://rpmfusion.org/Howto/Multimedia
 sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
 sudo dnf update -y @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
 
@@ -181,13 +183,12 @@ echo "************************ Identify Desktop Environment ********************
 DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
 echo "Desktop Environment is $DESKTOP"
 
-if [ "$DESKTOP" = "gnome" ]
-then
-    echo "************************ Changing default downloads directory ************************"
-    xdg-user-dirs-update --set DOWNLOAD "$DOWNLOADS_DIR" # Gnome specific
+if [ "$DESKTOP" = "gnome" ]; then
+  echo "************************ Changing default downloads directory ************************"
+  xdg-user-dirs-update --set DOWNLOAD "$DOWNLOADS_DIR" # Gnome specific
 
-    echo "************************ Enable Minimize or Maximize Window Buttons ************************"
-    gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
+  echo "************************ Enable Minimize or Maximize Window Buttons ************************"
+  gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close"
 fi
 
 echo "************************ Rename pc ************************"
@@ -205,13 +206,14 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
 #######################################
 
 echo "************************ Install and configure more dnf packages ************************"
-sudo dnf install -y htop gh fzf keepassxc gnome-tweaks fastfetch gparted bleachbit timeshift qbittorrent liferea gpodder quiterss # vlc
+sudo dnf install -y htop gh fzf keepassxc gnome-tweaks fastfetch gparted bleachbit timeshift qbittorrent liferea quiterss vlc
 # sudo dnf install -y  gnome-browser-connector dnfdragora transmission
 # sudo dnf install -y akregator alligator kasts clementine
 # TODO - configure fzf
+# Podcasts - gpodder
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.bitwarden.desktop org.telegram.desktop flathub org.gnome.Fractal chat.simplex.simplex com.rtosta.zapzap io.freetubeapp.FreeTube com.brave.Browser 
+flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.bitwarden.desktop org.telegram.desktop flathub org.gnome.Fractal chat.simplex.simplex com.rtosta.zapzap io.freetubeapp.FreeTube com.brave.Browser org.kde.kasts dev.fredol.open-tv app.grayjay.Grayjay
 # com.protonvpn.www me.proton.Mail me.proton.Pass # installing using official instructions via script
 # flatpak install -y flathub ca.desrt.dconf-editor com.spotify.Client
 # Facebook messenger (deprecated) - com.sindresorhus.Caprine
@@ -219,8 +221,14 @@ flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal or
 # im.fluffychat.Fluffychat
 # org.gnome.Fractal - prefer on Gnome
 # io.github.kolunmi.Bazaar - an alternative software store from flatpak/flathub
+# flatpak install flathub app.grayjay.Grayjay
 
-sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal
+#######################################
+# Some configs
+
+# export CHROME_EXECUTABLE=/usr/bin/brave-browser
+export CHROME_EXECUTABLE="flatpak run com.brave.Browser"
+sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal # do something similar for Element, Telegram, etc
 
 #######################################
 
@@ -262,12 +270,9 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh
 # pin apps to dash in right seq
 # add apps to app folders in overview
 
-
 ###############################
 
-
-
-sudo tee -a ~/.zshrc << 'ZSHRC_EOF'
+sudo tee -a ~/.zshrc <<'ZSHRC_EOF'
 
 #################################################################
 # Added by nbhirud manually:
@@ -282,6 +287,7 @@ sudo tee -a ~/.zshrc << 'ZSHRC_EOF'
 # alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && sudo freshclam && omz update -y && . torsocks on && fastfetch"
 # freshclam is a service now
 alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && omz update -y && . torsocks on && fastfetch"
+alias nbupdateproton=". torsocks off && cd /home/nbhirud/nb/CodeProjects/system_update/ && sh /home/nbhirud/nb/CodeProjects/system_update/linux/security_os_level/proton_ag_stuff.sh && cd && . torsocks on"
 
 
 # https://docs.fedoraproject.org/en-US/quick-docs/upgrading-fedora-offline/
@@ -309,7 +315,6 @@ source ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh
 
 ZSHRC_EOF
 
-
 #######################################
 
 echo "************************ Update and upgrade everything ************************"
@@ -322,16 +327,22 @@ echo "************************ Update and upgrade everything *******************
 #######################################
 
 # TODO
-# firefox
-# gnome
-# kde
+# firefox config
+# gnome config
+# kde config
 # dns (this is different from hosts)
 # firewalld
 # ufw
 # clamav
-# tor
+# tor config
 # aliases like nbupdate, etc
 # install dnf packages
 # install flatpak apps
 # TODO cron jobs - linux/common/cron_jobs.sh
-# brave
+# brave config
+# VSCodium config
+
+#####################################33
+
+# Some OSes to try:
+# CachyOS, omarchy
