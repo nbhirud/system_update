@@ -287,6 +287,7 @@ sudo tee -a ~/.zshrc <<'ZSHRC_EOF'
 # alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && sudo freshclam && omz update -y && . torsocks on && fastfetch"
 # freshclam is a service now
 alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && omz update -y && . torsocks on && fastfetch"
+alias nbupdateproton=". torsocks off && cd /home/nbhirud/nb/CodeProjects/system_update/ && sh /home/nbhirud/nb/CodeProjects/system_update/linux/security_os_level/proton_ag_stuff.sh && cd && . torsocks on"
 
 
 # https://docs.fedoraproject.org/en-US/quick-docs/upgrading-fedora-offline/
