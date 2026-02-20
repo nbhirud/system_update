@@ -327,16 +327,22 @@ echo "************************ Update and upgrade everything *******************
 #######################################
 
 # TODO
-# firefox
-# gnome
-# kde
+# firefox config
+# gnome config
+# kde config
 # dns (this is different from hosts)
 # firewalld
 # ufw
 # clamav
-# tor
+# tor config
 # aliases like nbupdate, etc
 # install dnf packages
 # install flatpak apps
 # TODO cron jobs - linux/common/cron_jobs.sh
-# brave
+# brave config
+# VSCodium config
+
+#####################################33
+
+# Some OSes to try:
+# CachyOS, omarchy
