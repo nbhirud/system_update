@@ -1,3 +1,6 @@
+#!/bin/bash
+
+set -eux
 
 # The following has been tested on:
 # Fedora Linux 40 (Workstation Edition) x86_64
@@ -32,7 +35,7 @@ sudo dnf update -y && sudo dnf upgrade --refresh -y
 which git || sudo dnf install -y git # check if a package is already installed to avoid unnecessary operations
 mkdir -p ~/nb
 mkdir -p ~/nb/CodeProjects
-cd ~/nb/CodeProjects
+cd ~/nb/CodeProjects || exit
 git clone https://github.com/nbhirud/system_update.git
 gedit system_update/linux/ubuntu/ubuntu_todo_after_fresh_install.sh
 
@@ -58,7 +61,7 @@ gedit system_update/linux/ubuntu/ubuntu_todo_after_fresh_install.sh
 # Enable RPM Fusion
 # https://rpmfusion.org/Configuration
 
-sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-"$(rpm -E %fedora)".noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-"$(rpm -E %fedora)".noarch.rpm
 # The above doesn't work with zsh. Use bash
 # If the above doesn't work, there is another GUI method in the link
 sudo dnf config-manager --enable fedora-cisco-openh264
@@ -272,9 +275,7 @@ sudo dnf upgrade -y
 # reboot
 ######################################################
 
-# flatpak install -y flathub com.jetbrains.PyCharm-Community
-# flatpak run com.jetbrains.PyCharm-Community
-# https://copr.fedorainfracloud.org/coprs/phracek/PyCharm/
+
 
 # dnf install
 # dnf remove
@@ -373,7 +374,7 @@ alias nbtoroff=". torsocks off"
 
 # https://linuxcapable.com/how-to-install-kodi-on-fedora-linux/
 # flatpak install -y flathub tv.kodi.Kodi
-sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-"$(rpm -E %fedora)".noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-"$(rpm -E %fedora)".noarch.rpm
 sudo dnf install -y kodi-inputstream-adaptive kodi-firewalld kodi-inputstream-rtmp kodi-platform kodi-pvr-iptvsimple kodi-visualization-spectrum kodi-eventclients kodi
 
 # cmake make automake gcc gcc-c++
@@ -433,7 +434,7 @@ sudo nano /etc/dnf/dnf.conf
 # don't do dnf update here
 
 # rpmfusion
-sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-"$(rpm -E %fedora)".noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-"$(rpm -E %fedora)".noarch.rpm
 # don't do dnf update here
 
 # zsh - check linux/common/zsh.sh
@@ -513,10 +514,10 @@ flatpak install flathub org.signal.Signal
 
 ###############################################################
 
-https://itsfoss.com/things-to-do-after-installing-fedora/
-https://www.hackingthehike.com/fedora-40-after-install-guide/
-https://www.debugpoint.com/10-things-to-do-fedora-39-after-install/
-https://artofcoding.dev/things-to-do-after-installing-fedora-40
+# https://itsfoss.com/things-to-do-after-installing-fedora/
+# https://www.hackingthehike.com/fedora-40-after-install-guide/
+# https://www.debugpoint.com/10-things-to-do-fedora-39-after-install/
+# https://artofcoding.dev/things-to-do-after-installing-fedora-40
 
 
 ###############################################################
@@ -539,7 +540,7 @@ lsmod | grep kvm # verify that the KVM kernel modules are properly loaded
 # Permissions
 
 mkdir vm
-cd vm
+cd vm || exit
 # Create a group shared and two users
 sudo groupadd vm_group
 sudo usermod -aG vm_group nbhirud
