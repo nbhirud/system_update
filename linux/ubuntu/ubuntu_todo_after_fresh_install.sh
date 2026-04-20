@@ -1,3 +1,6 @@
+#!/bin/bash
+
+set -eux
 
 ## Notes:
 # The following steps were written based on Ubuntu 24.04 (Dev) x86_64
@@ -27,7 +30,7 @@
 # Get this repo
 which git || sudo apt install git # check if a package is already installed to avoid unnecessary operations
 mkdir -p CodeProjects
-cd CodeProjects
+cd CodeProjects || exit
 git clone https://github.com/nbhirud/system_update.git
 gedit system_update/linux/ubuntu/ubuntu_todo_after_fresh_install.sh
 
@@ -87,8 +90,8 @@ gedit .bashrc # change to zshrc for zsh
 # change color scheme of starship
 
 # Reloads the updated terminal theme
-source ~/.zshrc
-source ~/.bashrcf
+# source ~/.zshrc
+# source ~/.bashrcf
 # reboot
 
 #########################
@@ -105,7 +108,6 @@ source ~/.bashrcf
 # https://draculatheme.com/chrome
 # https://draculatheme.com/firefox
 # https://draculatheme.com/alacritty
-# https://draculatheme.com/jetbrains
 # https://draculatheme.com/jupyter-notebook
 # https://draculatheme.com/jupyterlab
 # https://draculatheme.com/duckduckgo
@@ -303,31 +305,6 @@ sudo apt update && sudo apt install codium
 ###########################################
 ###########################################
 
-# Install jetbrains toolbox
-
-# Follow instructions here: https://www.jetbrains.com/help/pycharm/installation-guide.html
-# May need to run the following if opening toolbox app gives error:
-# sudo apt install -y libfuse2
-# TLDR:
-sudo apt install libfuse2
-cd /opt/
-sudo tar -xvzf ~/Downloads/jetbrains-toolbox-1.xx.xxxx.tar.gz
-sudo mv jetbrains-toolbox-1.xx.xxxx jetbrains
-jetbrains/jetbrains-toolbox # Open JetBrains Toolbox (and installs?)
-
-# # Install Pycharm (Avoid on old/slow machines, and use VSCodium there instead): 
-# # If toolbox not needed, go for "Standalone installation" of pycharm. Remember to download Pycharm community edition
-# sudo tar xzf pycharm-*.tar.gz -C /opt/
-# cd /opt/pycharm-professional-2024.1/bin
-# sh pycharm.sh
-
-# If the above standalone installation doesn't seem to work, install pycharm flatpak (try to avoid snap Pycharm, it's slower)
-
-### Pycharm Un-install:
-# https://toolbox-support.jetbrains.com/hc/en-us/articles/115001313270-How-to-uninstall-Toolbox-App
-# https://www.jetbrains.com/help/pycharm/uninstall.html
-
-
 ###########################################
 ###########################################
 
@@ -442,7 +419,7 @@ sudo apt install -y bleachbit
 # Gaming
 
 # Install Steam
-cd Downloads
+cd Downloads || exit
 wget https://cdn.akamai.steamstatic.com/client/installer/steam.deb
 sudo apt install -y ./steam.deb
 sudo apt update -y && sudo apt upgrade -y
@@ -521,7 +498,7 @@ compgen -u
 getent passwd : grep user_name
 
 # List normal users only (for scripting)
-eval getent passwd {$(awk '/^UID_MIN/ {print $2}' /etc/login.defs)..$(awk '/^UID_MAX/ {print $2}' /etc/login.defs)} | cut -d: -f1
+eval getent passwd "{$(awk '/^UID_MIN/ {print $2}' /etc/login.defs)..$(awk '/^UID_MAX/ {print $2}' /etc/login.defs)}" | cut -d: -f1
 
 # List currently logged in users
 who
@@ -566,12 +543,6 @@ sudo nano /etc/apt/apt.conf.d/50unattended-upgrades # Configure here
 # sudo systemctl enabe unattended-upgrades
 sudo systemctl restart unattended-upgrades
 
-##### Jetbrains Toolbox
-# login to the toolbox app
-# Toolbox -> Settings -> Enable auto update
-# Toolbox -> Install Pycharm Community
-# Toolbox -> Pycharm Community Settings -> Auto update, larger memory 
-
 ##### alacritty
 # ~/config/alacritty/alacritty.yml
 # Set a nerd font as default - not needed after setting at system level
@@ -581,9 +552,6 @@ sudo systemctl restart unattended-upgrades
 #cp /usr/share/doc/alacritty/examples/alacritty.yml ~/.config/alacritty/
 # Make changes to ~/.config/alacritty/alacritty.yml for configuring
 
-##### pycharm
-# Set "JetbrainsMono Nerd Font" as default editor font
-# set latest python as interpreter
 
 ##### vscode
 # Set "JetbrainsMono Nerd Font" as default editor font
@@ -636,29 +604,7 @@ sudo systemctl restart unattended-upgrades
 #NewPipe: https://newpipe.net/
 
 ###########################################
-###########################################
 
-# Open app "Startup Applications" -> Check if alright
-
-# To delay opening of start-up applicarions,
-
-# Find the .desktop file that corresponds with your application
-# in /home/nbhirud/.config/autostart/ directoryand open it in a text editor:
-
-# For example, for jetbrains toolbox:
-# /home/nbhirud/.config/autostart/jetbrains-toolbox.desktop
-# gedit ~/.config/autostart/jetbrains-toolbox.desktop
-# Append/Edit the following line to the file:
-#X-GNOME-Autostart-Delay=90
-#where 90 is the time in seconds you want to delay the application launch by
-
-#### Another method that doesn't seem to work:
-# For apps that you want to delay startup, append "sleep" <space> <seconds> <semicolon> before the existing command there
-# Example: Change the following in command box for jetbrains toolbox startup entry:
-# /home/nbhirud/.local/share/JetBrains/Toolbox/bin/jetbrains-toolbox --minimize
-# To the following
-# sleep 60;/home/nbhirud/.local/share/JetBrains/Toolbox/bin/jetbrains-toolbox --minimize
-# This did not work - find out why
 
 
 ###########################################
