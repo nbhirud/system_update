@@ -1,3 +1,6 @@
+#!/bin/sh
+
+set -eux
 
 nmcli connection modify "Wired connection 1" connection.id "nbInternet"
 
@@ -11,5 +14,4 @@ nmcli connection modify nbInternet ipv4.dns 194.242.2.6,194.242.2.4,1.1.1.3,1.0.
 
 
 # https://wiki.archlinux.org/title/NetworkManager
-
-
+# https://www.privacyguides.org/en/os/linux-overview/ - see "MAC Address Randomization" and other stuff
