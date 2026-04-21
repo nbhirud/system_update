@@ -1,15 +1,66 @@
 #!/bin/sh
 
 # Do not run as root
-# https://www.baeldung.com/linux/check-script-run-root
-if [ ${EUID:-0} -eq 0 ] || [ "$(id -u)" -eq 0 ]; then
+
+# ################# The following isn't POSIX compliant because EUID is undefined in POSIX
+# # https://www.baeldung.com/linux/check-script-run-root
+# if [ ${EUID:-0} -eq 0 ] || [ "$(id -u)" -eq 0 ]; then
+#   echo "[-] Do not run as root (or with sudo)."
+#   exit 1
+# else
+#     echo "You are running as $(whoami)"
+# fi
+
+# ################# The following isn't POSIX compliant because EUID is undefined in POSIX. This is a shorter version of above
+# # bool function to test if the user is root or not
+# is_user_root () { [ "${EUID:-$(id -u)}" -eq 0 ]; }
+
+# ################# The following is POSIX compliant
+# bool function to test if the user is root or not (POSIX only)
+is_user_root ()
+{
+    [ "$(id -u)" -eq 0 ]
+}
+
+# ################# The following is example usage of POSIX compliant function above
+# if is_user_root; then
+#     echo 'You are the almighty root!'
+#     # You can do whatever you need...
+# else
+#     echo 'You are just an ordinary user.' >&2
+#     exit 1
+# fi
+
+if ! is_user_root; then
+	echo "You are running as $(whoami)"
+else
   echo "[-] Do not run as root (or with sudo)."
   exit 1
-else
-    echo "You are running as $(whoami)"
 fi
 
 set -eux
+
+
+################################################
+# TODO - implement the following:
+# 
+# 1. ProtonPass versions json had "RolloutPercentage" as 0.05. So the wget ProtonPass.rpm kept getting the 0.95 percent rpm, but the SHA script kept returning SHA of 0.05 percent rpm as it was the latest version. So Strategy should be to first find the latest version, and return the corresponding "Url" and "Sha512CheckSum" for the *.rpm URL. Use this returned URL to download the rpm file:
+  # "Releases": [
+  #   {
+  #     "CategoryName": "Stable",
+  #     "Version": "1.35.0",
+  #     "ReleaseDate": "2026-03-09T10:47:04Z",
+  #     "RolloutPercentage": 0.05,
+  #     "File": [
+#
+#
+# 2. Somethimes, the latest version will have "CategoryName" as something other than "Stable". Skip those non-stable versions while fetching SHA:
+  # "Releases": [
+  #   {
+  #     "CategoryName": "Stable",
+#
+#
+################################################
 
 echo "************************ Setting literals and constants ************************"
 HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
@@ -42,6 +93,9 @@ SHA_ProtonAuthenticator=$(sh "$SYSUPDATE_SEC_CODE_DIR"/proton_get_sha.sh "$DOWNL
 # Remove any leading or trailing quotes
 SHA_ProtonAuthenticator=${SHA_ProtonAuthenticator%\"} # Remove a single quote from the end
 SHA_ProtonAuthenticator=${SHA_ProtonAuthenticator#\"} # Remove a single quote from the beginning
+# Calculate *.rpm file's SHA for debugging:
+SHA_CALCULATED_PROTAUTH=$(sha512sum ProtonAuthenticator.rpm)
+echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTAUTH" 
 # Confirm the package’s integrity
 echo "$SHA_ProtonAuthenticator" ProtonAuthenticator.rpm | sha512sum --check -
 # Install it
@@ -61,6 +115,9 @@ SHA_ProtonPass=$(sh "$SYSUPDATE_SEC_CODE_DIR"/proton_get_sha.sh "$DOWNLOADS_DIR_
 # Remove any leading or trailing quotes
 SHA_ProtonPass=${SHA_ProtonPass%\"} # Remove a single quote from the end
 SHA_ProtonPass=${SHA_ProtonPass#\"} # Remove a single quote from the beginning
+# Calculate *.rpm file's SHA for debugging:
+SHA_CALCULATED_PROTPASS=$(sha512sum ProtonPass.rpm)
+echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTPASS" 
 # Confirm the package’s integrity
 echo "$SHA_ProtonPass ProtonPass.rpm" | sha512sum --check -
 # Install it
@@ -81,6 +138,9 @@ SHA_ProtonMail=$(sh "$SYSUPDATE_SEC_CODE_DIR"/proton_get_sha.sh "$DOWNLOADS_DIR_
 # Remove any leading or trailing quotes from the variable
 SHA_ProtonMail=${SHA_ProtonMail%\"} # Remove a single quote from the end
 SHA_ProtonMail=${SHA_ProtonMail#\"} # Remove a single quote from the beginning
+# Calculate *.rpm file's SHA for debugging:
+SHA_CALCULATED_PROTMAIL=$(sha512sum ProtonMail-desktop-beta.rpm)
+echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTMAIL" 
 # check the RPM file’s integrity
 echo "$SHA_ProtonMail ProtonMail-desktop-beta.rpm" | sha512sum --check -
 # Install it
@@ -130,4 +190,14 @@ sudo dnf install -y proton-vpn-gnome-desktop
 # Enable GNOME desktop tray icons
 sudo dnf install -y libappindicator-gtk3 gnome-shell-extension-appindicator # gnome-extensions-app
 echo "************************ TODO: Open the Extensions app and ensure that AppIndicator and KStatusNotifierItem Support is toggled on before opening the app ************************"
+
+
+######################### ProtonMeet ###################################################################
+echo "************************ Installing ProtonMeet ************************"
+# https://proton.me/meet/download
+# Download the RPM file.
+wget https://proton.me/download/meet/linux/1.0.8/ProtonMeet-desktop.rpm
+# Install it
+sudo dnf install -y ./ProtonMeet-desktop.rpm
+echo "Note: TODO: Check if Proton has made available the SHA for ProtonMeet rpm yet. Also, there is no good way to automate getting the latest rpm"
 
