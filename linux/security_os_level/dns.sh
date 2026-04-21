@@ -14,10 +14,10 @@ set -eux
 # NEXTDNS_ID="<YOUR_NEXTDNS_ID>"   # Replace with your NextDNS ID
 # NEXTDNS_DEVICE_ID="<YOUR_NEXTDNS_DEVICE_ID>" # Replace with your NextDNS device ID to uniquely identify the device
 
-NEXTDNS_ID=""  
+NEXTDNS_ID=""
 NEXTDNS_DEVICE_ID=""
 
-if [$NEXTDNS_DEVICE_ID -eq ""] || [$NEXTDNS_ID -eq ""]; then
+if [ "$NEXTDNS_DEVICE_ID" -eq "" ] || [ "$NEXTDNS_ID" -eq "" ]; then
   echo "Please set NextDNS details and run again"
   exit 1
 fi
