@@ -22,7 +22,13 @@ sudo dnf install -y syncthing
 # Enable it to launch automatically on login  and start it
 systemctl --user enable --now syncthing.service
 
-mkdir -p "$HOME_DIR"/nb/Syncthing/{Obsidian,Joplin,Default,send_to_devices}
+# mkdir -p "$HOME_DIR"/nb/Syncthing/{Obsidian,Joplin,send_to_devices} # not POSIX compliant
+
+# https://www.baeldung.com/linux/shell-script-iterate-over-string-list
+for i in Obsidian Joplin send_to_devices
+do
+	mkdir -p "$HOME_DIR/nb/Syncthing/$i"
+done
 
 # Setup syncthing after setup in web browser:
 # xdg-open http://127.0.0.1:8384
@@ -48,4 +54,20 @@ mkdir -p "$HOME_DIR"/nb/Syncthing/{Obsidian,Joplin,Default,send_to_devices}
 
 # Test by placing a file or modifying a file that the syncing is working
 
-# Install Gnome extension on linux: https://github.com/2nv2u/gnome-shell-extension-syncthing-indicator
+echo "************************ Identify Desktop Environment ************************"
+DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
+echo "Desktop Environment is $DESKTOP"
+
+
+
+if [ "$DESKTOP" = "gnome" ]; then
+  echo "Install Gnome extension on linux: https://github.com/2nv2u/gnome-shell-extension-syncthing-indicator"
+
+elif [ "$DESKTOP" = "kde" ]; then
+  sudo dnf install -y syncthingtray
+
+fi
+
+
+
+
