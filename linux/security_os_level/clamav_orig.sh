@@ -64,11 +64,11 @@ clamconf -g clamav-milter.conf > clamav-milter.conf
 
 # Create log files:
 sudo touch /var/log/freshclam.log
-sudo chmod 600 /var/log/freshclam.log
+sudo chmod 640 /var/log/freshclam.log
 sudo chown clamupdate /var/log/freshclam.log
 
 sudo touch /var/log/clamav.log
-sudo chmod 600 /var/log/clamav.log
+sudo chmod 640 /var/log/clamav.log
 sudo chown clamscan /var/log/clamav.log
 
 # Configurations:
@@ -93,15 +93,15 @@ sudo nano /etc/clamd.d/scan.conf
 # LogFileMaxSize 20M
 # LogTime yes
 # LogRotate yes
-# ExitOnOOM yes # Not sure if this is a good thing to do
 # LocalSocket /var/run/clamd.scan/clamd.sock
 # User clamscan
+# ExitOnOOM yes # Not sure if this is a good thing to do
 # DetectPUA yes
 # TLDR of - https://docs.clamav.net/manual/OnAccess.html
-# OnAccessIncludePath /home # Figure out if this is the best option
-# OnAccessExcludeUname clamscan
-# OnAccessPrevention yes
 # OnAccessDisableDDD yes
+# OnAccessIncludePath /home # Figure out if this is the best option
+# OnAccessPrevention yes
+# OnAccessExcludeUname clamscan
 
 
 ## Automatated update scheduling:
@@ -312,6 +312,33 @@ sudo systemctl restart clamav-clamd.service
 # ClamAV‑Bytecode‑Repo - (https://github.com/Cisco-Talos/clamav-bytecode) - additional experimental Bytecode modules.
 # Enable in clamd.conf - Bytecode = Yes
 # place the .cbc files in the bytecode directory (default: /var/lib/clamav/bytecode/
+
+
+
+
+##### Debugging:
+
+sudo systemctl status clamd@scan
+
+ps aux | grep clam
+
+sudo tail -100 /var/log/clamav.log
+
+journalctl -xeu clamd@scan.service
+
+systemctl cat clamd@scan.service
+
+sudo journalctl -u clamd@scan.service -n 50 --no-pager
+
+# Run the following command to display which signatures are being loaded by clamav
+clamscan --debug 2>&1 /dev/null | grep "loaded"
+
+
+
+
+
+
+
 
 ######################################################
 # From Fedora 40

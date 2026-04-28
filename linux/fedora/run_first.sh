@@ -18,12 +18,12 @@ echo "************************ Setting literals and constants ******************
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
 DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
 SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
-RUN_FIRST_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+# RUN_FIRST_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
 echo "************************ HOME_DIR = $HOME_DIR ************************"
 echo "************************ DOWNLOADS_DIR = $DOWNLOADS_DIR ************************"
 echo "************************ SYSUPDATE_CODE_BASE_DIR = $SYSUPDATE_CODE_BASE_DIR ************************"
-echo "************************ RUN_FIRST_LOCATION = $RUN_FIRST_DIR ************************" # https://stackoverflow.com/a/246128
+# echo "************************ RUN_FIRST_LOCATION = $RUN_FIRST_DIR ************************" # https://stackoverflow.com/a/246128
 sleep 5s
 
 echo "************************ Updating /etc/dnf/dnf.conf ************************"
@@ -48,8 +48,9 @@ sudo tee /etc/dnf/dnf.conf <<EOL
 [main]
 max_parallel_downloads=5
 defaultyes=True
-fastestmirror=True
+#fastestmirror=True
 clean_requirements_on_remove=True
+color=always
 
 EOL
 
@@ -150,7 +151,7 @@ echo "************************ Enabling RPM Fusion ************************"
 
 ### Configuration of Repositories - https://rpmfusion.org/Configuration
 
-sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm # use bash, not zsh (done above)
+sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-"$(rpm -E %fedora)".noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-"$(rpm -E %fedora)".noarch.rpm # use bash, not zsh (done above)
 
 echo "************************ Configuring @core ************************"
 sudo dnf config-manager setopt fedora-cisco-openh264.enabled=1
@@ -211,9 +212,10 @@ sudo dnf install -y htop gh fzf keepassxc gnome-tweaks fastfetch gparted bleachb
 # sudo dnf install -y akregator alligator kasts clementine
 # TODO - configure fzf
 # Podcasts - gpodder
+# nautilus-python - research what this can be used for
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.bitwarden.desktop org.telegram.desktop flathub org.gnome.Fractal chat.simplex.simplex com.rtosta.zapzap io.freetubeapp.FreeTube com.brave.Browser org.kde.kasts dev.fredol.open-tv app.grayjay.Grayjay
+flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.bitwarden.desktop org.telegram.desktop flathub org.gnome.Fractal chat.simplex.simplex com.rtosta.zapzap io.freetubeapp.FreeTube com.brave.Browser org.kde.kasts dev.fredol.open-tv app.grayjay.Grayjay com.spotify.Client
 # com.protonvpn.www me.proton.Mail me.proton.Pass # installing using official instructions via script
 # flatpak install -y flathub ca.desrt.dconf-editor com.spotify.Client
 # Facebook messenger (deprecated) - com.sindresorhus.Caprine
@@ -228,7 +230,7 @@ flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal or
 
 # export CHROME_EXECUTABLE=/usr/bin/brave-browser
 export CHROME_EXECUTABLE="flatpak run com.brave.Browser"
-sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal # do something similar for Element, Telegram, etc
+sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal # So something similar for Element, Telegram, etc
 
 #######################################
 
@@ -258,7 +260,7 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh
 # $SYSUPDATE_CODE_BASE_DIR/linux/common/gnome_settings.sh
 
 # Thunderbird
-# sudo dnf install thunderbird
+# sudo dnf install -y thunderbird
 
 # calendar
 

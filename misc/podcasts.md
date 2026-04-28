@@ -38,6 +38,9 @@ https://d3gih7jbfe3jlq.cloudfront.net/aws-podcast.rss # The Official AWS Podcast
 https://github.com/plenaryapp/awesome-rss-feeds 
 
 
+https://github.com/sindresorhus/awesome
+
+https://github.com/ayr-ton/awesome-geek-podcasts#readme
 
 ```
 
