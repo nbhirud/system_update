@@ -15,6 +15,7 @@ SCAN_CONF="/etc/clamd.d/scan.conf"
 FRESH_CONF="/etc/freshclam.conf"
 RUNTIME_DIR="/run/clamd.scan"
 QUARANTINE_DIR="/var/quarantine/clamav"
+SIG_DB_DIR="/var/lib/clamav"
 
 LOG_DIR="/var/log/clamav"
 FRESH_LOG="$LOG_DIR/freshclam.log"
@@ -36,14 +37,14 @@ sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamav-dat
 
 # Filesystem and Permissions - Ensure volatile directories exist and have correct ownership.
 
-sudo mkdir -p "$RUNTIME_DIR" "$LOG_DIR"  "$QUARANTINE_DIR"
+sudo mkdir -p "$RUNTIME_DIR" "$LOG_DIR" "$QUARANTINE_DIR"
 # sudo chown clamscan:clamscan "$RUNTIME_DIR" "$LOG_DIR" $CLAMD_LOG
 sudo chown -R $CLAM_USER:$CLAM_USER "$RUNTIME_DIR" "$LOG_DIR" "$QUARANTINE_DIR"
 sudo chmod -R 750 "$RUNTIME_DIR" "$LOG_DIR"
-sudo touch $FRESH_LOG $CLAMD_LOG $ONACC_LOG
-sudo chown -R $CLAM_USER:$CLAM_USER $FRESH_LOG $CLAMD_LOG $ONACC_LOG
+sudo touch "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+sudo chown -R $CLAM_USER:$CLAM_USER "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
 sudo chmod -R 700 "$QUARANTINE_DIR"
-sudo chown -R $CLAM_USER:$CLAM_USER /var/lib/clamav # These are tested and correct credentials. Do not change
+sudo chown -R $CLAM_USER:$CLAM_USER "$SIG_DB_DIR" # These are tested and correct credentials. Do not change
 
 
 
@@ -86,9 +87,9 @@ sudo sed -i 's|^#Checks.*|Checks 12|' "$FRESH_CONF"
 
 # Configuring clamav-unofficial-sigs
 
-sudo sed -i 's|^user_configuration_complete=.*|user_configuration_complete="yes"|' $UNOFFICIAL_SIGS_CONF
-sudo sed -i "s|^#clam_user=.*|clam_user=\"$CLAM_USER\"|" $UNOFFICIAL_SIGS_CONF
-sudo sed -i "s|^#clam_group=.*|clam_group=\"$CLAM_USER\"|" $UNOFFICIAL_SIGS_CONF
+sudo sed -i 's|^user_configuration_complete=.*|user_configuration_complete="yes"|' "$UNOFFICIAL_SIGS_CONF"
+sudo sed -i "s|^#clam_user=.*|clam_user=\"$CLAM_USER\"|" "$UNOFFICIAL_SIGS_CONF"
+sudo sed -i "s|^#clam_group=.*|clam_group=\"$CLAM_USER\"|" "$UNOFFICIAL_SIGS_CONF"
 
 # Enable only trusted free sources
 # sudo sed -i 's|^#enable_.*sanesecurity.*|enable_sanesecurity="yes"|' $UNOFFICIAL_SIGS_CONF
