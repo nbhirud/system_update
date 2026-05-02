@@ -14,11 +14,34 @@ set -eux
 echo "************************ NOTE: The script will ask you to authenticate multiple times till the end. ************************"
 sleep 5s
 
-echo "************************ Setting literals and constants ************************"
+echo "************************ Setting User-Defined constants ************************"
+
+HOSTNAME=""
+GIT_USER_EMAIL=""
+NEXTDNS_ID="" 
+NEXTDNS_DEVICE_ID="$HOSTNAME"
+SETUP_TYPE="light" # full or light (or minimal - TBD - bare minimum, remove all optional stuff)
+PC_TYPE="paranoid" # public or private or paranoid
+
+if [ "$GIT_USER_EMAIL" = "" ]; then
+  echo "Warning - GIT_USER_EMAIL not provided."
+  sleep 5s
+fi
+
+if [ "$HOSTNAME" = "" ] || [ "$SETUP_TYPE" = "" ] || [ "$PC_TYPE" = "" ] || [ "$NEXTDNS_ID" = "" ] || [ "$NEXTDNS_DEVICE_ID" = "" ]; then
+  echo "Please set User-Defined constants and run again"
+  exit 1
+fi
+
+echo "************************ Setting INFERRED literals and constants ************************"
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
 DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
 SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
 # RUN_FIRST_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+
+echo "************************ Identify Desktop Environment ************************"
+DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
+echo "Desktop Environment is $DESKTOP"
 
 echo "************************ HOME_DIR = $HOME_DIR ************************"
 echo "************************ DOWNLOADS_DIR = $DOWNLOADS_DIR ************************"
@@ -180,9 +203,6 @@ mkdir -p $DOWNLOADS_DIR
 sudo chown $USER:$USER $DOWNLOADS_DIR
 echo "************************ Home directory is: $HOME_DIR ************************"
 
-echo "************************ Identify Desktop Environment ************************"
-DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
-echo "Desktop Environment is $DESKTOP"
 
 if [ "$DESKTOP" = "gnome" ]; then
   echo "************************ Changing default downloads directory ************************"
@@ -193,7 +213,6 @@ if [ "$DESKTOP" = "gnome" ]; then
 fi
 
 echo "************************ Rename pc ************************"
-HOSTNAME="nbFedora"
 sudo hostnamectl set-hostname $HOSTNAME
 
 #######################################
@@ -204,18 +223,76 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/hosts.sh
 echo "************************ Setup nerd fonts ************************"
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
 
-#######################################
+######################################
 
 echo "************************ Install and configure more dnf packages ************************"
-sudo dnf install -y htop gh fzf keepassxc gnome-tweaks fastfetch gparted bleachbit timeshift qbittorrent liferea quiterss vlc
+sudo dnf install -y  gh fzf fastfetch bleachbit 
 # sudo dnf install -y  gnome-browser-connector dnfdragora transmission
 # sudo dnf install -y akregator alligator kasts clementine
 # TODO - configure fzf
 # Podcasts - gpodder
 # nautilus-python - research what this can be used for
 
+
+if [ "$SETUP_TYPE" = "full" ]; 
+then 
+  sudo dnf install -y htop keepassxc timeshift qbittorrent vlc
+
+fi
+
+
+if [ "$DESKTOP" = "gnome" ]
+then
+  sudo dnf install -y gnome-tweaks 
+
+  if [ "$SETUP_TYPE" = "full" ]; 
+  then 
+    sudo dnf install -y gparted liferea quiterss
+  fi
+
+elif  [ "$DESKTOP" = "kde" ]
+then
+  echo "Use pre-installed KDE Partition Manager instead of gparted"
+  echo "Use pre-installed Kasts instead of Gnome Podcasts"
+  echo "Use pre-installed Akregator instead of liferea and quiterss"
+fi
+
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal org.gnome.Podcasts de.haeckerfelix.Shortwave com.bitwarden.desktop org.telegram.desktop flathub org.gnome.Fractal chat.simplex.simplex com.rtosta.zapzap io.freetubeapp.FreeTube com.brave.Browser org.kde.kasts dev.fredol.open-tv app.grayjay.Grayjay com.spotify.Client
+flatpak install -y flathub com.rtosta.zapzap com.brave.Browser
+
+# TODO - check which brave is installed (flatpak vs dnf) and set following accordingly
+# export CHROME_EXECUTABLE=/usr/bin/brave-browser
+export CHROME_EXECUTABLE="flatpak run com.brave.Browser"
+
+
+if [ "$SETUP_TYPE" = "full" ]; 
+then 
+  flatpak install -y flathub org.signal.Signal com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex io.freetubeapp.FreeTube dev.fredol.open-tv app.grayjay.Grayjay com.spotify.Client
+
+fi
+
+
+if [ "$DESKTOP" = "gnome" ]
+then
+  flatpak install -y flathub com.mattjakeman.ExtensionManager 
+
+  if [ "$SETUP_TYPE" = "full" ]; 
+  then 
+    flatpak install -y flathub org.gnome.Podcasts de.haeckerfelix.Shortwave org.gnome.Fractal
+  fi
+
+elif  [ "$DESKTOP" = "kde" ]
+then
+  # flatpak install -y flathub 
+
+  if [ "$SETUP_TYPE" = "full" ]; 
+  then 
+    flatpak install -y flathub org.kde.kasts org.kde.neochat
+  fi
+
+fi
+
+
 # com.protonvpn.www me.proton.Mail me.proton.Pass # installing using official instructions via script
 # flatpak install -y flathub ca.desrt.dconf-editor com.spotify.Client
 # Facebook messenger (deprecated) - com.sindresorhus.Caprine
@@ -228,9 +305,17 @@ flatpak install -y flathub com.mattjakeman.ExtensionManager org.signal.Signal or
 #######################################
 # Some configs
 
-# export CHROME_EXECUTABLE=/usr/bin/brave-browser
-export CHROME_EXECUTABLE="flatpak run com.brave.Browser"
-sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal # So something similar for Element, Telegram, etc
+
+if [ "$SETUP_TYPE" = "full" ]; 
+then 
+
+  if [ "$DESKTOP" = "gnome" ]
+  then
+    sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal 
+    # Do something similar for Element, Telegram, etc
+  fi
+
+fi
 
 #######################################
 
@@ -238,13 +323,13 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty.sh
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh $GIT_USER_EMAIL
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh
+sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh $SETUP_TYPE
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh
+sudo sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEXTDNS_DEVICE_ID
 
 #######################################
 
