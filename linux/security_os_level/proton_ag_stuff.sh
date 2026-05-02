@@ -22,6 +22,48 @@ is_user_root ()
     [ "$(id -u)" -eq 0 ]
 }
 
+
+SETUP_TYPE=""
+DESKTOP=""
+
+
+if [[ -z $1 ]];
+then 
+    echo "SETUP_TYPE not provided. Assuming full installation. Installing all ProtonAG stuff."
+
+else
+  SETUP_TYPE=$1
+  echo "SETUP_TYPE = $SETUP_TYPE"
+
+  if [ "$SETUP_TYPE" = "full" ];
+  then 
+      echo "Installing all ProtonAG stuff."
+      
+  elif [ "$SETUP_TYPE" = "light" ];
+  then
+      echo "Only installing ProtonVPN"
+
+  fi
+
+fi
+
+if [[ -z $2 ]];
+then
+  echo "DESKTOP not provided. Identifying."
+
+  HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+  SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
+  DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
+
+else 
+  DESKTOP=$2
+fi
+
+echo "The current DESKTOP is $DESKTOP."
+
+
+sleep 5s
+
 # ################# The following is example usage of POSIX compliant function above
 # if is_user_root; then
 #     echo 'You are the almighty root!'
@@ -80,73 +122,6 @@ mkdir -p "$DOWNLOADS_DIR_PROTON"
 cd "$DOWNLOADS_DIR_PROTON" || exit
 
 
-######################### ProtonAuthenticator ###################################################################
-echo "************************ Installing ProtonAuthenticator ************************"
-# https://proton.me/support/set-up-proton-authenticator-linux
-# Download the RPM file.
-wget https://proton.me/download/authenticator/linux/ProtonAuthenticator.rpm
-# Download the json with SHA
-JSON_ProtonAuthenticator="ProtonAuthenticator_version.json"
-wget -O $JSON_ProtonAuthenticator https://proton.me/download/authenticator/linux/version.json
-# Get SHA from JSON
-SHA_ProtonAuthenticator=$(sh "$SYSUPDATE_SEC_CODE_DIR"/proton_get_sha.sh "$DOWNLOADS_DIR_PROTON" $JSON_ProtonAuthenticator)
-# Remove any leading or trailing quotes
-SHA_ProtonAuthenticator=${SHA_ProtonAuthenticator%\"} # Remove a single quote from the end
-SHA_ProtonAuthenticator=${SHA_ProtonAuthenticator#\"} # Remove a single quote from the beginning
-# Calculate *.rpm file's SHA for debugging:
-SHA_CALCULATED_PROTAUTH=$(sha512sum ProtonAuthenticator.rpm)
-echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTAUTH" 
-# Confirm the package’s integrity
-echo "$SHA_ProtonAuthenticator" ProtonAuthenticator.rpm | sha512sum --check -
-# Install it
-sudo dnf install -y ProtonAuthenticator.rpm
-
-
-######################### ProtonPass ###################################################################
-echo "************************ Installing ProtonPass ************************"
-# https://proton.me/support/set-up-proton-pass-linux
-# Download the RPM file.
-wget https://proton.me/download/PassDesktop/linux/x64/ProtonPass.rpm
-# Download the json with SHA
-JSON_ProtonPass="ProtonPass_version.json"
-wget -O $JSON_ProtonPass https://proton.me/download/PassDesktop/linux/x64/version.json
-# Get SHA from JSON
-SHA_ProtonPass=$(sh "$SYSUPDATE_SEC_CODE_DIR"/proton_get_sha.sh "$DOWNLOADS_DIR_PROTON" $JSON_ProtonPass)
-# Remove any leading or trailing quotes
-SHA_ProtonPass=${SHA_ProtonPass%\"} # Remove a single quote from the end
-SHA_ProtonPass=${SHA_ProtonPass#\"} # Remove a single quote from the beginning
-# Calculate *.rpm file's SHA for debugging:
-SHA_CALCULATED_PROTPASS=$(sha512sum ProtonPass.rpm)
-echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTPASS" 
-# Confirm the package’s integrity
-echo "$SHA_ProtonPass ProtonPass.rpm" | sha512sum --check -
-# Install it
-# sudo rpm -i --force ProtonPass.rpm # OFFICIAL way, but RedHat seems to discourage this usage
-sudo dnf install -y ProtonPass.rpm
-
-
-######################### ProtonMail ###################################################################
-echo "************************ Installing ProtonMail ************************"
-# https://proton.me/support/set-up-proton-mail-linux
-# Download the RPM file.
-wget https://proton.me/download/mail/linux/ProtonMail-desktop-beta.rpm
-# Download the json with SHA
-JSON_ProtonMail="ProtonMail_version.json"
-wget -O ProtonMail_version.json https://proton.me/download/mail/linux/version.json
-# Get SHA from JSON
-SHA_ProtonMail=$(sh "$SYSUPDATE_SEC_CODE_DIR"/proton_get_sha.sh "$DOWNLOADS_DIR_PROTON" $JSON_ProtonMail)
-# Remove any leading or trailing quotes from the variable
-SHA_ProtonMail=${SHA_ProtonMail%\"} # Remove a single quote from the end
-SHA_ProtonMail=${SHA_ProtonMail#\"} # Remove a single quote from the beginning
-# Calculate *.rpm file's SHA for debugging:
-SHA_CALCULATED_PROTMAIL=$(sha512sum ProtonMail-desktop-beta.rpm)
-echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTMAIL" 
-# check the RPM file’s integrity
-echo "$SHA_ProtonMail ProtonMail-desktop-beta.rpm" | sha512sum --check -
-# Install it
-sudo dnf install -y ./ProtonMail-desktop-beta.rpm
-
-
 ########################## ProtonVPN ###################################################################
 
 ########################## ProtonVPN - Following is an implementation of the OFFICIAL way: 
@@ -185,19 +160,95 @@ wget "$PROTON_VPN_BASE_URL/$FILENAME"
 
 # Install the Proton VPN repository containing the app
 sudo dnf install -y ./protonvpn-stable-release-1.0.3-1.noarch.rpm # && sudo dnf check-update --refresh 
-# Install the app and accept an OpenPGP key.
-sudo dnf install -y proton-vpn-gnome-desktop 
-# Enable GNOME desktop tray icons
-sudo dnf install -y libappindicator-gtk3 gnome-shell-extension-appindicator # gnome-extensions-app
-echo "************************ TODO: Open the Extensions app and ensure that AppIndicator and KStatusNotifierItem Support is toggled on before opening the app ************************"
+
+if [ "$DESKTOP" = "gnome" ]
+then
+
+  # Install the app and accept an OpenPGP key.
+  sudo dnf install -y proton-vpn-gnome-desktop 
+  # Enable GNOME desktop tray icons
+  sudo dnf install -y libappindicator-gtk3 gnome-shell-extension-appindicator # gnome-extensions-app
+  echo "************************ TODO: Open the Extensions app and ensure that AppIndicator and KStatusNotifierItem Support is toggled on before opening the app ************************"
+fi
+
+if [ "$SETUP_TYPE" = "full" ];
+then 
+
+  ######################### ProtonAuthenticator ###################################################################
+  echo "************************ Installing ProtonAuthenticator ************************"
+  # https://proton.me/support/set-up-proton-authenticator-linux
+  # Download the RPM file.
+  wget https://proton.me/download/authenticator/linux/ProtonAuthenticator.rpm
+  # Download the json with SHA
+  JSON_ProtonAuthenticator="ProtonAuthenticator_version.json"
+  wget -O $JSON_ProtonAuthenticator https://proton.me/download/authenticator/linux/version.json
+  # Get SHA from JSON
+  SHA_ProtonAuthenticator=$(sh "$SYSUPDATE_SEC_CODE_DIR"/proton_get_sha.sh "$DOWNLOADS_DIR_PROTON" $JSON_ProtonAuthenticator)
+  # Remove any leading or trailing quotes
+  SHA_ProtonAuthenticator=${SHA_ProtonAuthenticator%\"} # Remove a single quote from the end
+  SHA_ProtonAuthenticator=${SHA_ProtonAuthenticator#\"} # Remove a single quote from the beginning
+  # Calculate *.rpm file's SHA for debugging:
+  SHA_CALCULATED_PROTAUTH=$(sha512sum ProtonAuthenticator.rpm)
+  echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTAUTH" 
+  # Confirm the package’s integrity
+  echo "$SHA_ProtonAuthenticator" ProtonAuthenticator.rpm | sha512sum --check -
+  # Install it
+  sudo dnf install -y ProtonAuthenticator.rpm
 
 
-######################### ProtonMeet ###################################################################
-echo "************************ Installing ProtonMeet ************************"
-# https://proton.me/meet/download
-# Download the RPM file.
-wget https://proton.me/download/meet/linux/1.0.8/ProtonMeet-desktop.rpm
-# Install it
-sudo dnf install -y ./ProtonMeet-desktop.rpm
-echo "Note: TODO: Check if Proton has made available the SHA for ProtonMeet rpm yet. Also, there is no good way to automate getting the latest rpm"
+  ######################### ProtonPass ###################################################################
+  echo "************************ Installing ProtonPass ************************"
+  # https://proton.me/support/set-up-proton-pass-linux
+  # Download the RPM file.
+  wget https://proton.me/download/PassDesktop/linux/x64/ProtonPass.rpm
+  # Download the json with SHA
+  JSON_ProtonPass="ProtonPass_version.json"
+  wget -O $JSON_ProtonPass https://proton.me/download/PassDesktop/linux/x64/version.json
+  # Get SHA from JSON
+  SHA_ProtonPass=$(sh "$SYSUPDATE_SEC_CODE_DIR"/proton_get_sha.sh "$DOWNLOADS_DIR_PROTON" $JSON_ProtonPass)
+  # Remove any leading or trailing quotes
+  SHA_ProtonPass=${SHA_ProtonPass%\"} # Remove a single quote from the end
+  SHA_ProtonPass=${SHA_ProtonPass#\"} # Remove a single quote from the beginning
+  # Calculate *.rpm file's SHA for debugging:
+  SHA_CALCULATED_PROTPASS=$(sha512sum ProtonPass.rpm)
+  echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTPASS" 
+  # Confirm the package’s integrity
+  echo "$SHA_ProtonPass ProtonPass.rpm" | sha512sum --check -
+  # Install it
+  # sudo rpm -i --force ProtonPass.rpm # OFFICIAL way, but RedHat seems to discourage this usage
+  sudo dnf install -y ProtonPass.rpm
 
+
+  ######################### ProtonMail ###################################################################
+  echo "************************ Installing ProtonMail ************************"
+  # https://proton.me/support/set-up-proton-mail-linux
+  # Download the RPM file.
+  wget https://proton.me/download/mail/linux/ProtonMail-desktop-beta.rpm
+  # Download the json with SHA
+  JSON_ProtonMail="ProtonMail_version.json"
+  wget -O ProtonMail_version.json https://proton.me/download/mail/linux/version.json
+  # Get SHA from JSON
+  SHA_ProtonMail=$(sh "$SYSUPDATE_SEC_CODE_DIR"/proton_get_sha.sh "$DOWNLOADS_DIR_PROTON" $JSON_ProtonMail)
+  # Remove any leading or trailing quotes from the variable
+  SHA_ProtonMail=${SHA_ProtonMail%\"} # Remove a single quote from the end
+  SHA_ProtonMail=${SHA_ProtonMail#\"} # Remove a single quote from the beginning
+  # Calculate *.rpm file's SHA for debugging:
+  SHA_CALCULATED_PROTMAIL=$(sha512sum ProtonMail-desktop-beta.rpm)
+  echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTMAIL" 
+  # check the RPM file’s integrity
+  echo "$SHA_ProtonMail ProtonMail-desktop-beta.rpm" | sha512sum --check -
+  # Install it
+  sudo dnf install -y ./ProtonMail-desktop-beta.rpm
+
+
+
+  ######################### ProtonMeet ###################################################################
+  echo "************************ Installing ProtonMeet ************************"
+  # https://proton.me/meet/download
+  # Download the RPM file.
+  wget https://proton.me/download/meet/linux/1.0.8/ProtonMeet-desktop.rpm
+  # Install it
+  sudo dnf install -y ./ProtonMeet-desktop.rpm
+  echo "Note: TODO: Check if Proton has made available the SHA for ProtonMeet rpm yet. Also, there is no good way to automate getting the latest rpm"
+
+fi
