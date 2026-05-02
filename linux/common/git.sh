@@ -1,14 +1,23 @@
 # Script to setup git on a new machine or new installation of OS
 echo "************************ Configure git ************************"
 
+GIT_USER_EMAIL=""
+
+if [[ -z $1 ]];
+then 
+    echo "Need to run later: git config --global user.email <xyz@users.noreply.github.com>"
+    sleep 5s
+else
+    GIT_USER_EMAIL=$1
+    echo "Will set user.email to $GIT_USER_EMAIL"
+fi
+
+
 # https://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration
 git config --global user.name "Nikhil Bhirud"
 
 # TODO replace with correct email
-# git config --global user.email "<place xyz@users.noreply.github.com from github here>"
-
-echo "************************ NOTE: Need to run - git config --global user.email <xyz@users.noreply.github.com> ************************"
-sleep 5s
+git config --global user.email "$GIT_USER_EMAIL"
 
 # https://code.visualstudio.com/docs/sourcecontrol/overview#_vs-code-as-git-difftool-and-mergetool
 git config --global core.editor "codium --wait" # # https://git-scm.com/book/en/v2/Appendix-C:-Git-Commands-Setup-and-Config
