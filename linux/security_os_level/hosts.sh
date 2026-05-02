@@ -23,6 +23,11 @@ sudo mv hosts /etc/hosts
 # stat --format '%a' /etc/hosts  # for linux
 # stat -c '%a' <file>  # for busybox
 sudo chmod $PERM /etc/hosts
+# sudo chown user:group /etc/hosts # TODO - find out correct user/group
+
+# /sbin/restorecon -v /etc/hosts
+# sudo ausearch -c 'systemd-resolve' --raw | audit2allow -M my-systemdresolve
+# sudo semodule -X 300 -i my-systemdresolve.pp
 
 # https://github.com/StevenBlack/hosts?tab=readme-ov-file#linux
 # sudo ipconfig /flushdns
