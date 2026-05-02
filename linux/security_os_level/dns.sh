@@ -14,11 +14,32 @@ set -eux
 # NEXTDNS_ID="<YOUR_NEXTDNS_ID>"   # Replace with your NextDNS ID
 # NEXTDNS_DEVICE_ID="<YOUR_NEXTDNS_DEVICE_ID>" # Replace with your NextDNS device ID to uniquely identify the device
 
-NEXTDNS_ID=""
-NEXTDNS_DEVICE_ID=""
+# Anything assigned here will be disregarded. Pass these instead to the script as:
+# sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEXTDNS_DEVICE_ID
+NEXTDNS_ID="" # Do not initialize here
+NEXTDNS_DEVICE_ID="" # Do not initialize here
 
-if [ "$NEXTDNS_DEVICE_ID" -eq "" ] || [ "$NEXTDNS_ID" -eq "" ]; then
+# Making sure nothing was manually initialized above
+if [ "$NEXTDNS_DEVICE_ID" != "" ] || [ "$NEXTDNS_ID" != "" ]; then
   echo "Please set NextDNS details and run again"
+  exit 1
+fi
+
+if [[ -z $1 ]] && [[ -z $2 ]];
+then 
+    echo "NEXTDNS_ID and/or NEXTDNS_DEVICE_ID not passed as input. Need to pass both"
+    sleep 5s
+
+else
+    echo "NEXTDNS_ID and/or NEXTDNS_DEVICE_ID are provided. Proceeding."
+    NEXTDNS_ID=$1
+    NEXTDNS_DEVICE_ID=$2
+fi
+
+
+# Redundant checks. Remove this later if nothing gets caught here after multiple tests.
+if [ "$NEXTDNS_ID" = "" ] || [ "$NEXTDNS_DEVICE_ID" = "" ]; then
+  echo "NEXTDNS_ID = $NEXTDNS_ID and NEXTDNS_DEVICE_ID = $NEXTDNS_DEVICE_ID. Why is any of them blank? Check"
   exit 1
 fi
 

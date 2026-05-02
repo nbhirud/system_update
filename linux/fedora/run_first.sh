@@ -325,7 +325,7 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh $GIT_USER_EMAIL
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh $SETUP_TYPE
+sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh $SETUP_TYPE $DESKTOP
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh
 
