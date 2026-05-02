@@ -1,0 +1,44 @@
+SELinux alert browser:
+
+
+SELinux is preventing systemd-resolve from read access on the file hosts.
+
+*****  Plugin catchall (100. confidence) suggests   **************************
+
+If you believe that systemd-resolve should be allowed read access on the hosts file by default.
+Then you should report this as a bug.
+You can generate a local policy module to allow this access.
+Do
+allow this access for now by executing:
+# ausearch -c 'systemd-resolve' --raw | audit2allow -M my-systemdresolve
+# semodule -X 300 -i my-systemdresolve.pp
+
+Additional Information:
+Source Context                system_u:system_r:systemd_resolved_t:s0
+Target Context                unconfined_u:object_r:user_home_t:s0
+Target Objects                hosts [ file ]
+Source                        systemd-resolve
+Source Path                   systemd-resolve
+Port                          <Unknown>
+Host                          xyzlalalala
+Source RPM Packages
+Target RPM Packages
+SELinux Policy RPM            selinux-policy-targeted-43.6-1.fc44.noarch
+Local Policy RPM              selinux-policy-targeted-43.6-1.fc44.noarch
+Selinux Enabled               True
+Policy Type                   targeted
+Enforcing Mode                Enforcing
+Host Name                     xyzlalalala
+Platform                      Linux xyzlalalala 6.19.10-300.fc44.x86_64 #1 SMP
+                              PREEMPT_DYNAMIC Wed Mar 25 18:23:49 UTC 2026
+                              x86_64
+Alert Count                   4
+First Seen                    2026-04-28 19:16:12 EDT
+Last Seen                     2026-04-28 19:16:28 EDT
+Local ID                      049a860e-21fb-427f-8ac2-59a225604ec4
+
+Raw Audit Messages
+type=AVC msg=audit(1777418188.982:1616): avc:  denied  { read } for  pid=24174 comm="systemd-resolve" name="hosts" dev="sda3" ino=309735 scontext=system_u:system_r:systemd_resolved_t:s0 tcontext=unconfined_u:object_r:user_home_t:s0 tclass=file permissive=0
+
+
+Hash: systemd-resolve,systemd_resolved_t,user_home_t,file,read
