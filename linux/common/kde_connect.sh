@@ -2,6 +2,8 @@
 
 set -eux
 
+# https://userbase.kde.org/KDEConnect
+# https://community.kde.org/KDEConnect
 
 #### GSConnect = KDE Connect on Gnome
 
