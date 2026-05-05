@@ -1,0 +1,41 @@
+
+I have used ufw as my firewall on ubuntu in the past. Now on fedora, firewalld seems very complicated. I absolutely do not understand zones in firewalld.
+
+Following are some of the rules I used in ufw on ubuntu:
+
+    sudo apt install -y ufw
+
+    sudo ufw limit 22/tcp
+    sudo ufw allow 80/tcp
+    sudo ufw allow 443/tcp
+    sudo ufw default deny incoming
+    sudo ufw default allow outgoing
+
+
+    # OpenHAB
+    # sudo ufw allow 8080/tcp
+    # sudo ufw allow 8443/tcp
+    # sudo ufw allow 5007/tcp
+
+    # Radicale
+    sudo ufw allow 5232/tcp
+
+    sudo ufw enable
+
+I also have some firewalld steps that I jotted down for some services I use:
+
+    # KDE Connect
+    firewall-cmd --permanent --zone=public --add-service=kdeconnect
+
+    # OpenHAB
+    sudo firewall-cmd --permanent --add-port=8080/tcp
+    sudo firewall-cmd --permanent --add-port=8443/tcp
+    sudo firewall-cmd --permanent --add-port=5007/tcp
+
+    # NextCloud
+    sudo firewall-cmd --add-service=http --permanent
+    sudo firewall-cmd --add-service=https --permanent
+
+    firewall-cmd --reload
+
+Write a script that sets up firewalld with all the correct rules for me. I am privacy and digital security conscious and I would very much want this setup to be very privacy focused 
