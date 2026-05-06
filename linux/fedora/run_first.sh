@@ -43,6 +43,27 @@ echo "************************ Identify Desktop Environment ********************
 DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
 echo "Desktop Environment is $DESKTOP"
 
+if [ "$DESKTOP" = "" ]; 
+then
+  echo "Desktop not identified. Fix check_desktop_env.sh and run again"
+  exit 1
+else
+  echo "Desktop is $DESKTOP"
+fi
+
+echo "************************ Identify Distro ************************"
+# Useful in cases where the common/security/etc scripts need them when they support multiple distros
+DISTRO=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/get_distro_name.sh)
+
+if [ "$DISTRO" = "" ]; 
+then
+  echo "Distro not identified. Fix get_distro_name.sh and run again"
+  exit 1
+else
+  echo "Distro is $DISTRO"
+fi
+
+
 echo "************************ HOME_DIR = $HOME_DIR ************************"
 echo "************************ DOWNLOADS_DIR = $DOWNLOADS_DIR ************************"
 echo "************************ SYSUPDATE_CODE_BASE_DIR = $SYSUPDATE_CODE_BASE_DIR ************************"
@@ -319,7 +340,7 @@ fi
 
 #######################################
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh $DISTRO $SETUP_TYPE $DESKTOP
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty.sh
 
@@ -362,7 +383,7 @@ sudo sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEX
 sudo tee -a ~/.zshrc <<'ZSHRC_EOF'
 
 #################################################################
-# Added by nbhirud manually:
+# Added by nbhirud:
 #################################################################
 
 ### Custom linux aliases - add to ~/.zshrc
