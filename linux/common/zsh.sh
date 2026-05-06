@@ -100,14 +100,11 @@ sed -i "/# ENABLE_CORRECTION.*/a ENABLE_CORRECTION=\"true\"" ~/.zshrc
 
 sed -i "/# COMPLETION_WAITING_DOTS.*/a COMPLETION_WAITING_DOTS=\"true\"" ~/.zshrc
 
+# Plugins
 # https://github.com/ohmyzsh/ohmyzsh/wiki/Plugins
-# sudo sed -i 's|^#LogTime.*|LogTime yes|' "$FRESH_CONF"
+
 # plugins=(git branch gh github gitignore pre-commit dnf yum sudo safe-paste python pip poetry repo zsh-autosuggestions zsh-syntax-highlighting colorize history history-substring-search aws docker docker-compose helm kops kubectl podman mongocli postgres rsync rust timer rsync vscode zsh-interactive-cd zsh-navigation-tools screen fzf-tab)
 
-# For vscode plugin
-# Add the following line to ~/.zshrc between the ZSH_THEME and plugins=() lines
-# Choose one of `code`, `code-insiders`, `codium`, or `cursor`.
-VSCODE=codium
 
 #https://www.baeldung.com/linux/file-insert-multiple-lines
 # If I write "....*/a \n" instead of "....*/a #\n" it is printing the character n in the file. Learn about this
@@ -125,7 +122,6 @@ OMZ_PLUGINS_FIVE_FULL=""
 OMZ_PLUGINS_ONE="git python uv pip autopep8 pep8 sudo colorize colored-man-pages command-not-found"
 # conda conda-env pipenv poetry poetry-env pyenv pylint tig
 # virtualenv virtualenvwrapper
-
 
 if [ "$DISTRO" = "fedora" ];
 then 
@@ -146,7 +142,6 @@ then
 
 fi
 
-
 OMZ_PLUGINS_FOUR="branch gh gitignore zsh-autosuggestions zsh-syntax-highlighting vscode zsh-interactive-cd  fzf-tab "
 # fzf - do not use this plugin
 # github history history-substring-search - not useful for me
@@ -154,7 +149,6 @@ OMZ_PLUGINS_FOUR="branch gh gitignore zsh-autosuggestions zsh-syntax-highlightin
 # rsync - start using this tool
 # safe-paste - very good plugin, but need to get used to using terminal without it
 # zsh-navigation-tools
-
 
 if [ "$SETUP_TYPE" = "full" ];
 then 
@@ -176,7 +170,6 @@ then
   then 
     # bgnotify uses kdialog on kde
     OMZ_PLUGINS_THREE_DESKTOP="bgnotify" 
-
 
   elif  [ "$DESKTOP" = "gnome" ];
   then
