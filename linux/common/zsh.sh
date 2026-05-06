@@ -75,12 +75,12 @@ fi
 
 
 echo "************************ Install zsh ************************"
-# sudo dnf install -y zsh
+sudo dnf install -y zsh
 
 echo "************************ Make zsh the default shell ************************"
 # chsh -s $(which zsh) 
 # chsh -s $(which zsh) nbhirud
-# chsh -s $(which zsh) $USER
+chsh -s $(which zsh) $USER
 
 echo "************************ Install omz (Oh My zsh) unattended ************************"
 # sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
