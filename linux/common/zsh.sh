@@ -5,6 +5,7 @@ set -eux
 DISTRO=""
 SETUP_TYPE=""
 DESKTOP=""
+TIMESTAMP_FILENAME=""
 
 if [[ -z $1 ]] && [[ -z $2 ]] && [[ -z $3 ]];
 then 
@@ -16,6 +17,16 @@ else
   SETUP_TYPE=$2
   DESKTOP=$3
   echo "Inputs provided: DISTRO = $DISTRO, SETUP_TYPE = $SETUP_TYPE, DESKTOP = $DESKTOP"
+
+fi
+
+if [[ -z $4 ]];
+then 
+  echo "TIMESTAMP_FILENAME not passed. It will be calculated based on current time."
+  TIMESTAMP_FILENAME="$(date +%Y-%m-%d_%H-%M-%S)"
+
+else
+  TIMESTAMP_FILENAME=$4
 
 fi
 
@@ -41,14 +52,35 @@ fi
 #   echo "Distro privided as input = $DISTRO"
 # fi
 
+# Check if OMZ is already setup
+OMZ_DIR=~/.oh-my-zsh
+if [ -d $OMZ_DIR ]; 
+then
+  # Can backup before removing this directory. But that is of no good use. Remove directly
+  echo "$OMZ_DIR exists. This will be deleted before fresh setup."
+  rm -rf "$OMZ_DIR"
+fi
+
+HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+ZSHRC_FILENAME=".zshrc"
+ZSHRC_BKP_FILENAME="$ZSHRC_FILENAME"_nbbkp_"$TIMESTAMP_FILENAME"
+
+if [ -e "$HOME_DIR/$ZSHRC_FILENAME" ]
+then
+    echo "$HOME_DIR/$ZSHRC_FILENAME already exists. Creating a backup and deleting. Backup: $ZSHRC_BKP_FILENAME"
+    mv "$HOME_DIR/$ZSHRC_FILENAME" "$HOME_DIR/$ZSHRC_BKP_FILENAME"
+else
+    echo "$HOME_DIR/$ZSHRC_FILENAME does not already exist."
+fi
+
 
 echo "************************ Install zsh ************************"
-sudo dnf install -y zsh
+# sudo dnf install -y zsh
 
 echo "************************ Make zsh the default shell ************************"
 # chsh -s $(which zsh) 
 # chsh -s $(which zsh) nbhirud
-chsh -s $(which zsh) $USER
+# chsh -s $(which zsh) $USER
 
 echo "************************ Install omz (Oh My zsh) unattended ************************"
 # sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
