@@ -39,6 +39,18 @@ DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
 SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
 # RUN_FIRST_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
+SCRIPT_BACKUPS_DIR="$HOME_DIR/nb/nb_script_backups" 
+SCRIPT_DOWNLOADS_DIR="$HOME_DIR/nb/nb_script_downloads" 
+
+TIMESTAMP_FILENAME="$(date +%Y-%m-%d_%H-%M-%S)"
+
+echo "************************ Create directories ************************"
+# TODO - use this downloads dir for downloads of ProtonAG installers, etc
+# TODO - Use this backup fir for backup of configs, etc before replacing or editing like .zshrc
+
+mkdir -p $DOWNLOADS_DIR $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR
+sudo chown $USER:$USER $DOWNLOADS_DIR $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR
+
 echo "************************ Identify Desktop Environment ************************"
 DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
 echo "Desktop Environment is $DESKTOP"
@@ -220,10 +232,6 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 #######################################
 
 # Change default downloads dir:
-mkdir -p $DOWNLOADS_DIR
-sudo chown $USER:$USER $DOWNLOADS_DIR
-echo "************************ Home directory is: $HOME_DIR ************************"
-
 
 if [ "$DESKTOP" = "gnome" ]; then
   echo "************************ Changing default downloads directory ************************"
@@ -340,7 +348,7 @@ fi
 
 #######################################
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh $DISTRO $SETUP_TYPE $DESKTOP
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh $DISTRO $SETUP_TYPE $DESKTOP $TIMESTAMP_FILENAME
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty.sh
 
