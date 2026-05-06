@@ -29,7 +29,8 @@ DESKTOP=""
 
 if [[ -z $1 ]];
 then 
-    echo "SETUP_TYPE not provided. Assuming full installation. Installing all ProtonAG stuff."
+    echo "SETUP_TYPE not provided. Assuming light installation."
+    SETUP_TYPE="light"
 
 else
   SETUP_TYPE=$1

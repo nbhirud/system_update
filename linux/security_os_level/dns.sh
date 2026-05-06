@@ -21,19 +21,21 @@ NEXTDNS_DEVICE_ID="" # Do not initialize here
 
 # Making sure nothing was manually initialized above
 if [ "$NEXTDNS_DEVICE_ID" != "" ] || [ "$NEXTDNS_ID" != "" ]; then
-  echo "Please set NextDNS details and run again"
-  exit 1
+  echo "Found hardcoded NEXTDNS_DEVICE_ID = $NEXTDNS_DEVICE_ID and NEXTDNS_ID = $NEXTDNS_ID in dns.sh. These will be ignored. "
+  sleep 30s
 fi
 
 if [[ -z $1 ]] && [[ -z $2 ]];
 then 
-    echo "NEXTDNS_ID and/or NEXTDNS_DEVICE_ID not passed as input. Need to pass both"
-    sleep 5s
-
+  echo "NEXTDNS_ID and/or NEXTDNS_DEVICE_ID not passed as input. Need to pass both"
+  exit 1
+  
 else
-    echo "NEXTDNS_ID and/or NEXTDNS_DEVICE_ID are provided. Proceeding."
-    NEXTDNS_ID=$1
-    NEXTDNS_DEVICE_ID=$2
+  echo "NEXTDNS_ID and/or NEXTDNS_DEVICE_ID are provided. Proceeding."
+  NEXTDNS_ID=$1
+  NEXTDNS_DEVICE_ID=$2
+  echo "Inputs provided: NEXTDNS_DEVICE_ID = $NEXTDNS_DEVICE_ID and NEXTDNS_ID = $NEXTDNS_ID"
+
 fi
 
 
