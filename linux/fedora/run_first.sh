@@ -287,7 +287,7 @@ then
 fi
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub com.rtosta.zapzap com.brave.Browser
+flatpak install -y flathub com.brave.Browser org.signal.Signal
 
 # TODO - check which brave is installed (flatpak vs dnf) and set following accordingly
 # export CHROME_EXECUTABLE=/usr/bin/brave-browser
@@ -296,7 +296,7 @@ export CHROME_EXECUTABLE="flatpak run com.brave.Browser"
 
 if [ "$SETUP_TYPE" = "full" ]; 
 then 
-  flatpak install -y flathub org.signal.Signal com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex io.freetubeapp.FreeTube dev.fredol.open-tv app.grayjay.Grayjay com.spotify.Client
+  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay
 
 fi
 
@@ -334,16 +334,10 @@ fi
 #######################################
 # Some configs
 
-
-if [ "$SETUP_TYPE" = "full" ]; 
-then 
-
-  if [ "$DESKTOP" = "gnome" ]
-  then
-    sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal 
-    # Do something similar for Element, Telegram, etc
-  fi
-
+if [ "$DESKTOP" = "gnome" ] || [ "$DESKTOP" = "cosmic" ];
+then
+sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal 
+# Do something similar for Element, Telegram, etc
 fi
 
 #######################################
@@ -387,6 +381,13 @@ sudo sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEX
 # add apps to app folders in overview
 
 ###############################
+
+# TODO - Edit nbclean for cosmic
+# sudo bleachbit doesn'tt work idirectly on cosmic. it blames wayland. Surround it with commands as follows to use xwayland
+# https://docs.bleachbit.org/doc/frequently-asked-questions.html
+# https://wiki.archlinux.org/title/Running_GUI_applications_as_root
+# xhost si:localuser:root && sudo bleachbit --clean --preset && xhost -si:localuser:root
+
 
 sudo tee -a ~/.zshrc <<'ZSHRC_EOF'
 
