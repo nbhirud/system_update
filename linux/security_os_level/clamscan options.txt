@@ -15,3 +15,7 @@ clamscan --bell --cross-fs=yes --move="/home/nbhirud/Desktop/clamscan_infected" 
 
 
 clamscan --bell --cross-fs=yes --move="/home/nbhirud/Desktop/clamscan_infected" --heuristic-alerts=yes --recursive -i . | tee clamscan.log
+
+# TODO
+# Exclude relevant files and directories
+# Example: /etc/hosts file
