@@ -1,0 +1,21 @@
+
+
+# TODO
+# Create a script where you pass directory to be scanned
+# Script creates folder and log file based on timestamp in /home/user/username/Desktop/<here>
+# Pass or set other values and flags
+
+--bell --quiet --cross-fs=yes --move="/home/nbhirud/nb/clamscan_infected" --heuristic-alerts=yes --recursive
+
+
+clamscan --bell --quiet --cross-fs=yes --move="/home/nbhirud/Desktop/clamscan_infected" --heuristic-alerts=yes --recursive -i /
+
+clamscan --bell --cross-fs=yes --move="/home/nbhirud/Desktop/clamscan_infected" --heuristic-alerts=yes --recursive -i /
+
+
+
+clamscan --bell --cross-fs=yes --move="/home/nbhirud/Desktop/clamscan_infected" --heuristic-alerts=yes --recursive -i . | tee clamscan.log
+
+# TODO
+# Exclude relevant files and directories
+# Example: /etc/hosts file
