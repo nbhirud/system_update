@@ -1,0 +1,12 @@
+
+
+--bell --quiet --cross-fs=yes --move="/home/nbhirud/nb/clamscan_infected" --heuristic-alerts=yes --recursive
+
+
+clamscan --bell --quiet --cross-fs=yes --move="/home/nbhirud/Desktop/clamscan_infected" --heuristic-alerts=yes --recursive -i /
+
+clamscan --bell --cross-fs=yes --move="/home/nbhirud/Desktop/clamscan_infected" --heuristic-alerts=yes --recursive -i /
+
+
+
+clamscan --bell --cross-fs=yes --move="/home/nbhirud/Desktop/clamscan_infected" --heuristic-alerts=yes --recursive -i . | tee clamscan.log
