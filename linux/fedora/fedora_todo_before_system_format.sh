@@ -5,6 +5,11 @@ set -eux
 # List of packages/apps installed
 # maybe make a cron job which does the following
 
+####################################################
+# Do this FIRST
+# Scan absolutely everything with clamscan, etc before starting any backups
+####################################################
+
 
 DATE_VAR=$(date +%Y-%m-%d)
 mkdir Fedora__$DATE_VAR
