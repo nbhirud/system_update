@@ -30,12 +30,13 @@ sudo firewall-cmd --permanent --zone=public --set-target=DROP
 # SSH (rate-limited like ufw limit)
 # -----------------------------
 echo "[+] Adding rate-limited SSH access..."
-sudo firewall-cmd --permanent --add-rich-rule='
-rule family="ipv4"
-service name="ssh"
-limit value="10/m"
-accept
-'
+# sudo firewall-cmd --permanent --add-rich-rule='
+# rule family="ipv4"
+# service name="ssh"
+# limit value="10/m"
+# accept
+# '
+sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" service name="ssh" limit value="10/m" accept'
 
 # -----------------------------
 # Web (Nextcloud etc.)
