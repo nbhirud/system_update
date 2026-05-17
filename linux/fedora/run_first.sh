@@ -18,7 +18,7 @@ echo "************************ Setting User-Defined constants ******************
 
 HOSTNAME=""
 GIT_USER_EMAIL=""
-NEXTDNS_ID="" 
+NEXTDNS_ID=""
 NEXTDNS_DEVICE_ID="$HOSTNAME"
 SETUP_TYPE="light" # full or light (or minimal - TBD - bare minimum, remove all optional stuff)
 PC_TYPE="paranoid" # public or private or paranoid
@@ -35,7 +35,17 @@ fi
 
 echo "************************ Setting INFERRED literals and constants ************************"
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+
+DESKTOP_DIR="$HOME_DIR/nb/Desktop"
+DOCUMENTS_DIR="$HOME_DIR/nb/Documents"
 DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
+VIDEOS_DIR="$HOME_DIR/nb/Videos"
+PICTURES_DIR="$HOME_DIR/nb/Pictures"
+MUSIC_DIR="$HOME_DIR/nb/Music"
+PUBLIC_DIR="$HOME_DIR/nb/Public"
+TEMPLATES_DIR="$HOME_DIR/nb/Templates"
+PROJECTS_DIR="$HOME_DIR/nb/Projects"
+
 SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
 # RUN_FIRST_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
@@ -48,8 +58,8 @@ echo "************************ Create directories ************************"
 # TODO - use this downloads dir for downloads of ProtonAG installers, etc
 # TODO - Use this backup fir for backup of configs, etc before replacing or editing like .zshrc
 
-mkdir -p $DOWNLOADS_DIR $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR
-sudo chown $USER:$USER $DOWNLOADS_DIR $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR
+mkdir -p $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
+sudo chown $USER:$USER $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
 
 echo "************************ Identify Desktop Environment ************************"
 DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
@@ -67,7 +77,7 @@ echo "************************ Identify Distro ************************"
 # Useful in cases where the common/security/etc scripts need them when they support multiple distros
 DISTRO=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/get_distro_name.sh)
 
-if [ "$DISTRO" = "" ]; 
+if [ "$DISTRO" = "" ];
 then
   echo "Distro not identified. Fix get_distro_name.sh and run again"
   exit 1
@@ -336,8 +346,13 @@ fi
 
 if [ "$DESKTOP" = "gnome" ] || [ "$DESKTOP" = "cosmic" ];
 then
-sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal 
-# Do something similar for Element, Telegram, etc
+  sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal 
+  # Do something similar for Element, Telegram, etc
+
+elif  [ "$DESKTOP" = "kde" ]
+then
+  sudo flatpak override --env=SIGNAL_PASSWORD_STORE=kwallet6 org.signal.Signal
+  
 fi
 
 #######################################
