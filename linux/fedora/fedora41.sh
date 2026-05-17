@@ -1,3 +1,7 @@
+#!/bin/sh
+
+set -eux
+
 #######################################
 
 sudo dnf install -y git
@@ -7,7 +11,7 @@ git clone https://github.com/nbhirud/system_update.git
 
 
 # Run this first: linux/fedora/run_first.sh
-sh ~/nb/CodeProjects/system_update/linux/fedora/run_first.sh
+sh ~/nb/CodeProjects/system_update/linux/fedora/run_first.sh | tee ~/nb/fedora_run_first.log
 
 #######################################
 
