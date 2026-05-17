@@ -36,7 +36,7 @@ CLAM_USER="clamscan"
 
 
 # Install packages
-sudo dnf upgrade --refresh -y
+# sudo dnf upgrade --refresh -y
 sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamav-data clamav-lib clamav-filesystem 
 
 
