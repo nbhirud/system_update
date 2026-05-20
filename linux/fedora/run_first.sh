@@ -357,6 +357,13 @@ fi
 
 #######################################
 
+if [ "$SETUP_TYPE" = "full" ];
+then
+  wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash
+fi
+
+#######################################
+
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh $DISTRO $SETUP_TYPE $DESKTOP $TIMESTAMP_FILENAME
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty.sh
