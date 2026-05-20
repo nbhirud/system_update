@@ -45,6 +45,18 @@ echo "[+] Allowing HTTP/HTTPS..."
 sudo firewall-cmd --permanent --add-service=http
 sudo firewall-cmd --permanent --add-service=https
 
+
+# Syncthing
+echo "[+] Allowing Syncthing..."
+# Sync traffic
+sudo firewall-cmd --permanent --add-port=22000/tcp
+sudo firewall-cmd --permanent --add-port=22000/udp
+# Local discovery
+sudo firewall-cmd --permanent --add-port=21027/udp
+# Web UI (optional)
+sudo firewall-cmd --permanent --add-port=8384/tcp
+
+
 # -----------------------------
 # Radicale
 # -----------------------------
