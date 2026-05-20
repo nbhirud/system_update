@@ -300,8 +300,8 @@ flatpak install -y flathub org.signal.Signal
 # com.brave.Browser
 
 # TODO - check which brave is installed (flatpak vs dnf) and set following accordingly
-# export CHROME_EXECUTABLE=/usr/bin/brave-browser
-export CHROME_EXECUTABLE="flatpak run com.brave.Browser"
+export CHROME_EXECUTABLE=/usr/bin/brave-browser
+# export CHROME_EXECUTABLE="flatpak run com.brave.Browser"
 
 
 if [ "$SETUP_TYPE" = "full" ]; 
