@@ -146,12 +146,16 @@ PROTON_VPN_BASE_URL="https://repo.protonvpn.com/fedora-$FEDORA_RELEASE_VERSION-s
 page="$(curl "$PROTON_VPN_BASE_URL/")"
 
 line=$(echo "$page" | grep ".rpm")
+# echo "########### line = $line ###########"
 # Sample line:
 # <a href="protonvpn-stable-release-1.0.3-1.noarch.rpm">protonvpn-stable-release-1.0.3-1.noarch.rpm</a>        03-Apr-2025 09:24                7765
 
 # get text (filename) between double quotes (from the <a> tag)
 FILENAME=${line#*\"}
 FILENAME=${FILENAME%\"*}
+FILENAME=${FILENAME%\"*}
+FILENAME=${FILENAME%\"*}
+
 # echo "URL for downloading ProtonVPN = $PROTON_VPN_BASE_URL/$FILENAME"
 
 # # Download the package that contains the repository configuration and keys required to install the Proton VPN app
@@ -160,7 +164,7 @@ wget "$PROTON_VPN_BASE_URL/$FILENAME"
 ############ Everything below this is same as the OFFICIAL way above
 
 # Install the Proton VPN repository containing the app
-sudo dnf install -y ./protonvpn-stable-release-1.0.3-1.noarch.rpm # && sudo dnf check-update --refresh 
+sudo dnf install -y ./"$FILENAME" # && sudo dnf check-update --refresh 
 
 if [ "$DESKTOP" = "gnome" ]
 then
