@@ -16,7 +16,7 @@ sudo systemctl enable --now firewalld
 # ... etc
 
 # Set default policy: deny incoming, allow outgoing (already default, but explicit)
-sudo firewall-cmd --zone=public --set-target=DROP  # Drop all incoming by default
+sudo firewall-cmd --zone=public --set-target=DROP --permanent # Drop all incoming by default
 # Outgoing is already allowed by default in Fedora
 
 # SSH: Limit connections (rate limiting for brute-force protection)

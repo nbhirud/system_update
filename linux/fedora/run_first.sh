@@ -178,8 +178,7 @@ sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-releas
 
 echo "************************ Installing packages ************************"
 # install the packages
-sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher
-# brave-browser - trying flatpak
+sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher brave-browser
 # obfs4
 # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
 
@@ -265,7 +264,7 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
 ######################################
 
 echo "************************ Install and configure more dnf packages ************************"
-sudo dnf install -y  gh fzf fastfetch bleachbit 
+sudo dnf install -y  gh fzf fastfetch bleachbit
 # sudo dnf install -y  gnome-browser-connector dnfdragora transmission
 # sudo dnf install -y akregator alligator kasts clementine
 # TODO - configure fzf
@@ -273,59 +272,60 @@ sudo dnf install -y  gh fzf fastfetch bleachbit
 # nautilus-python - research what this can be used for
 
 
-if [ "$SETUP_TYPE" = "full" ]; 
-then 
-  sudo dnf install -y htop keepassxc timeshift qbittorrent vlc
+if [ "$SETUP_TYPE" = "full" ];
+then
+  sudo dnf install -y htop keepassxc timeshift qbittorrent vlc thunderbird
 
 fi
 
 
 if [ "$DESKTOP" = "gnome" ]
 then
-  sudo dnf install -y gnome-tweaks 
+  sudo dnf install -y gnome-tweaks
 
-  if [ "$SETUP_TYPE" = "full" ]; 
-  then 
+  if [ "$SETUP_TYPE" = "full" ];
+  then
     sudo dnf install -y gparted liferea quiterss
   fi
 
 elif  [ "$DESKTOP" = "kde" ]
 then
+  sudo dnf install -y kde-gtk-config
   echo "Use pre-installed KDE Partition Manager instead of gparted"
   echo "Use pre-installed Kasts instead of Gnome Podcasts"
   echo "Use pre-installed Akregator instead of liferea and quiterss"
 fi
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub com.brave.Browser org.signal.Signal
+flatpak install -y flathub org.signal.Signal
+# com.brave.Browser
 
 # TODO - check which brave is installed (flatpak vs dnf) and set following accordingly
-# export CHROME_EXECUTABLE=/usr/bin/brave-browser
-export CHROME_EXECUTABLE="flatpak run com.brave.Browser"
+export CHROME_EXECUTABLE=/usr/bin/brave-browser
+# export CHROME_EXECUTABLE="flatpak run com.brave.Browser"
 
 
-if [ "$SETUP_TYPE" = "full" ]; 
-then 
-  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay
+if [ "$SETUP_TYPE" = "full" ];
+then
+  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex network.loki.Session io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay
 
 fi
 
-
 if [ "$DESKTOP" = "gnome" ]
 then
-  flatpak install -y flathub com.mattjakeman.ExtensionManager 
+  flatpak install -y flathub com.mattjakeman.ExtensionManager
 
-  if [ "$SETUP_TYPE" = "full" ]; 
-  then 
+  if [ "$SETUP_TYPE" = "full" ];
+  then
     flatpak install -y flathub org.gnome.Podcasts de.haeckerfelix.Shortwave org.gnome.Fractal
   fi
 
 elif  [ "$DESKTOP" = "kde" ]
 then
-  # flatpak install -y flathub 
+  # flatpak install -y flathub
 
-  if [ "$SETUP_TYPE" = "full" ]; 
-  then 
+  if [ "$SETUP_TYPE" = "full" ];
+  then
     flatpak install -y flathub org.kde.kasts org.kde.neochat
   fi
 
@@ -346,13 +346,13 @@ fi
 
 if [ "$DESKTOP" = "gnome" ] || [ "$DESKTOP" = "cosmic" ];
 then
-  sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal 
+  sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal
   # Do something similar for Element, Telegram, etc
 
 elif  [ "$DESKTOP" = "kde" ]
 then
   sudo flatpak override --env=SIGNAL_PASSWORD_STORE=kwallet6 org.signal.Signal
-  
+
 fi
 
 #######################################
@@ -363,11 +363,13 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh $GIT_USER_EMAIL
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh $SETUP_TYPE $DESKTOP
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/syncthing.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh
 
 sudo sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEXTDNS_DEVICE_ID
+
+sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh $SETUP_TYPE $DESKTOP
 
 #######################################
 
@@ -381,9 +383,6 @@ sudo sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEX
 
 # $SYSUPDATE_CODE_BASE_DIR/linux/common/bleachbit.sh
 # $SYSUPDATE_CODE_BASE_DIR/linux/common/gnome_settings.sh
-
-# Thunderbird
-# sudo dnf install -y thunderbird
 
 # calendar
 
