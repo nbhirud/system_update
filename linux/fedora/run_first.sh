@@ -296,7 +296,8 @@ then
 fi
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub com.brave.Browser org.signal.Signal
+flatpak install -y flathub org.signal.Signal
+# com.brave.Browser
 
 # TODO - check which brave is installed (flatpak vs dnf) and set following accordingly
 # export CHROME_EXECUTABLE=/usr/bin/brave-browser
