@@ -178,8 +178,7 @@ sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-releas
 
 echo "************************ Installing packages ************************"
 # install the packages
-sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher
-# brave-browser - trying flatpak
+sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher brave-browser
 # obfs4
 # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
 
