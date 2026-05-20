@@ -9,6 +9,7 @@ set -eux
 # http://127.0.0.1:8384/ - Syncthing Web GUI
 
 HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
+SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
 
 sudo dnf install -y syncthing
 
@@ -64,7 +65,8 @@ if [ "$DESKTOP" = "gnome" ]; then
   echo "Install Gnome extension on linux: https://github.com/2nv2u/gnome-shell-extension-syncthing-indicator"
 
 elif [ "$DESKTOP" = "kde" ]; then
-  sudo dnf install -y syncthingtray
+  # sudo dnf install -y syncthingtray
+  flatpak install -y flathub io.github.martchus.syncthingtray
 
 fi
 
