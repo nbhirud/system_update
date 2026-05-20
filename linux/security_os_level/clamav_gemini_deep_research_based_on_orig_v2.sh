@@ -257,9 +257,9 @@ sudo freshclam
 # Fedora uses clamd@scan as the default instance.
 sudo systemctl daemon-reload
 # sudo systemctl enable --now clamav-freshclam.service
+sudo systemctl enable --now clamav-unofficial-sigs.timer
 sudo systemctl enable --now clamd@scan.service
 # sudo systemctl enable --now clamav-clamonacc.service
-sudo systemctl enable --now clamav-unofficial-sigs.timer
 # sudo systemctl enable --now fangfrisch.timer
 
 # Verification
