@@ -225,6 +225,13 @@ then
 
 
   ######################### ProtonMail ###################################################################
+
+  # TODO:
+  # The download of rpm is returning ("CategoryName": "EarlyAccess",), the second item in list and 
+  # proton_get_sha.sh is returning SHA of ("CategoryName": "Alpha",), the first item in list. 
+  # However, we need to install the 3rd one ("CategoryName": "Stable",)
+  # Right now, ProtonMail only installs if the first item in json and the downloaded rpm are same
+
   echo "************************ Installing ProtonMail ************************"
   # https://proton.me/support/set-up-proton-mail-linux
   # Download the RPM file.
