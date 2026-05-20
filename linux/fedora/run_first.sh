@@ -264,7 +264,7 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
 ######################################
 
 echo "************************ Install and configure more dnf packages ************************"
-sudo dnf install -y  gh fzf fastfetch bleachbit 
+sudo dnf install -y  gh fzf fastfetch bleachbit
 # sudo dnf install -y  gnome-browser-connector dnfdragora transmission
 # sudo dnf install -y akregator alligator kasts clementine
 # TODO - configure fzf
@@ -281,10 +281,10 @@ fi
 
 if [ "$DESKTOP" = "gnome" ]
 then
-  sudo dnf install -y gnome-tweaks 
+  sudo dnf install -y gnome-tweaks
 
-  if [ "$SETUP_TYPE" = "full" ]; 
-  then 
+  if [ "$SETUP_TYPE" = "full" ];
+  then
     sudo dnf install -y gparted liferea quiterss
   fi
 
@@ -305,28 +305,27 @@ export CHROME_EXECUTABLE=/usr/bin/brave-browser
 # export CHROME_EXECUTABLE="flatpak run com.brave.Browser"
 
 
-if [ "$SETUP_TYPE" = "full" ]; 
-then 
-  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay
+if [ "$SETUP_TYPE" = "full" ];
+then
+  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex network.loki.Session io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay
 
 fi
 
-
 if [ "$DESKTOP" = "gnome" ]
 then
-  flatpak install -y flathub com.mattjakeman.ExtensionManager 
+  flatpak install -y flathub com.mattjakeman.ExtensionManager
 
-  if [ "$SETUP_TYPE" = "full" ]; 
-  then 
+  if [ "$SETUP_TYPE" = "full" ];
+  then
     flatpak install -y flathub org.gnome.Podcasts de.haeckerfelix.Shortwave org.gnome.Fractal
   fi
 
 elif  [ "$DESKTOP" = "kde" ]
 then
-  # flatpak install -y flathub 
+  # flatpak install -y flathub
 
-  if [ "$SETUP_TYPE" = "full" ]; 
-  then 
+  if [ "$SETUP_TYPE" = "full" ];
+  then
     flatpak install -y flathub org.kde.kasts org.kde.neochat
   fi
 
@@ -347,13 +346,13 @@ fi
 
 if [ "$DESKTOP" = "gnome" ] || [ "$DESKTOP" = "cosmic" ];
 then
-  sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal 
+  sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal
   # Do something similar for Element, Telegram, etc
 
 elif  [ "$DESKTOP" = "kde" ]
 then
   sudo flatpak override --env=SIGNAL_PASSWORD_STORE=kwallet6 org.signal.Signal
-  
+
 fi
 
 #######################################
