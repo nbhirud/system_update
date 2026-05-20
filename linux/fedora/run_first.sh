@@ -290,6 +290,7 @@ then
 
 elif  [ "$DESKTOP" = "kde" ]
 then
+  sudo dnf install -y kde-gtk-config
   echo "Use pre-installed KDE Partition Manager instead of gparted"
   echo "Use pre-installed Kasts instead of Gnome Podcasts"
   echo "Use pre-installed Akregator instead of liferea and quiterss"
