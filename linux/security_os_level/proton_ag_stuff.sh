@@ -262,5 +262,5 @@ then
   # Install it
   sudo dnf install -y ./ProtonMeet-desktop.rpm
   echo "Note: TODO: Check if Proton has made available the SHA for ProtonMeet rpm yet. Also, there is no good way to automate getting the latest rpm"
-
+  # SHA availavle now - https://proton.me/download/meet/linux/version.json - TODO
 fi
