@@ -13,7 +13,7 @@ sudo firewall-cmd --set-default-zone=public
 echo "[+] Resetting public zone to a clean state..."
 sudo firewall-cmd --permanent --zone=public --remove-service=dhcpv6-client || true
 sudo firewall-cmd --permanent --zone=public --remove-service=ssh || true
-sudo firewall-cmd --permanent --zone=public --remove-service=cockpit || true
+# sudo firewall-cmd --permanent --zone=public --remove-service=cockpit || true
 
 # -----------------------------
 # Default policy (IMPORTANT)
