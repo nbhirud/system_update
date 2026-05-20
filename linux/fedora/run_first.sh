@@ -272,9 +272,9 @@ sudo dnf install -y  gh fzf fastfetch bleachbit
 # nautilus-python - research what this can be used for
 
 
-if [ "$SETUP_TYPE" = "full" ]; 
-then 
-  sudo dnf install -y htop keepassxc timeshift qbittorrent vlc
+if [ "$SETUP_TYPE" = "full" ];
+then
+  sudo dnf install -y htop keepassxc timeshift qbittorrent vlc thunderbird
 
 fi
 
@@ -381,9 +381,6 @@ sudo sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEX
 
 # $SYSUPDATE_CODE_BASE_DIR/linux/common/bleachbit.sh
 # $SYSUPDATE_CODE_BASE_DIR/linux/common/gnome_settings.sh
-
-# Thunderbird
-# sudo dnf install -y thunderbird
 
 # calendar
 
