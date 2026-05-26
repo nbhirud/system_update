@@ -85,7 +85,7 @@ sudo chmod -R 700 "$QUARANTINE_DIR"
 # sudo chgrp clamav /var/lib/fangfrisch
 
 
-
+###########################
 
 # nautilus-python 
 # python3-fangfrisch  
@@ -163,8 +163,22 @@ sudo sed -i 's|^#AlertBrokenExecutables.*|AlertBrokenExecutables yes|' "$SCAN_CO
 cat <<EOF | sudo tee -a "$SCAN_CONF"
 ScanOnAccess yes
 OnAccessIncludePath /home/$(whoami)/Downloads
+OnAccessIncludePath /home/$(whoami)/.cache/thunderbird
+OnAccessIncludePath /home/$(whoami)/.cache/torbrowser
+OnAccessIncludePath /home/$(whoami)/.cache/librewolf
+OnAccessIncludePath /home/$(whoami)/.cache/BraveSoftware
+OnAccessIncludePath /home/$(whoami)/.cache/akregator
+OnAccessIncludePath /home/$(whoami)/.cache/qBittorrent
 OnAccessIncludePath /home/$(whoami)/.cache/mozilla
-OnAccessIncludePath /home/$(whoami)/.cache/google-chrome
+OnAccessIncludePath /home/$(whoami)/nb/Torrents
+OnAccessIncludePath /home/$(whoami)/nb/nb_script_downloads
+OnAccessIncludePath /home/$(whoami)/nb/Downloads
+OnAccessIncludePath /home/$(whoami)/Downloads
+OnAccessIncludePath /home/$(whoami)/.thunderbird/
+OnAccessIncludePath /home/$(whoami)/.mullvad-browser/
+OnAccessIncludePath /home/$(whoami)/.mozilla/
+OnAccessIncludePath /home/$(whoami)/.kodi/
+# OnAccessIncludePath /home/$(whoami)/.cache/google-chrome
 OnAccessPrevention yes
 OnAccessExcludeUname $CLAM_USER
 EOF
