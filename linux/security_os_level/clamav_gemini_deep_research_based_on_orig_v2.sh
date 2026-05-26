@@ -187,6 +187,8 @@ EOF
 # SELinux Hardening - Mandatory for scanning home directories and system paths in Fedora
 sudo setsebool -P antivirus_can_scan_system 1
 sudo setsebool -P antivirus_use_jit 1
+# Allow clamonacc to scan user home directories
+sudo setsebool -P antivirus_scan_home_dirs 1
 
 
 # echo "--- Phase 5: Unofficial Databases (Fangfrisch) ---"
