@@ -249,9 +249,37 @@ sudo setsebool -P antivirus_scan_home_dirs 1
 
 
 # --- clamonacc service ---
-echo "[+] Creating clamonacc service..."
+# echo "[+] Creating clamonacc service..."
 
-sudo tee /etc/systemd/system/clamav-clamonacc.service >/dev/null <<EOF
+# sudo tee /etc/systemd/system/clamav-clamonacc.service >/dev/null <<EOF
+# [Unit]
+# Description=ClamAV On-Access Scanner
+# Requires=clamd@scan.service
+# After=clamd@scan.service
+
+# [Service]
+# Type=simple
+# ExecStart=/usr/sbin/clamonacc \
+#   --foreground \
+#   --fdpass \
+#   --log=$ONACC_LOG \
+#   --move=$QUARANTINE_DIR \
+#   --include-path=/home \
+#   --exclude-uids=0 \
+#   --exclude-dir=/proc \
+#   --exclude-dir=/sys
+
+# Restart=on-failure
+
+# [Install]
+# WantedBy=multi-user.target
+# EOF
+
+################
+
+sudo systemctl stop clamav-clamonacc.service
+
+sudo tee /etc/systemd/system/clamav-clamonacc.service > /dev/null <<EOF
 [Unit]
 Description=ClamAV On-Access Scanner
 Requires=clamd@scan.service
@@ -259,17 +287,16 @@ After=clamd@scan.service
 
 [Service]
 Type=simple
+User=root
+# Minimal arguments: Just foreground, logging, and fdpass
 ExecStart=/usr/sbin/clamonacc \
   --foreground \
   --fdpass \
-  --log=$ONACC_LOG \
-  --move=$QUARANTINE_DIR \
-  --include-path=/home \
-  --exclude-uids=0 \
-  --exclude-dir=/proc \
-  --exclude-dir=/sys
+  --log=/var/log/clamav/clamonacc.log \
+  --move=/var/quarantine/clamav
 
 Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
