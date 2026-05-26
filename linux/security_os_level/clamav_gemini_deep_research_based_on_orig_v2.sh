@@ -410,3 +410,77 @@ sudo restorecon -Rv /var/lib/clamav
 
 # sudo systemctl disable clamav-freshclam.service
 # sudo systemctl disable clamav-clamonacc.service
+
+
+
+# ############################
+# # Debugging freshclam
+
+# # Database Problems The ClamAV database might be missing or corrupted:
+# # Check if freshclam ran successfully
+# sudo freshclam
+
+# # Verify database exists
+# ls -la /var/lib/clamav/
+
+# # Check for errors in the freshclam log
+# sudo tail -n 20 /var/log/freshclam.log
+
+# ############################
+# # Debugging clamd@scan.service
+
+# # Check the specific error logs
+# # sudo journalctl -u clamd@scan.service -n 50 --no-pager
+# sudo journalctl -u clamd@scan.service -n 100 --no-pager -e
+
+# # Or view the service status with extended output
+# sudo systemctl status clamd@scan.service -l
+
+# # Configuration File Issues Check /etc/clamav/clamd.conf for syntax errors:
+# sudo clamd --config-file=/etc/clamav/clamd.conf --test
+
+# # check if the clamscan user exists
+# id clamscan
+
+# # Check for SELinux/AppArmor interference
+# # Check SELinux status
+# getenforce
+# # If enforcing, check for denials
+# sudo ausearch -m avc -ts recent 2>/dev/null | grep clamd
+# # sudo ausearch -m avc -ts recent | grep clamd
+# # Temporarily set to permissive to test (not recommended for production)
+# # sudo setenforce 0
+
+# # Port Conflicts Check if another process is using port 3310:
+# sudo netstat -tlnp | grep 3310
+# # or
+# sudo ss -tlnp | grep 3310
+
+# # Resource Constraints Check system resources:
+# free -h
+# df -h
+
+# # Verify it's working
+
+
+# sudo systemctl is-active clamd@scan.service
+# # Should return "active"
+
+# # check what user the service is supposed to run as:
+# # Check the service file
+# grep -i user /usr/lib/systemd/system/clamd@.service
+# # Check the config file
+# grep -i user /etc/clamd.d/scan.conf
+
+
+# ############################
+# # Debugging clamav-clamonacc.service
+
+# sudo journalctl -u clamav-clamonacc.service -n 50 --no-pager -e
+
+# # Check if the binary supports the flags you are using:
+# /usr/sbin/clamonacc --help | grep -E "fdpass|include-path"
+
+# # Check for denials:
+# sudo ausearch -m avc -ts recent | grep clamonacc
+
