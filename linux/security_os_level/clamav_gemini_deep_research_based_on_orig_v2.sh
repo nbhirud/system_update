@@ -339,7 +339,37 @@ fi
 
 
 
+##########################
+### Fix ClamD Scan Service Start Failure - maybe do this if Verification at the end fails # TODO  - check
+##########################
 
+# turn SELinux on if disabled
+sudo setenforce 1
+
+# Fix 1 
+# This reads the audit log and creates a policy module named 'clamd_fix'
+# audit2allow tool reads the denial logs and creates a custom policy module automatically.
+sudo ausearch -m avc -ts recent | grep clamd | audit2allow -M clamd_fix
+sudo semodule -i clamd_fix.pp
+
+
+# Fix 2
+# Sometimes the issue isn't a missing permission rule, but simply that the files have the wrong SELinux context 
+# Restore the default contexts:
+sudo restorecon -Rv /var/log/clamav
+sudo restorecon -Rv /var/lib/clamav
+
+# # If above fix 2 fails, manually set the context:
+# # Set the log directory context
+# sudo semanage fcontext -a -t clamav_var_log_t "/var/log/clamav(/.*)?"
+# sudo restorecon -Rv /var/log/clamav
+# # Set the database directory context
+# sudo semanage fcontext -a -t clamav_var_lib_t "/var/lib/clamav(/.*)?"
+# sudo restorecon -Rv /var/lib/clamav
+
+####### NOTE: if the fix was needed to be run, then run the "Service Activation" section again
+
+########################################################################################################
 
 ##### Debugging:
 
