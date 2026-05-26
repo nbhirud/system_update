@@ -25,6 +25,31 @@ FONT_NAMES_FILE_PATH="$SYSUPDATE_CODE_DIR/linux/common/data/fonts.txt"
 # 1. Whether there has been any update in the repo at all
 # 2. If yes, whether there has been any change to the folders (fonts) I am using
 
+#####################################
+
+# # TODO - This code checks if nerd fonts are already installed
+# # Check if this could b used.
+
+# FONT_DIR="$HOME/.local/share/fonts"
+# if ! fc-list : family | grep -qi "Nerd Font"; then
+#     echo "--> No Nerd Font detected. Fetching JetBrainsMono Nerd Font..."
+#     mkdir -p "$FONT_DIR"
+#     TEMP_DIR=$(mktemp -d)
+    
+#     curl -sSL -o "$TEMP_DIR/JetBrainsMono.zip" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip
+#     unzip -q "$TEMP_DIR/JetBrainsMono.zip" -d "$TEMP_DIR"
+#     cp "$TEMP_DIR"/*.ttf "$FONT_DIR/"
+    
+#     echo "--> Regenerating font cache..."
+#     fc-cache -f "$FONT_DIR"
+#     rm -rf "$TEMP_DIR"
+#     echo "✔ Font installed. Be sure to select 'JetBrainsMono Nerd Font' in Konsole's Profile Settings!"
+# else
+#     echo "✔ Found an existing Nerd Font configuration."
+# fi
+#####################################
+
+
 mkdir -p "$CODE_BASE_DIR"
 cd "$CODE_BASE_DIR"  || exit
 
