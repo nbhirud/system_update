@@ -40,19 +40,41 @@ CLAM_USER="clamscan"
 sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamav-data clamav-lib clamav-filesystem 
 
 
-
-# Filesystem and Permissions - Ensure volatile directories exist and have correct ownership.
-
-sudo mkdir -p "$RUNTIME_DIR" "$LOG_DIR" "$QUARANTINE_DIR"
-# sudo chown clamscan:clamscan "$RUNTIME_DIR" "$LOG_DIR" $CLAMD_LOG
-sudo chown -R $CLAM_USER:$CLAM_USER "$RUNTIME_DIR" "$LOG_DIR" "$QUARANTINE_DIR"
-sudo chmod -R 750 "$RUNTIME_DIR" "$LOG_DIR"
+###########################
+### Filesystem and Permissions - Ensure volatile directories exist and have correct ownership.
+###########################
+# LOG files:
+sudo mkdir -p "$LOG_DIR"
+# sudo chown clamscan:clamscan "$LOG_DIR" $CLAMD_LOG
+sudo chown -R $CLAM_USER:$CLAM_USER "$LOG_DIR"
+sudo chmod -R 750 "$LOG_DIR"
 sudo touch "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
-sudo chown -R $CLAM_USER:$CLAM_USER "$CLAMD_LOG" "$ONACC_LOG"
-sudo chown -R $CLAM_USER:$CLAM_USER "$FRESH_LOG"
-sudo chmod -R 700 "$QUARANTINE_DIR"
+sudo chmod 640  "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+sudo chown -R $CLAM_USER:$CLAM_USER "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+
+###########################
+# DATABASE files:
 sudo chown -R $CLAM_USER:$CLAM_USER "$SIG_DB_DIR" # These are tested and correct credentials. Do not change
-sudo chmod -R 775 "$SIG_DB_DIR"
+sudo chmod -R 750 "$SIG_DB_DIR"
+
+###########################
+# RUNTIME files:
+sudo mkdir -p "$RUNTIME_DIR"
+# sudo chown clamscan:clamscan "$RUNTIME_DIR"
+sudo chown -R $CLAM_USER:$CLAM_USER "$RUNTIME_DIR"
+sudo chmod -R 750 "$RUNTIME_DIR"
+
+###########################
+# SOCK
+sudo touch $CLAMD_SOCK
+# sudo chown -R $CLAM_USER:$CLAM_USER $CLAMD_SOCK
+
+###########################
+# QUARANTINE files:
+sudo mkdir -p "$QUARANTINE_DIR"
+sudo chown -R $CLAM_USER:$CLAM_USER "$QUARANTINE_DIR"
+sudo chmod -R 700 "$QUARANTINE_DIR"
+
 
 
 # Fangfrisch dirs - not creating as we are using clamav-unofficial-sigs instead
