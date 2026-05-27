@@ -17,3 +17,5 @@ dynamic_title = true
 opacity = 0.9
 # Supported => Windowed, Maximized, Fullscreen
 startup_mode = "Maximized"
+
+# TODO - set terminal font - Noto Nerd Mono something

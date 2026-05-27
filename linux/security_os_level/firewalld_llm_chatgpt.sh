@@ -48,6 +48,7 @@ sudo firewall-cmd --permanent --add-service=https
 
 # Syncthing
 echo "[+] Allowing Syncthing..."
+sudo firewall-cmd --permanent --add-service=syncthing
 # Sync traffic
 sudo firewall-cmd --permanent --add-port=22000/tcp
 sudo firewall-cmd --permanent --add-port=22000/udp

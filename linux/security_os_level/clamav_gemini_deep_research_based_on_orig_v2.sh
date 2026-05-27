@@ -40,19 +40,41 @@ CLAM_USER="clamscan"
 sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamav-data clamav-lib clamav-filesystem 
 
 
-
-# Filesystem and Permissions - Ensure volatile directories exist and have correct ownership.
-
-sudo mkdir -p "$RUNTIME_DIR" "$LOG_DIR" "$QUARANTINE_DIR"
-# sudo chown clamscan:clamscan "$RUNTIME_DIR" "$LOG_DIR" $CLAMD_LOG
-sudo chown -R $CLAM_USER:$CLAM_USER "$RUNTIME_DIR" "$LOG_DIR" "$QUARANTINE_DIR"
-sudo chmod -R 750 "$RUNTIME_DIR" "$LOG_DIR"
+###########################
+### Filesystem and Permissions - Ensure volatile directories exist and have correct ownership.
+###########################
+# LOG files:
+sudo mkdir -p "$LOG_DIR"
+# sudo chown clamscan:clamscan "$LOG_DIR" $CLAMD_LOG
+sudo chown -R $CLAM_USER:$CLAM_USER "$LOG_DIR"
+sudo chmod -R 750 "$LOG_DIR"
 sudo touch "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
-sudo chown -R $CLAM_USER:$CLAM_USER "$CLAMD_LOG" "$ONACC_LOG"
-sudo chown -R $CLAM_USER:$CLAM_USER "$FRESH_LOG"
-sudo chmod -R 700 "$QUARANTINE_DIR"
+sudo chmod 640  "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+sudo chown -R $CLAM_USER:$CLAM_USER "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+
+###########################
+# DATABASE files:
 sudo chown -R $CLAM_USER:$CLAM_USER "$SIG_DB_DIR" # These are tested and correct credentials. Do not change
-sudo chmod -R 775 "$SIG_DB_DIR"
+sudo chmod -R 750 "$SIG_DB_DIR"
+
+###########################
+# RUNTIME files:
+sudo mkdir -p "$RUNTIME_DIR"
+# sudo chown clamscan:clamscan "$RUNTIME_DIR"
+sudo chown -R $CLAM_USER:$CLAM_USER "$RUNTIME_DIR"
+sudo chmod -R 750 "$RUNTIME_DIR"
+
+###########################
+# SOCK
+sudo touch $CLAMD_SOCK
+# sudo chown -R $CLAM_USER:$CLAM_USER $CLAMD_SOCK
+
+###########################
+# QUARANTINE files:
+sudo mkdir -p "$QUARANTINE_DIR"
+sudo chown -R $CLAM_USER:$CLAM_USER "$QUARANTINE_DIR"
+sudo chmod -R 700 "$QUARANTINE_DIR"
+
 
 
 # Fangfrisch dirs - not creating as we are using clamav-unofficial-sigs instead
@@ -63,7 +85,7 @@ sudo chmod -R 775 "$SIG_DB_DIR"
 # sudo chgrp clamav /var/lib/fangfrisch
 
 
-
+###########################
 
 # nautilus-python 
 # python3-fangfrisch  
@@ -141,8 +163,22 @@ sudo sed -i 's|^#AlertBrokenExecutables.*|AlertBrokenExecutables yes|' "$SCAN_CO
 cat <<EOF | sudo tee -a "$SCAN_CONF"
 ScanOnAccess yes
 OnAccessIncludePath /home/$(whoami)/Downloads
+OnAccessIncludePath /home/$(whoami)/.cache/thunderbird
+OnAccessIncludePath /home/$(whoami)/.cache/torbrowser
+OnAccessIncludePath /home/$(whoami)/.cache/librewolf
+OnAccessIncludePath /home/$(whoami)/.cache/BraveSoftware
+OnAccessIncludePath /home/$(whoami)/.cache/akregator
+OnAccessIncludePath /home/$(whoami)/.cache/qBittorrent
 OnAccessIncludePath /home/$(whoami)/.cache/mozilla
-OnAccessIncludePath /home/$(whoami)/.cache/google-chrome
+OnAccessIncludePath /home/$(whoami)/nb/Torrents
+OnAccessIncludePath /home/$(whoami)/nb/nb_script_downloads
+OnAccessIncludePath /home/$(whoami)/nb/Downloads
+OnAccessIncludePath /home/$(whoami)/Downloads
+OnAccessIncludePath /home/$(whoami)/.thunderbird/
+OnAccessIncludePath /home/$(whoami)/.mullvad-browser/
+OnAccessIncludePath /home/$(whoami)/.mozilla/
+OnAccessIncludePath /home/$(whoami)/.kodi/
+# OnAccessIncludePath /home/$(whoami)/.cache/google-chrome
 OnAccessPrevention yes
 OnAccessExcludeUname $CLAM_USER
 EOF
@@ -151,6 +187,8 @@ EOF
 # SELinux Hardening - Mandatory for scanning home directories and system paths in Fedora
 sudo setsebool -P antivirus_can_scan_system 1
 sudo setsebool -P antivirus_use_jit 1
+# Allow clamonacc to scan user home directories
+sudo setsebool -P antivirus_scan_home_dirs 1
 
 
 # echo "--- Phase 5: Unofficial Databases (Fangfrisch) ---"
@@ -211,9 +249,37 @@ sudo setsebool -P antivirus_use_jit 1
 
 
 # --- clamonacc service ---
-echo "[+] Creating clamonacc service..."
+# echo "[+] Creating clamonacc service..."
 
-sudo tee /etc/systemd/system/clamav-clamonacc.service >/dev/null <<EOF
+# sudo tee /etc/systemd/system/clamav-clamonacc.service >/dev/null <<EOF
+# [Unit]
+# Description=ClamAV On-Access Scanner
+# Requires=clamd@scan.service
+# After=clamd@scan.service
+
+# [Service]
+# Type=simple
+# ExecStart=/usr/sbin/clamonacc \
+#   --foreground \
+#   --fdpass \
+#   --log=$ONACC_LOG \
+#   --move=$QUARANTINE_DIR \
+#   --include-path=/home \
+#   --exclude-uids=0 \
+#   --exclude-dir=/proc \
+#   --exclude-dir=/sys
+
+# Restart=on-failure
+
+# [Install]
+# WantedBy=multi-user.target
+# EOF
+
+################
+
+sudo systemctl stop clamav-clamonacc.service
+
+sudo tee /etc/systemd/system/clamav-clamonacc.service > /dev/null <<EOF
 [Unit]
 Description=ClamAV On-Access Scanner
 Requires=clamd@scan.service
@@ -221,17 +287,16 @@ After=clamd@scan.service
 
 [Service]
 Type=simple
+User=root
+# Minimal arguments: Just foreground, logging, and fdpass
 ExecStart=/usr/sbin/clamonacc \
   --foreground \
   --fdpass \
-  --log=$ONACC_LOG \
-  --move=$QUARANTINE_DIR \
-  --include-path=/home \
-  --exclude-uids=0 \
-  --exclude-dir=/proc \
-  --exclude-dir=/sys
+  --log=/var/log/clamav/clamonacc.log \
+  --move=/var/quarantine/clamav
 
 Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
@@ -253,13 +318,17 @@ EOF
 # Update databases for the first time
 sudo freshclam
 
+
+##########################
 # Service Activation
+##########################
+
 # Fedora uses clamd@scan as the default instance.
 sudo systemctl daemon-reload
-# sudo systemctl enable --now clamav-freshclam.service
+sudo systemctl enable --now clamav-freshclam.service
 sudo systemctl enable --now clamav-unofficial-sigs.timer
 sudo systemctl enable --now clamd@scan.service
-# sudo systemctl enable --now clamav-clamonacc.service
+sudo systemctl enable --now clamav-clamonacc.service
 # sudo systemctl enable --now fangfrisch.timer
 
 # Verification
@@ -274,7 +343,37 @@ fi
 
 
 
+##########################
+### Fix ClamD Scan Service Start Failure - maybe do this if Verification at the end fails # TODO  - check
+##########################
 
+# turn SELinux on if disabled
+sudo setenforce 1
+
+# Fix 1 
+# This reads the audit log and creates a policy module named 'clamd_fix'
+# audit2allow tool reads the denial logs and creates a custom policy module automatically.
+sudo ausearch -m avc -ts recent | grep clamd | audit2allow -M clamd_fix
+sudo semodule -i clamd_fix.pp
+
+
+# Fix 2
+# Sometimes the issue isn't a missing permission rule, but simply that the files have the wrong SELinux context 
+# Restore the default contexts:
+sudo restorecon -Rv /var/log/clamav
+sudo restorecon -Rv /var/lib/clamav
+
+# # If above fix 2 fails, manually set the context:
+# # Set the log directory context
+# sudo semanage fcontext -a -t clamav_var_log_t "/var/log/clamav(/.*)?"
+# sudo restorecon -Rv /var/log/clamav
+# # Set the database directory context
+# sudo semanage fcontext -a -t clamav_var_lib_t "/var/lib/clamav(/.*)?"
+# sudo restorecon -Rv /var/lib/clamav
+
+####### NOTE: if the fix was needed to be run, then run the "Service Activation" section again
+
+########################################################################################################
 
 ##### Debugging:
 
@@ -311,3 +410,77 @@ fi
 
 # sudo systemctl disable clamav-freshclam.service
 # sudo systemctl disable clamav-clamonacc.service
+
+
+
+# ############################
+# # Debugging freshclam
+
+# # Database Problems The ClamAV database might be missing or corrupted:
+# # Check if freshclam ran successfully
+# sudo freshclam
+
+# # Verify database exists
+# ls -la /var/lib/clamav/
+
+# # Check for errors in the freshclam log
+# sudo tail -n 20 /var/log/freshclam.log
+
+# ############################
+# # Debugging clamd@scan.service
+
+# # Check the specific error logs
+# # sudo journalctl -u clamd@scan.service -n 50 --no-pager
+# sudo journalctl -u clamd@scan.service -n 100 --no-pager -e
+
+# # Or view the service status with extended output
+# sudo systemctl status clamd@scan.service -l
+
+# # Configuration File Issues Check /etc/clamav/clamd.conf for syntax errors:
+# sudo clamd --config-file=/etc/clamav/clamd.conf --test
+
+# # check if the clamscan user exists
+# id clamscan
+
+# # Check for SELinux/AppArmor interference
+# # Check SELinux status
+# getenforce
+# # If enforcing, check for denials
+# sudo ausearch -m avc -ts recent 2>/dev/null | grep clamd
+# # sudo ausearch -m avc -ts recent | grep clamd
+# # Temporarily set to permissive to test (not recommended for production)
+# # sudo setenforce 0
+
+# # Port Conflicts Check if another process is using port 3310:
+# sudo netstat -tlnp | grep 3310
+# # or
+# sudo ss -tlnp | grep 3310
+
+# # Resource Constraints Check system resources:
+# free -h
+# df -h
+
+# # Verify it's working
+
+
+# sudo systemctl is-active clamd@scan.service
+# # Should return "active"
+
+# # check what user the service is supposed to run as:
+# # Check the service file
+# grep -i user /usr/lib/systemd/system/clamd@.service
+# # Check the config file
+# grep -i user /etc/clamd.d/scan.conf
+
+
+# ############################
+# # Debugging clamav-clamonacc.service
+
+# sudo journalctl -u clamav-clamonacc.service -n 50 --no-pager -e
+
+# # Check if the binary supports the flags you are using:
+# /usr/sbin/clamonacc --help | grep -E "fdpass|include-path"
+
+# # Check for denials:
+# sudo ausearch -m avc -ts recent | grep clamonacc
+

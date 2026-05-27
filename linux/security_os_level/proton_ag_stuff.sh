@@ -166,15 +166,21 @@ wget "$PROTON_VPN_BASE_URL/$FILENAME"
 # Install the Proton VPN repository containing the app
 sudo dnf install -y ./"$FILENAME" # && sudo dnf check-update --refresh 
 
+# Install the app and accept an OpenPGP key. Just installing the above RPM doesn't complete the setup.
+sudo dnf install -y proton-vpn-gnome-desktop 
+
 if [ "$DESKTOP" = "gnome" ]
 then
-
-  # Install the app and accept an OpenPGP key.
-  sudo dnf install -y proton-vpn-gnome-desktop 
   # Enable GNOME desktop tray icons
   sudo dnf install -y libappindicator-gtk3 gnome-shell-extension-appindicator # gnome-extensions-app
   echo "************************ TODO: Open the Extensions app and ensure that AppIndicator and KStatusNotifierItem Support is toggled on before opening the app ************************"
 fi
+
+########################## ProtonVPN cli ###################################################################
+# https://protonvpn.com/support/linux-cli
+# Optional installation if need arises
+# sudo dnf install -y proton-vpn-cli
+
 
 if [ "$SETUP_TYPE" = "full" ];
 then 
