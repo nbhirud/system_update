@@ -137,8 +137,6 @@ sudo sed -i "s|^reload_dbs=.*|reload_dbs=\"yes\"|" "$UNOFFICIAL_SIGS_OS_CONF"
 
 # Daemon (clamd) Config:
 
-
-
 sudo sed -i '/^Example/d' "$SCAN_CONF"
 sudo sed -i "s|^#LogFile.*|LogFile $CLAMD_LOG|" "$SCAN_CONF"
 sudo sed -i 's|^#LogTime.*|LogTime yes|' "$SCAN_CONF"
@@ -151,6 +149,21 @@ sudo sed -i 's|^#DetectPUA.*|DetectPUA yes|' "$SCAN_CONF"
 sudo sed -i 's|^#MaxThreads.*|MaxThreads 4|' "$SCAN_CONF"
 sudo sed -i 's|^#ReadTimeout.*|ReadTimeout 180|' "$SCAN_CONF"
 
+
+# Excluded dirs
+cat <<EOF | sudo tee -a "$SCAN_CONF"
+ExcludePath /etc/hosts
+# Add trusted browser extensions (regex including profiles, etc)
+
+
+# {d19a89b9-76c1-4a61-bcd4-49e8de916403}.xpi
+# uBlock0@raymondhill.net.xpi
+
+
+EOF
+
+
+
 # Content Scanning Options
 sudo sed -i 's|^#ScanPE.*|ScanPE yes|' "$SCAN_CONF"
 sudo sed -i 's|^#ScanELF.*|ScanELF yes|' "$SCAN_CONF"
@@ -161,7 +174,12 @@ sudo sed -i 's|^#AlertBrokenExecutables.*|AlertBrokenExecutables yes|' "$SCAN_CO
 # On-Access Scanning (ClamOnAcc)
 # Configure Real-time protection for Downloads and Browser Caches
 cat <<EOF | sudo tee -a "$SCAN_CONF"
+
+# On-Access Scanning (ClamOnAcc) Flags
 ScanOnAccess yes
+OnAccessPrevention yes
+
+# On-Access Scanning (ClamOnAcc) Inclusions
 OnAccessIncludePath /home/$(whoami)/Downloads
 OnAccessIncludePath /home/$(whoami)/.cache/thunderbird
 OnAccessIncludePath /home/$(whoami)/.cache/torbrowser
@@ -179,8 +197,10 @@ OnAccessIncludePath /home/$(whoami)/.mullvad-browser/
 OnAccessIncludePath /home/$(whoami)/.mozilla/
 OnAccessIncludePath /home/$(whoami)/.kodi/
 # OnAccessIncludePath /home/$(whoami)/.cache/google-chrome
-OnAccessPrevention yes
+
+# On-Access Scanning (ClamOnAcc) Exclusions
 OnAccessExcludeUname $CLAM_USER
+# OnAccessExcludePath /home/user # Add trusted browser extensions (regex including profiles, etc)
 EOF
 
 
@@ -292,8 +312,8 @@ User=root
 ExecStart=/usr/sbin/clamonacc \
   --foreground \
   --fdpass \
-  --log=/var/log/clamav/clamonacc.log \
-  --move=/var/quarantine/clamav
+  --log=$ONACC_LOG \
+  --move=$QUARANTINE_DIR
 
 Restart=on-failure
 RestartSec=5
