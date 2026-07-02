@@ -2,6 +2,10 @@
 
 set -eux
 
+
+# TODO - following is required only for Gnome. Exit if any other DE
+
+
 # https://userbase.kde.org/KDEConnect
 # https://community.kde.org/KDEConnect
 
