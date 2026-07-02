@@ -15,3 +15,27 @@ nmcli connection modify nbInternet ipv4.dns 194.242.2.6,194.242.2.4,1.1.1.3,1.0.
 
 # https://wiki.archlinux.org/title/NetworkManager
 # https://www.privacyguides.org/en/os/linux-overview/ - see "MAC Address Randomization" and other stuff
+
+##################################################
+# Debugging and Testing
+##################################################
+
+# Check your network
+# ip route | grep default
+# ip addr show
+# ip route
+
+# Check if there are any unknown devices in your network
+# sudo dnf install -y nmap
+# sudo nmap -sn 192.168.0.0/24
+# arp -an
+
+# You may see hostnames that identify the devices.
+# avahi-browse -at
+
+# You can also inspect vendors:
+# ip neigh
+
+# Check MAC - The MAC OUI often reveals the manufacturer.
+# sudo nmap -sP 192.168.0.ABC
+# sudo nmap -sP 192.168.0.XYZ

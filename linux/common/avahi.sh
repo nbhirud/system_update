@@ -13,7 +13,7 @@ sudo firewall-cmd --reload
 sleep 5s # Check mDNS *.local in status
 
 ##################################################
-# Debugging
+# Debugging and Testing
 ##################################################
 
 # sudo systemctl status avahi-daemon 
