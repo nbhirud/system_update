@@ -23,6 +23,15 @@ NEXTDNS_DEVICE_ID="$HOSTNAME"
 SETUP_TYPE="light" # full or light (or minimal - TBD - bare minimum, remove all optional stuff)
 PC_TYPE="paranoid" # public or private or paranoid
 
+echo "************************ Setting User-Defined Flags ************************"
+
+MEDIA_PC="" # TODO
+INSTALL_XYZ="yes"
+
+
+
+echo "************************ Verifying User-Defined constants and flags ************************"
+
 if [ "$GIT_USER_EMAIL" = "" ]; then
   echo "Warning - GIT_USER_EMAIL not provided."
   sleep 5s
@@ -35,24 +44,29 @@ fi
 
 echo "************************ Setting INFERRED literals and constants ************************"
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
-
-DESKTOP_DIR="$HOME_DIR/nb/Desktop"
-DOCUMENTS_DIR="$HOME_DIR/nb/Documents"
-DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
-VIDEOS_DIR="$HOME_DIR/nb/Videos"
-PICTURES_DIR="$HOME_DIR/nb/Pictures"
-MUSIC_DIR="$HOME_DIR/nb/Music"
-PUBLIC_DIR="$HOME_DIR/nb/Public"
-TEMPLATES_DIR="$HOME_DIR/nb/Templates"
-PROJECTS_DIR="$HOME_DIR/nb/Projects"
-
-SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
+NBDIR="$HOME_DIR/nb"
+CODEPROJECTS_DIR="$NBDIR/CodeProjects"
+SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
 # RUN_FIRST_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
-SCRIPT_BACKUPS_DIR="$HOME_DIR/nb/nb_script_backups" 
-SCRIPT_DOWNLOADS_DIR="$HOME_DIR/nb/nb_script_downloads" 
+DESKTOP_DIR="$NBDIR/Desktop"
+DOCUMENTS_DIR="$NBDIR/Documents"
+DOWNLOADS_DIR="$NBDIR/Downloads"
+VIDEOS_DIR="$NBDIR/Videos"
+PICTURES_DIR="$NBDIR/Pictures"
+MUSIC_DIR="$NBDIR/Music"
+PUBLIC_DIR="$NBDIR/Public"
+TEMPLATES_DIR="$NBDIR/Templates"
+PROJECTS_DIR="$NBDIR/Projects"
 
-TIMESTAMP_FILENAME="$(date +%Y-%m-%d_%H-%M-%S)"
+SCRIPT_BACKUPS_DIR="$NBDIR/nb_script_backups" 
+SCRIPT_DOWNLOADS_DIR="$NBDIR/nb_script_downloads" 
+
+FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
+
+echo "************************ Setting Inferred flags ************************"
+
+
 
 echo "************************ Create directories ************************"
 # TODO - use this downloads dir for downloads of ProtonAG installers, etc
@@ -182,6 +196,16 @@ sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-
 # obfs4
 # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
 
+# Set codium as the default text editor
+xdg-mime default codium.desktop text/plain
+# Set brave as the default browser - TODO
+# Set thunderbird/ProtonMail as the default email client - TODO
+# Set KDEConnect/GSConnect as the default Phone numbers handler - TODO
+# Set VLC as the default video player - TODO
+# Set Okular as the default PDF viewer - TODO
+# Set Alacritty as the default terminal emulator - TODO
+# Set OSM as the default Map - TODO
+
 echo "************************ Adding docker browser repo (not installing) ************************"
 # https://docs.docker.com/engine/install/fedora/
 sudo dnf -y install dnf-plugins-core
@@ -264,7 +288,7 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
 ######################################
 
 echo "************************ Install and configure more dnf packages ************************"
-sudo dnf install -y  gh fzf fastfetch bleachbit
+sudo dnf install -y gh fzf fastfetch bleachbit
 # sudo dnf install -y  gnome-browser-connector dnfdragora transmission
 # sudo dnf install -y akregator alligator kasts clementine
 # TODO - configure fzf
@@ -294,10 +318,13 @@ then
   echo "Use pre-installed KDE Partition Manager instead of gparted"
   echo "Use pre-installed Kasts instead of Gnome Podcasts"
   echo "Use pre-installed Akregator instead of liferea and quiterss"
+
+  echo "Installing apps to try out on KDE - dnf"
+  sudo dnf install -y kate kalarm kbackup
 fi
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub org.signal.Signal
+flatpak install -y flathub org.signal.Signal it.mijorus.gearlever com.github.tchx84.Flatseal
 # com.brave.Browser
 
 # TODO - check which brave is installed (flatpak vs dnf) and set following accordingly
@@ -307,7 +334,9 @@ export CHROME_EXECUTABLE=/usr/bin/brave-browser
 
 if [ "$SETUP_TYPE" = "full" ];
 then
-  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex network.loki.Session io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay
+  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex network.loki.Session io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay app.organicmaps.desktop net.rpdev.OpenTodoList im.riot.Riot
+
+
 
 fi
 
@@ -317,7 +346,8 @@ then
 
   if [ "$SETUP_TYPE" = "full" ];
   then
-    flatpak install -y flathub org.gnome.Podcasts de.haeckerfelix.Shortwave org.gnome.Fractal
+    flatpak install -y flathub org.gnome.Podcasts de.haeckerfelix.Shortwave 
+    # org.gnome.Fractal
   fi
 
 elif  [ "$DESKTOP" = "kde" ]
@@ -326,10 +356,21 @@ then
 
   if [ "$SETUP_TYPE" = "full" ];
   then
-    flatpak install -y flathub org.kde.kasts org.kde.neochat
+    flatpak install -y flathub org.kde.kasts 
+    # org.kde.neochat
+
+    # echo "Installing apps to try out on KDE - flatpak"
+    # flatpak install -y flathub <>
+    # dev.zed.Zed
   fi
 
 fi
+
+
+
+echo "Installing apps to try out on KDE - curl/wget | sh"
+curl -f https://zed.dev/install.sh | sh
+
 
 
 # com.protonvpn.www me.proton.Mail me.proton.Pass # installing using official instructions via script
@@ -348,25 +389,44 @@ if [ "$DESKTOP" = "gnome" ] || [ "$DESKTOP" = "cosmic" ];
 then
   sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal
   # Do something similar for Element, Telegram, etc
+  # sudo flatpak override --password-store=gnome-libsecret im.riot.Riot
+
 
 elif  [ "$DESKTOP" = "kde" ]
 then
   sudo flatpak override --env=SIGNAL_PASSWORD_STORE=kwallet6 org.signal.Signal
+  # sudo flatpak override --env=password-store=kwallet6 im.riot.Riot
+  flatpak override --user im.riot.Riot \
+  --talk-name=org.kde.kwalletd6 \
+  --talk-name=org.freedesktop.secrets
+  
+  # To enable drag ang drop, etc
+  sudo flatpak override --user --filesystem=home com.rtosta.zapzap
 
 fi
 
 #######################################
 
+# # Reference: https://github.com/laurent22/joplin/blob/dev/Joplin_install_and_update.sh
+# INSTALL_DIR="${HOME}/.joplin"   # default installation directory
+# # Check if it's an update or a new install
+# DOWNLOAD_TYPE="New"
+# if [[ -f "${INSTALL_DIR}/Joplin.AppImage" ]]; then
+#   DOWNLOAD_TYPE="Update"
+# fi
+
+
 if [ "$SETUP_TYPE" = "full" ];
 then
+  # https://joplinapp.org/help/install/
   wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash
 fi
 
 #######################################
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh $DISTRO $SETUP_TYPE $DESKTOP $TIMESTAMP_FILENAME
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh_orig.sh $DISTRO $SETUP_TYPE $DESKTOP $FILENAME_TIMESTAMP
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty.sh
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty_orig.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh $GIT_USER_EMAIL
 
@@ -377,6 +437,32 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh
 sudo sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEXTDNS_DEVICE_ID
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh $SETUP_TYPE $DESKTOP
+
+
+
+######################################
+# Start up apps
+######################################
+
+
+# Akregator 
+# Option 1 - Add to startup
+# /usr/bin/akregator --hide-mainwindow
+
+# Option 2 (call a script)
+# #!/usr/bin/sh     
+# /usr/bin/akregator > /dev/null 2>&1 &
+# sleep 5
+# qdbus org.kde.akregator /akregator /akregator/MainWindow_1 hide
+
+
+
+
+
+
+
+
+
 
 #######################################
 
@@ -401,14 +487,9 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh $SETUP_TY
 # pin apps to dash in right seq
 # add apps to app folders in overview
 
+# Pin apps to taskbar via script in correct order
+
 ###############################
-
-# TODO - Edit nbclean for cosmic
-# sudo bleachbit doesn'tt work idirectly on cosmic. it blames wayland. Surround it with commands as follows to use xwayland
-# https://docs.bleachbit.org/doc/frequently-asked-questions.html
-# https://wiki.archlinux.org/title/Running_GUI_applications_as_root
-# xhost si:localuser:root && sudo bleachbit --clean --preset && xhost -si:localuser:root
-
 
 sudo tee -a ~/.zshrc <<'ZSHRC_EOF'
 
@@ -449,6 +530,22 @@ source ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh
 # Add to nbReboot - update dnsmasq blocklists
 # Or maybe most of these just need to be cron jobs? (linux/common/cron_jobs.sh)
 
+
+# TODO - Edit nbclean for cosmic
+# sudo bleachbit doesn'tt work idirectly on cosmic. it blames wayland. Surround it with commands as follows to use xwayland
+# https://docs.bleachbit.org/doc/frequently-asked-questions.html
+# https://wiki.archlinux.org/title/Running_GUI_applications_as_root
+# xhost si:localuser:root && sudo bleachbit --clean --preset && xhost -si:localuser:root
+
+############################
+
+alias nbjoplinupdate="wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash"
+alias nbuvupdate="uv self update"
+
+
+
+alias gearlever='flatpak run it.mijorus.gearlever'
+# flatpak run it.mijorus.gearlever --update <name of appimage> # updates 1 appimage at a time
 #################################################################
 
 ZSHRC_EOF
@@ -479,8 +576,23 @@ echo "************************ Update and upgrade everything *******************
 # TODO cron jobs - linux/common/cron_jobs.sh
 # brave config
 # VSCodium config
+# obsidian in run first
+# neovim  in run first
+# Boxes alternative for kde fedora
+# gparted alt for kde fedora
 
 #####################################33
 
 # Some OSes to try:
 # CachyOS, omarchy
+
+
+####################################################
+
+
+######################################
+# Debugging
+######################################
+
+# Check all the added repos
+# cd /etc/yum.repos.dg
