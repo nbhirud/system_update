@@ -487,6 +487,8 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh $SETUP_TY
 # pin apps to dash in right seq
 # add apps to app folders in overview
 
+# Pin apps to taskbar via script in correct order
+
 ###############################
 
 # TODO - Edit nbclean for cosmic
@@ -565,8 +567,23 @@ echo "************************ Update and upgrade everything *******************
 # TODO cron jobs - linux/common/cron_jobs.sh
 # brave config
 # VSCodium config
+# obsidian in run first
+# neovim  in run first
+# Boxes alternative for kde fedora
+# gparted alt for kde fedora
 
 #####################################33
 
 # Some OSes to try:
 # CachyOS, omarchy
+
+
+####################################################
+
+
+######################################
+# Debugging
+######################################
+
+# Check all the added repos
+# cd /etc/yum.repos.dg
