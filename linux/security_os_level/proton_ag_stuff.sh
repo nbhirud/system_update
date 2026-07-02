@@ -22,7 +22,7 @@ is_user_root ()
     [ "$(id -u)" -eq 0 ]
 }
 
-
+# DO NOT initialize these here. Pass them instead while calling this script
 SETUP_TYPE=""
 DESKTOP=""
 
@@ -201,7 +201,7 @@ then
   # Calculate *.rpm file's SHA for debugging:
   SHA_CALCULATED_PROTAUTH=$(sha512sum ProtonAuthenticator.rpm)
   echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTAUTH" 
-  # Confirm the package’s integrity
+  # Confirm the package's integrity
   echo "$SHA_ProtonAuthenticator" ProtonAuthenticator.rpm | sha512sum --check -
   # Install it
   sudo dnf install -y ProtonAuthenticator.rpm
@@ -223,7 +223,7 @@ then
   # Calculate *.rpm file's SHA for debugging:
   SHA_CALCULATED_PROTPASS=$(sha512sum ProtonPass.rpm)
   echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTPASS" 
-  # Confirm the package’s integrity
+  # Confirm the package's integrity
   echo "$SHA_ProtonPass ProtonPass.rpm" | sha512sum --check -
   # Install it
   # sudo rpm -i --force ProtonPass.rpm # OFFICIAL way, but RedHat seems to discourage this usage
@@ -253,7 +253,7 @@ then
   # Calculate *.rpm file's SHA for debugging:
   SHA_CALCULATED_PROTMAIL=$(sha512sum ProtonMail-desktop-beta.rpm)
   echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTMAIL" 
-  # check the RPM file’s integrity
+  # check the RPM file's integrity
   echo "$SHA_ProtonMail ProtonMail-desktop-beta.rpm" | sha512sum --check -
   # Install it
   sudo dnf install -y ./ProtonMail-desktop-beta.rpm
