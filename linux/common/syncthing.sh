@@ -30,8 +30,31 @@ systemctl --user enable --now syncthing.service
 
 # mkdir -p "$HOME_DIR"/nb/Syncthing/{Obsidian,Joplin,send_to_devices} # not POSIX compliant
 
-# https://www.baeldung.com/linux/shell-script-iterate-over-string-list
-for i in Obsidian Joplin send_to_devices
+# # https://www.baeldung.com/linux/shell-script-iterate-over-string-list
+# # DCIM_nbM42_external  DCIM_nbM42_internal  DeSyncCC  Joplin  KeePass  kodi_backups  nbM42_and_nbMain  nbM42_sms_import_export  nbMain_and_nbAcer  Obsidian  OrgMode  Recordings_nbM42  Signal_Backup_nbM42
+
+# for i in Obsidian Joplin
+# do
+# 	mkdir -p "$HOME_DIR/nb/Syncthing/$i"
+# done
+
+SYNC_DIRS=(
+    "DCIM_nbM42_external"  
+    "DCIM_nbM42_internal"  
+    "DeSyncCC"  
+    "Joplin"  
+    "KeePass"  
+    "kodi_backups"  
+    "nbM42_and_nbMain"  
+    "nbM42_sms_import_export"  
+    "nbMain_and_nbAcer"  
+    "Obsidian"  
+    "OrgMode"  
+    "Recordings_nbM42"  
+    "Signal_Backup_nbM42"
+)
+
+for i in "${SYNC_DIRS[@]}"
 do
 	mkdir -p "$HOME_DIR/nb/Syncthing/$i"
 done
@@ -43,14 +66,14 @@ done
 # - accept the security warning (self‑signed cert)
 # - create login
 # - create a device ID
-# - In the GUI, click “Add Folder” → Folder Path, Folder id, etc (Do this for each folder you want to sync including the ones created above)
+# - In the GUI, click "Add Folder" → Folder Path, Folder id, etc (Do this for each folder you want to sync including the ones created above)
 
 # On Android:
 # - Create a parent folder to place all the synced folders
 # - install and setup syncthing on fdroid - syncthing fork something. Check https://docs.syncthing.net/users/contrib.html#android
 
 # On Each device:
-# - “Devices” tab → + (Add Device). Do this for each device
+# - "Devices" tab → + (Add Device). Do this for each device
 
 # On the linux web GUI / Android app:
 # - Accept device connection requests
