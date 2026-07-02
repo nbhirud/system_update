@@ -145,5 +145,89 @@ elif [ "$DESKTOP" = "kde" ]; then
 fi
 
 
+##################################################
+# Debugging and Testing
+##################################################
+
+### Is Syncthing running?
+# systemctl --user status syncthing
+# systemctl --user enable --now syncthing
+# systemctl --user restart syncthing
+# systemctl --user stop syncthing
+
+# ss -tulpn | grep 8384
+# You should see something like:
+# LISTEN 0 4096 127.0.0.1:8384
+# or
+# LISTEN 0 4096 0.0.0.0:8384
+# or machine IP
+# 192.168.0.XYZ:8384
+
+### Can you access it locally?
+# curl http://127.0.0.1:8384
+# xdg-open http://127.0.0.1:8384
+
+# syncthing connectivity status
+
+
+### Check Syncthing's GUI bind address
+
+# Look in:
+# ~/.local/state/syncthing/config.xml
+# and find:
+# <gui enabled="true" tls="false">
+#     <address>127.0.0.1:8384</address>
+# </gui>
+
+# If it's bound to: 127.0.0.1:8384, then only localhost can access it.
+
+# If you want access via hostnameXYZ.local (while using avahi), change to: 
+# <address>0.0.0.0:8384</address> 
+# or machine IP
+# <address>192.168.0.xyz:8384</address>
+# then restart:
+# systemctl --user restart syncthing
+
+
+# grep -A5 "<gui" ~/.local/state/syncthing/config.xml
+# Look for
+# <address>127.0.0.1:8384</address>
+# or 
+# <address>0.0.0.0:8384</address>
+
+### Check firewall
+# sudo firewall-cmd --list-ports
+
+# To allow 8384:
+# sudo firewall-cmd --permanent --add-port=8384/tcp
+# sudo firewall-cmd --reload
+
+
+# Check name resolution - Verify that .local resolves:
+# ping hostnameXYZ.local
+# Expected:
+# PING hostnameXYZ.local (192.168.0.xyz)
+# If ping fails, the problem is Avahi/mDNS.
+
+# On Fedora, Syncthing's web UI is typically configured to listen only on: 127.0.0.1:8384
+# In that configuration: http://localhost:8384 works
+# http://nbMain.local:8384 fails because the browser resolves nbMain.local to 192.168.0.66, not 127.0.0.1.
+
+# The linger setting lets Syncthing continue running even if you log out of KDE, which is useful for a machine acting as a synchronization node.
+# systemctl --user enable --now syncthing
+# loginctl enable-linger $USER
+
+# Check whether linger is already enabled:
+# loginctl show-user $USER -p Linger
+
+
+# If you want LAN access but only from trusted machines, keep in the XML:
+# <address>0.0.0.0:8384</address> 
+# and restrict it with firewalld:
+# sudo firewall-cmd --permanent \
+#   --add-rich-rule='rule family="ipv4" source address="192.168.0.0/24" port protocol="tcp" port="8384" accept'
+# or even to specific hosts (Then only selected LAN devices can access the GUI.):
+# sudo firewall-cmd --permanent \
+#   --add-rich-rule='rule family="ipv4" source address="192.168.0.48" port protocol="tcp" port="8384" accept'
 
 
