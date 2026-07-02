@@ -14,8 +14,8 @@ SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
 sudo dnf install -y syncthing
 
 
-# Firewall: (Figure out correct commands)
-# https://docs.syncthing.net/users/firewall.html#firewall-setup
+# if id "$REAL_USER" &>/dev/null; then
+# loginctl enable-linger "$REAL_USER" || true
 
 # sudo firewall-cmd --permanent --add-port=8384/tcp
 # sudo firewall-cmd --reload
@@ -54,6 +54,27 @@ done
 # - Setup what folder is shared with what device, and other settings
 
 # Test by placing a file or modifying a file that the syncing is working
+
+#########################
+# Firewall: (Figure out correct commands)
+# https://docs.syncthing.net/users/firewall.html#firewall-setup
+
+# sudo firewall-cmd --permanent --add-port=8384/tcp
+# sudo firewall-cmd --reload
+
+##########
+
+# Following rule allows only your OtherPC (192.168.0.XYZ) to reach the Syncthing GUI. You can specify more IPs like this to restrict local network usability
+# sudo firewall-cmd --permanent \
+#   --add-rich-rule='rule family="ipv4" source address="192.168.0.XYZ" port protocol="tcp" port="8384" accept'
+
+# sudo firewall-cmd --permanent \
+#   --add-rich-rule='rule family="ipv4" port protocol="tcp" port="8384" drop'
+
+# sudo firewall-cmd --reload
+
+#############################
+
 
 echo "************************ Identify Desktop Environment ************************"
 DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
