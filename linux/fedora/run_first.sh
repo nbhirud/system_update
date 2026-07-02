@@ -23,6 +23,15 @@ NEXTDNS_DEVICE_ID="$HOSTNAME"
 SETUP_TYPE="light" # full or light (or minimal - TBD - bare minimum, remove all optional stuff)
 PC_TYPE="paranoid" # public or private or paranoid
 
+echo "************************ Setting User-Defined Flags ************************"
+
+MEDIA_PC="" # TODO
+INSTALL_XYZ="yes"
+
+
+
+echo "************************ Verifying User-Defined constants and flags ************************"
+
 if [ "$GIT_USER_EMAIL" = "" ]; then
   echo "Warning - GIT_USER_EMAIL not provided."
   sleep 5s
@@ -35,24 +44,29 @@ fi
 
 echo "************************ Setting INFERRED literals and constants ************************"
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
-
-DESKTOP_DIR="$HOME_DIR/nb/Desktop"
-DOCUMENTS_DIR="$HOME_DIR/nb/Documents"
-DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
-VIDEOS_DIR="$HOME_DIR/nb/Videos"
-PICTURES_DIR="$HOME_DIR/nb/Pictures"
-MUSIC_DIR="$HOME_DIR/nb/Music"
-PUBLIC_DIR="$HOME_DIR/nb/Public"
-TEMPLATES_DIR="$HOME_DIR/nb/Templates"
-PROJECTS_DIR="$HOME_DIR/nb/Projects"
-
-SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
+NBDIR="$HOME_DIR/nb"
+CODEPROJECTS_DIR="$NBDIR/CodeProjects"
+SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
 # RUN_FIRST_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
-SCRIPT_BACKUPS_DIR="$HOME_DIR/nb/nb_script_backups" 
-SCRIPT_DOWNLOADS_DIR="$HOME_DIR/nb/nb_script_downloads" 
+DESKTOP_DIR="$NBDIR/Desktop"
+DOCUMENTS_DIR="$NBDIR/Documents"
+DOWNLOADS_DIR="$NBDIR/Downloads"
+VIDEOS_DIR="$NBDIR/Videos"
+PICTURES_DIR="$NBDIR/Pictures"
+MUSIC_DIR="$NBDIR/Music"
+PUBLIC_DIR="$NBDIR/Public"
+TEMPLATES_DIR="$NBDIR/Templates"
+PROJECTS_DIR="$NBDIR/Projects"
 
-TIMESTAMP_FILENAME="$(date +%Y-%m-%d_%H-%M-%S)"
+SCRIPT_BACKUPS_DIR="$NBDIR/nb_script_backups" 
+SCRIPT_DOWNLOADS_DIR="$NBDIR/nb_script_downloads" 
+
+FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
+
+echo "************************ Setting Inferred flags ************************"
+
+
 
 echo "************************ Create directories ************************"
 # TODO - use this downloads dir for downloads of ProtonAG installers, etc
