@@ -407,8 +407,18 @@ fi
 
 #######################################
 
+# # Reference: https://github.com/laurent22/joplin/blob/dev/Joplin_install_and_update.sh
+# INSTALL_DIR="${HOME}/.joplin"   # default installation directory
+# # Check if it's an update or a new install
+# DOWNLOAD_TYPE="New"
+# if [[ -f "${INSTALL_DIR}/Joplin.AppImage" ]]; then
+#   DOWNLOAD_TYPE="Update"
+# fi
+
+
 if [ "$SETUP_TYPE" = "full" ];
 then
+  # https://joplinapp.org/help/install/
   wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash
 fi
 
