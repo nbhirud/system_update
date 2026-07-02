@@ -17,5 +17,8 @@ dynamic_title = true
 opacity = 0.9
 # Supported => Windowed, Maximized, Fullscreen
 startup_mode = "Maximized"
+# Ensure this is set for Wayland specific optimizations
+decorations = "full" # "none" Or "full" depending on your WM preference
+option_as_alt = "Both" # Essential for Vim users
 
 # TODO - set terminal font - Noto Nerd Mono something
