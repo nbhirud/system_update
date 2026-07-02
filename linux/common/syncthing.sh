@@ -59,6 +59,31 @@ do
 	mkdir -p "$HOME_DIR/nb/Syncthing/$i"
 done
 
+# --------------------------------------------------
+# Syncthing GUI LAN access
+# --------------------------------------------------
+# 0.0.0.0:8384 allows accessing syncthing using http://hostname.local:8384, http://127.0.0.1:8384, http://192.168.0.XYZ:8384 (Machine IP), http://localhost:8384 from anywhere on your LAN without worrying about DHCP changes. (Use only is you know the network is always going to be safe)
+
+# SYNCTHING_CONFIG="/home/${REAL_USER}/.local/state/syncthing/config.xml"
+
+# if [[ -f "$SYNCTHING_CONFIG" ]]; then
+
+# cp -a "$SYNCTHING_CONFIG" "${SYNCTHING_CONFIG}.bak.$(date +%s)"
+
+# # Option A (recommended)
+# sed -Ei \
+#     's|<address>[^<]+</address>|<address>0.0.0.0:8384</address>|' \
+#     "$SYNCTHING_CONFIG"
+
+# chown "${REAL_USER}:${REAL_USER}" "$SYNCTHING_CONFIG"
+
+# su - "$REAL_USER" -c '
+#     systemctl --user restart syncthing 2>/dev/null || true
+# '
+
+# fi
+
+
 # Setup syncthing after setup in web browser:
 # xdg-open http://127.0.0.1:8384
 
