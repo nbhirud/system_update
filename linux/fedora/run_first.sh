@@ -364,9 +364,9 @@ fi
 
 #######################################
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh $DISTRO $SETUP_TYPE $DESKTOP $TIMESTAMP_FILENAME
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh_orig.sh $DISTRO $SETUP_TYPE $DESKTOP $FILENAME_TIMESTAMP
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty.sh
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty_orig.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh $GIT_USER_EMAIL
 
