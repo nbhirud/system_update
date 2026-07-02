@@ -288,7 +288,7 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
 ######################################
 
 echo "************************ Install and configure more dnf packages ************************"
-sudo dnf install -y  gh fzf fastfetch bleachbit
+sudo dnf install -y gh fzf fastfetch bleachbit
 # sudo dnf install -y  gnome-browser-connector dnfdragora transmission
 # sudo dnf install -y akregator alligator kasts clementine
 # TODO - configure fzf
@@ -318,10 +318,13 @@ then
   echo "Use pre-installed KDE Partition Manager instead of gparted"
   echo "Use pre-installed Kasts instead of Gnome Podcasts"
   echo "Use pre-installed Akregator instead of liferea and quiterss"
+
+  echo "Installing apps to try out on KDE - dnf"
+  sudo dnf install -y kate kalarm kbackup
 fi
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub org.signal.Signal
+flatpak install -y flathub org.signal.Signal it.mijorus.gearlever com.github.tchx84.Flatseal
 # com.brave.Browser
 
 # TODO - check which brave is installed (flatpak vs dnf) and set following accordingly
@@ -331,7 +334,9 @@ export CHROME_EXECUTABLE=/usr/bin/brave-browser
 
 if [ "$SETUP_TYPE" = "full" ];
 then
-  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex network.loki.Session io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay
+  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex network.loki.Session io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay app.organicmaps.desktop net.rpdev.OpenTodoList im.riot.Riot
+
+
 
 fi
 
@@ -341,7 +346,8 @@ then
 
   if [ "$SETUP_TYPE" = "full" ];
   then
-    flatpak install -y flathub org.gnome.Podcasts de.haeckerfelix.Shortwave org.gnome.Fractal
+    flatpak install -y flathub org.gnome.Podcasts de.haeckerfelix.Shortwave 
+    # org.gnome.Fractal
   fi
 
 elif  [ "$DESKTOP" = "kde" ]
@@ -350,10 +356,21 @@ then
 
   if [ "$SETUP_TYPE" = "full" ];
   then
-    flatpak install -y flathub org.kde.kasts org.kde.neochat
+    flatpak install -y flathub org.kde.kasts 
+    # org.kde.neochat
+
+    # echo "Installing apps to try out on KDE - flatpak"
+    # flatpak install -y flathub <>
+    # dev.zed.Zed
   fi
 
 fi
+
+
+
+echo "Installing apps to try out on KDE - curl/wget | sh"
+curl -f https://zed.dev/install.sh | sh
+
 
 
 # com.protonvpn.www me.proton.Mail me.proton.Pass # installing using official instructions via script
