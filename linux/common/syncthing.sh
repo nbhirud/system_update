@@ -17,8 +17,13 @@ sudo dnf install -y syncthing
 # if id "$REAL_USER" &>/dev/null; then
 # loginctl enable-linger "$REAL_USER" || true
 
-# sudo firewall-cmd --permanent --add-port=8384/tcp
-# sudo firewall-cmd --reload
+# su - "$REAL_USER" -c '
+#     if systemctl --user list-unit-files 2>/dev/null | grep -q "^syncthing.service"; then
+#         systemctl --user enable --now syncthing
+#     fi
+# ' || true
+
+# fi
 
 # Enable it to launch automatically on login  and start it
 systemctl --user enable --now syncthing.service
