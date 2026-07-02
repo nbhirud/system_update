@@ -438,6 +438,32 @@ sudo sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEX
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh $SETUP_TYPE $DESKTOP
 
+
+
+######################################
+# Start up apps
+######################################
+
+
+# Akregator 
+# Option 1 - Add to startup
+# /usr/bin/akregator --hide-mainwindow
+
+# Option 2 (call a script)
+# #!/usr/bin/sh     
+# /usr/bin/akregator > /dev/null 2>&1 &
+# sleep 5
+# qdbus org.kde.akregator /akregator /akregator/MainWindow_1 hide
+
+
+
+
+
+
+
+
+
+
 #######################################
 
 # Configure firewall - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/firewalld.sh
