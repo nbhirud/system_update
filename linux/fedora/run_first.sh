@@ -334,7 +334,7 @@ export CHROME_EXECUTABLE=/usr/bin/brave-browser
 
 if [ "$SETUP_TYPE" = "full" ];
 then
-  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex network.loki.Session io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay app.organicmaps.desktop net.rpdev.OpenTodoList im.riot.Riot
+  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex network.loki.Session io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay app.organicmaps.desktop net.rpdev.OpenTodoList im.riot.Riot org.localsend.localsend_app
 
 
 
