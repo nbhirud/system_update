@@ -1,0 +1,32 @@
+
+
+SSH_PORT=2245
+
+echo "Hardening SSH..."
+# Edits /etc/ssh/sshd_config:
+sed -i "s/^#*Port .*/Port $SSH_PORT/" /etc/ssh/sshd_config # Changes SSH port from default 22 to 2222 (helps avoid basic brute-force attacks).
+
+
+systemctl restart sshd
+
+
+# some content of this file was moved to remote access as it makes more sense
+# The content in this file needs to be done first to be able to do next step
+
+###################
+
+# Check currently used ssh port: (netstat and lsof do not come pre-installed on ubuntu)
+
+sudo ss -tunlp # options same as netstat
+
+sudo netstat -tunlp
+    -t - Show TCP ports.
+    -u - Show UDP ports.
+    -n - Show numerical addresses instead of resolving hosts.
+    -l - Show only listening ports.
+    -p - Show the PID and name of the listener’s process. This information is shown only if you run the command as root or sudo user.
+
+sudo lsof -nP -iTCP -sTCP:LISTEN
+    -n - Do not convert port numbers to port names.
+    -p - Do not resolve hostnames, show numerical addresses.
+    -iTCP -sTCP:LISTEN - Show only network files with TCP state LISTEN.

@@ -1,0 +1,28 @@
+
+
+sudo apt install -y avahi-daemon
+# avahi-daemon: Enables mDNS resolution (e.g., access nbserver as nbserver.local).
+
+
+
+echo "Enabling Avahi (for .local hostname resolution)..."
+systemctl enable avahi-daemon --now # Allows you to access your server using a .local domain (e.g., ubuntu-server.local) from devices on the same network. Useful for dynamic IPs or avoiding hardcoding IP addresses.
+sudo systemctl status avahi-daemon
+# On your Ubuntu server:if command `hostname` returns nbserver, then your Avahi (mDNS) name will be: nbserver.local
+
+# Enable access in ufw:
+sudo ufw allow 5353/udp
+sudo ufw reload
+
+
+
+# Test from other PC:
+
+ping nbserver.local
+
+# Login from Fedora: 
+ssh -p $SSH_PORT nbhirud@<SERVER_IP_ADDRESS>
+ssh -p $SSH_PORT nbhirud@nbserver.local
+
+
+# https://wiki.archlinux.org/title/Avahi

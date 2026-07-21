@@ -1,0 +1,59 @@
+# Important Considerations Before Running:
+# You must be logged in as your non-root adminuser via SSH.
+# Read through the script and comments carefully before executing.
+# After the script finishes, you must log out of your SSH session and log back in (or reboot the server) for the docker group changes to take effect. This is essential so you can run docker commands without sudo.
+
+
+#!/bin/bash
+
+# Script to install Docker Engine and Docker Compose on Ubuntu Server 25.04.
+# This script assumes you are running as a non-root user with sudo privileges.
+# After running, you MUST log out and log back in for group changes to take effect.
+
+echo "--- Starting Docker and Docker Compose Installation ---"
+
+# Step 1: Update your package lists
+echo "Updating package lists..."
+sudo apt update -y
+
+# Step 2: Install necessary packages to allow apt to use a repository over HTTPS
+echo "Installing prerequisite packages for Docker repository..."
+sudo apt install -y ca-certificates curl gnupg lsb-release
+
+# Step 3: Add Docker's official GPG key
+echo "Adding Docker's official GPG key..."
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg # Ensure correct permissions for the GPG key
+
+# Step 4: Add the Docker APT repository to your sources list
+echo "Adding Docker APT repository..."
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Step 5: Update package lists again to include the new Docker repository
+echo "Updating package lists after adding Docker repository..."
+sudo apt update -y
+
+# Step 6: Install Docker Engine, Docker CLI, containerd, and Docker Compose plugin
+echo "Installing Docker Engine, CLI, containerd, and Docker Compose plugin..."
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# Step 7: Verify Docker installation by running the hello-world container
+echo "Verifying Docker installation with 'hello-world'..."
+sudo docker run hello-world
+
+# Step 8: Add your current user to the 'docker' group
+# This allows you to run Docker commands without needing 'sudo'.
+# IMPORTANT: This change requires you to LOG OUT and LOG BACK IN (or reboot)
+# for it to take effect.
+echo "Adding current user ($USER) to the 'docker' group..."
+sudo usermod -aG docker $USER
+
+echo "--- Docker and Docker Compose Installation Complete ---"
+echo "********************************************************************************"
+echo "IMPORTANT: You MUST log out of this SSH session and log back in (or reboot)"
+echo "for the 'docker' group changes to take effect. After logging back in, you"
+echo "should be able to run 'docker run hello-world' without 'sudo'."
+echo "********************************************************************************"

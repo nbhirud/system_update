@@ -1,0 +1,96 @@
+
+
+# SSH Key Authentication (Highly Recommended)
+
+On your Fedora Laptop:
+
+            Generate an SSH key pair (if you don't have one):
+            
+
+    ssh-keygen -t ed25519 -C "your_email@example.com" # Or -t rsa -b 4096
+    # OR
+    ssh-keygen -t rsa -b 4096
+
+    ################# Experiments:
+    HOSTNAME=""
+    USERNAME=""
+    SERVERNAME="nbServer"
+    USERHOME=""
+    SSH_KEY_PATH="$USERHOME/.ssh"
+    SSH_KEY_SILENAME="$SSH_KEY_PATH/id_ed25519_$HOSTNAME_$SERVERNAME"
+
+    # ssh-keygen -t ecdsa -b 521
+    # ssh-keygen -t ed25519 -a 100 -C user@hostname -f ~/.ssh/id_ed25519_hostname_servername
+
+
+    if "aes" in $(grep -m1 aes /proc/cpuinfo):
+        AES_NI_AVAILABLE=true
+    else:
+        AES_NI_AVAILABLE=false
+
+
+
+
+    Z_PRIVATE_KEY_ENCRYPTION_CIPHER=chacha20-poly1305@openssh.com
+    if AES_NI_AVAILABLE:
+        Z_PRIVATE_KEY_ENCRYPTION_CIPHER=aes256-gcm@openssh.com
+
+
+    ssh-keygen -t ed25519 -a 100 -C $USERNAME@$HOSTNAME -f $SSH_KEY_SILENAME -Z $Z_PRIVATE_KEY_ENCRYPTION_CIPHER
+
+
+
+    # -f ~/.ssh/id_ed25519_work -C "nik@nbMain-work"
+    # -f ~/.ssh/id_ed25519_personal -C "nik@nbMain-personal"
+    # -f ~/.ssh/id_ed25519_automation -C "nik@nbMain-automation"
+
+
+    Then in ~/.ssh/config:
+        Host github.com
+            IdentityFile ~/.ssh/id_ed25519_personal
+
+        Host *.yourdomain.local
+            IdentityFile ~/.ssh/id_ed25519_personal
+
+        Host university.git.server
+            IdentityFile ~/.ssh/id_ed25519_work
+    #################
+
+    Follow the prompts. It's a good idea to set a strong passphrase for the key.
+
+
+    Copy your public key to the server:
+        # If you are using a local VPN or tor, disable it before next step.
+        ssh-copy-id -p $SSH_PORT adminuser@<SERVER_IP_ADDRESS>
+        ssh-copy-id -p 22 nbhirud@192.168.0.XX
+
+        Enter your adminuser password when prompted.
+    
+    Test remote access: (Either remember the ssh paraphrase by entering it once, or else enter the server password everytime)
+        ssh -p $SSH_PORT adminuser@<SERVER_IP_ADDRESS>
+        ssh -p 22 nbhirud@192.168.0.XX
+
+On the Ubuntu Server:
+
+        Disable Password Authentication for SSH (after verifying key login):
+        
+
+    sudo nano /etc/ssh/sshd_config
+
+    # Find these lines and change their values:
+
+    PasswordAuthentication no
+    PermitRootLogin no
+
+    # Same thing via script: 
+    sed -i "s/^#*PasswordAuthentication .*/PasswordAuthentication no/" /etc/ssh/sshd_config # Disables password-based login. SSH key authentication only (you must already have your public key in ~/.ssh/authorized_keys).
+    sed -i "s/^#*PermitRootLogin .*/PermitRootLogin no/" /etc/ssh/sshd_config # Prevents remote root logins, reducing attack surface.
+
+    Save (Ctrl+O, Enter) and Exit (Ctrl+X).
+
+    Restart the SSH service:
+    
+
+    sudo systemctl restart ssh
+
+    IMPORTANT: Before closing your current terminal session, open a new terminal on your Fedora laptop and try to SSH into the server using your key (ssh adminuser@<SERVER_IP_ADDRESS>). If it works, you're good. If not, don't close the old session and troubleshoot!

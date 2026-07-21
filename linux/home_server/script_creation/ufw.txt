@@ -1,0 +1,62 @@
+
+
+sudo apt install -y ufw 
+# UFW: Simple firewall to control open ports.
+
+
+
+#################################
+
+
+
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow $SSH_PORT/tcp
+sudo ufw allow http/tcp
+sudo ufw allow https/tcp
+
+sudo ufw enable
+#ufw enable <<< "y" # Enable the firewall
+
+sudo ufw status
+#sudo ufw status verbose # Check status
+
+
+
+######### Info for later #########################
+
+# If you have changed ssh port in this same session, the "ufw allow ssh" might add old ssh port (22) instead of new one. Check this.
+sudo ufw allow ssh/tcp
+
+# to remove a rule:
+sudo ufw status numbered # copy the number to delete
+sudo ufw delete 1
+
+# You will add more ports later for Jellyfin, Home Assistant, etc.
+# e.g., sudo ufw allow 8096/tcp  # Jellyfin default HTTP
+# e.g., sudo ufw allow 8920/tcp  # Jellyfin default HTTPS
+# e.g., sudo ufw allow 8123/tcp  # Home Assistant default
+
+# sudo ufw reload
+
+
+######### Ignore stuff below #########################
+
+echo "Configuring firewall..."
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow $SSH_PORT/tcp
+ufw allow 80,443/tcp
+sudo ufw allow ssh      # Or specify port if you change it later: sudo ufw allow 22/tcp
+sudo ufw allow http     # For web services like Nextcloud (port 80)
+sudo ufw allow https    # For web services like Nextcloud (port 443)
+
+
+# ufw Firewall Configuration:
+# Blocks all incoming connections by default.
+# Allows outgoing traffic (so updates/downloads work).
+# Opens: 2222/tcp → SSH (change as per your config), 80,443/tcp → HTTP/HTTPS for web apps
+
+
+#################################
+

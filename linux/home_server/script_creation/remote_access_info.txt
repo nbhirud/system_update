@@ -1,0 +1,36 @@
+
+
+
+# Accessing the Server from your Fedora Laptop:
+
+
+You've already set up SSH, which is the primary method.
+
+1. Via Terminal (SSH):
+
+        Open a terminal on your Fedora laptop.
+
+        Use the command: ssh nbhirud@<SERVER_IP_ADDRESS>
+        Replace <SERVER_IP_ADDRESS> with the actual IP address of your Ubuntu server (e.g., 192.168.1.100).
+
+        If you set a passphrase for your SSH key, you'll be prompted for it.
+    
+2. Via File Manager (SFTP/Nautilus/Dolphin):
+
+    Most modern Linux file managers (like GNOME Files/Nautilus on Fedora) can connect via SFTP.
+
+    Open your file manager.
+
+    In Nautilus, click "Other Locations" or "Connect to Server".
+
+    Enter the address: sftp://nbhirud@<SERVER_IP_ADDRESS>/
+
+    You'll be prompted for your SSH key passphrase.
+
+    This allows you to browse, upload, and download files graphically.
+
+3. Via Cockpit (Optional Web UI):
+    # Details: script_creation/cockpit.txt
+
+
+

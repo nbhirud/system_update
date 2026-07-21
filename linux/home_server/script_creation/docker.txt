@@ -1,0 +1,88 @@
+
+
+######################################################################################################
+# Add Docker's official GPG key:
+sudo apt update
+sudo apt install ca-certificates curl gnupg -y
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+# Add Docker's repository:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+
+# Install Docker Engine, CLI, and Containerd:
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+
+# Verify Docker installation:
+sudo docker run hello-world
+
+# Add your user to the docker group: This allows you to run Docker commands without sudo. Log out and log back in for this to take effect.
+# sudo usermod -aG docker $USER
+
+# apt install -y docker.io docker-compose
+# docker.io: Container platform.
+# docker-compose: Manages multi-container apps.
+
+echo "Enabling and starting Docker..."
+systemctl enable docker --now # Ensures Docker starts on boot and is running immediately. Needed for hosting apps like Jellyfin, Nextcloud, Home Assistant.
+
+usermod -aG docker $NEW_USER # Adds nik to: docker: So the user can run Docker without sudo.
+
+
+######################################################################################################
+
+
+# Installs latest Docker Engine from official Docker repo (not old Ubuntu package).
+# Adds current user (e.g. nik) to docker group.
+# Installs latest docker-compose as a plugin.
+# Enables Docker to start on boot.
+
+# usage:
+# chmod +x install-docker.sh
+# sudo ./install-docker.sh nik   # Replace 'nik' with your actual username
+
+
+
+#!/bin/bash
+
+set -e
+
+USER_TO_ADD=${1:-$SUDO_USER}
+
+echo ">>> Updating system..."
+sudo apt update && sudo apt install -y ca-certificates curl gnupg lsb-release
+
+echo ">>> Setting up Docker GPG key and repo..."
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+  sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) \
+  signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+echo ">>> Installing Docker Engine..."
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+echo ">>> Enabling Docker service..."
+sudo systemctl enable docker
+sudo systemctl start docker
+
+echo ">>> Adding user '$USER_TO_ADD' to docker group..."
+sudo usermod -aG docker $USER_TO_ADD
+
+echo ">>> Verifying installation..."
+docker version
+docker compose version
+
+echo ">>> Docker and Compose installed successfully. Reboot or log out/in to apply group membership."

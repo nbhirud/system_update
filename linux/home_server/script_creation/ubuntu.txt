@@ -1,0 +1,95 @@
+
+
+##############################################
+# Installation Steps from bootable USB: 
+    Follow the Installer Prompts:
+
+        Language: Choose your preferred language.
+
+        Keyboard Layout: Select your keyboard layout.
+
+        Network Configuration: It should auto-configure via DHCP. Note down the IP address shown here. You'll need it to SSH later. If you have a static IP address you want to assign, you can do it here.
+
+        Proxy Address: Leave blank unless you use a proxy.
+
+        Mirror Address: Use the default, it will pick a local one.
+
+        Storage Configuration: (TODO - Do this CAREFULLY)
+
+            For simplicity, choose "Use an entire disk" and let Ubuntu set up the partitions (including LVM, which is flexible for future disk changes, though adds a tiny bit of overhead).
+
+            Crucially, confirm that you want to proceed and that all data on the 500GB HDD will be erased.
+
+        Profile Setup:
+
+            Enter your name, server name (e.g., homeserver), and a username (e.g., adminuser).
+
+            Set a Strong Password for your user. This is critical.
+
+        SSH Setup: Select "Install OpenSSH server" during this step. This is essential for headless access.
+
+        Featured Server Snaps: You can deselect any options here (e.g., lxd, microk8s) to keep the system minimal and avoid Snap.
+
+        Installation: Let the installer complete.
+
+        Reboot: When prompted, remove the USB drive and select "Reboot Now".
+
+
+##############################################
+
+# Run this as root or with sudo su -
+# Save as setup-server.sh:
+
+# Usage:
+# chmod +x setup-server.sh
+# sudo ./setup-server.sh
+##############################################
+
+#!/bin/bash
+
+echo "Installing essentials..."
+sudo apt install -y htop curl wget git smartmontools nano fastfetch zsh
+
+chsh -s $(which zsh)
+
+sudo reboot
+
+echo "Updating system..."
+
+sudo apt update && sudo apt upgrade -y
+sudo apt autoremove -y 
+
+# Reboot if the kernel was updated
+
+## Packages Installed:
+# htop: Better top, for monitoring system resource usage.
+# curl: Used to download files, test endpoints.
+# git: Required for cloning config files/scripts from GitHub.
+# smartmontools: Monitors HDD/SSD health using S.M.A.R.T.
+
+
+######### Ignore stuff below #########################
+
+
+# Optional tools (uncomment to install):
+# sudo apt install -y net-tools ncdu
+
+# net-tools: Legacy tools like ifconfig, netstat.
+# ncdu: TUI disk usage viewer.
+
+echo "Done. Reboot recommended."
+
+# Once setup is done:
+# Reboot server: sudo reboot
+
+#######################
+
+NEW_USER="nbhirud"
+# user gets created when installing the distro, so adduser command not needed
+# echo "Creating user '$NEW_USER'..."
+# adduser --gecos "" $NEW_USER # Creates a new user named nik with default info prompts skipped.
+usermod -aG sudo $NEW_USER # Adds nik to: sudo: So the user can run privileged commands
+
+
+
+

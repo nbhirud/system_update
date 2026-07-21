@@ -1,0 +1,173 @@
+
+
+
+
+#### Create Directories for Jellyfin Data:
+# Create a base directory for your Docker application data
+mkdir -p /srv/docker/jellyfin
+
+# Create subdirectories for Jellyfin's configuration and cache
+mkdir -p /srv/docker/jellyfin/config
+mkdir -p /srv/docker/jellyfin/cache
+
+# Create a directory for your media (if you don't have one already)
+# This is where your movies and series files will live on the server.
+# Adjust this path if your media is stored elsewhere (e.g., on a separate drive).
+mkdir -p /srv/media/movies
+mkdir -p /srv/media/series
+
+# Set appropriate permissions for the Jellyfin directories
+# This ensures the Jellyfin container can read/write to these locations.
+# Replace <YOUR_USERNAME> with your actual admin user on the server.
+sudo chown -R <YOUR_USERNAME>:<YOUR_USERNAME> /srv/docker/jellyfin
+sudo chown -R <YOUR_USERNAME>:<YOUR_USERNAME> /srv/media
+
+
+##### Create a docker-compose.yml file:
+
+# Navigate into the Jellyfin Docker directory
+cd /srv/docker/jellyfin
+
+# Create the docker-compose.yml file using nano
+nano docker-compose.yml
+
+##### Paste the following content into docker-compose.yml:
+
+```
+version: '3.8' # Use a recent Docker Compose file format version
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest # Use the official Jellyfin Docker image
+    container_name: jellyfin
+    restart: unless-stopped # Always restart unless explicitly stopped
+
+    # User and Group IDs: Important for file permissions.
+    # Replace PUID and PGID with your user's UID and GID.
+    # You can find these by running 'id -u <YOUR_USERNAME>' and 'id -g <YOUR_USERNAME>' on your server.
+    # Example: PUID=1000, PGID=1000 for a typical first user.
+    environment:
+      - PUID=1000 # Your User ID
+      - PGID=1000 # Your Group ID
+      - TZ=America/Toronto # Set your timezone (e.g., America/Toronto, Europe/London, Asia/Tokyo)
+      # - JELLYFIN_PublishedServerUrl=<YOUR_SERVER_IP>:8096 # Optional: Helps with server discovery, replace with your server's IP
+      # If you plan to use a reverse proxy (like Nginx Proxy Manager) later,
+      # you might adjust this or remove it, as the reverse proxy handles external access.
+
+    # Port Mappings: Map container ports to host ports.
+    # 8096 (HTTP) and 8920 (HTTPS) are Jellyfin's default web UI ports.
+    # 7359 (UDP) is for server discovery (DLNA/Bonjour).
+    ports:
+      - 8096:8096/tcp
+      - 8920:8920/tcp
+      - 7359:7359/udp # For server discovery (DLNA/Bonjour)
+
+    # Volume Mappings: Persist configuration, cache, and media.
+    # Ensure these paths match the directories you created earlier.
+    volumes:
+      - /srv/docker/jellyfin/config:/config # Jellyfin configuration and database
+      - /srv/docker/jellyfin/cache:/cache   # Jellyfin cache files
+      - /srv/media/movies:/data/movies:ro   # Your movie collection (read-only in container)
+      - /srv/media/series:/data/series:ro   # Your series collection (read-only in container)
+      # Add more media folders as needed, e.g.:
+      # - /srv/media/music:/data/music:ro
+      # - /srv/media/photos:/data/photos:ro
+
+    # Optional: Hardware Transcoding (Highly Recommended for your APU!)
+    # This enables Jellyfin to use your AMD APU's integrated graphics for faster video transcoding.
+    # The exact device path might vary. Common paths are /dev/dri/renderD128 or /dev/dri/card0.
+    # You might need to install AMD graphics drivers on your Ubuntu host if you haven't already.
+    # Check 'ls /dev/dri' to confirm the device.
+    # You might also need to add your user to the 'render' or 'video' group: sudo usermod -aG render $USER
+    # After adding to group, log out and back in.
+    devices:
+      - /dev/dri:/dev/dri # Maps the entire /dev/dri directory for GPU access
+    # If using SELinux (more common on Fedora, but good to be aware), you might need:
+    # security_opt:
+    #   - seccomp:unconfined # Or 'label=disable' for older versions of container-selinux
+
+    # Optional: Network Mode (consider if you have issues with DLNA or specific network needs)
+    # network_mode: host # Allows container to use host's network stack directly.
+    # If using host network mode, you don't need the 'ports' section above, as the container
+    # directly uses the host's ports. However, it's less isolated.
+    # For most cases, the default bridge network with explicit port mapping is fine.
+```
+##### Before saving the docker-compose.yml:
+
+Replace PUID and PGID:
+
+    On your server, open a new terminal and run id -u <YOUR_USERNAME> and id -g <YOUR_USERNAME>. Use the numbers returned for PUID and PGID in the docker-compose.yml. (e.g., if your username is adminuser, run id -u adminuser and id -g adminuser).
+
+Set TZ (Timezone): Find your correct timezone string (e.g., America/New_York, Europe/Berlin) from the TZ database name list and update TZ.
+
+Media Paths: Double-check that /srv/media/movies and /srv/media/series (and any others you add) correctly point to where your actual media files are stored on the server.
+
+Hardware Transcoding (devices section): This is crucial for your APU.
+
+On your server, run ls /dev/dri. You should see card0 and renderD128. The /dev/dri:/dev/dri mapping should generally work.
+
+Ensure your adminuser is part of the render or video group to access the GPU devices from within the container.
+
+sudo usermod -aG render $USER
+sudo usermod -aG video $USER
+
+# You will need to log out and log back in (or reboot) after adding your user to these groups.
+
+##### Start Jellyfin with Docker Compose:
+
+# From the /srv/docker/jellyfin directory:
+
+docker compose up -d
+# docker compose up: Reads the docker-compose.yml file and starts the defined services.
+# -d: Runs the containers in "detached" mode (in the background), so they keep running even if you close your terminal.
+
+##### Adjust Firewall (UFW):
+
+sudo ufw allow 8096/tcp  # Jellyfin Web UI (HTTP)
+sudo ufw allow 8920/tcp  # Jellyfin Web UI (HTTPS, if you configure it later)
+sudo ufw allow 7359/udp  # Jellyfin server discovery (DLNA/Bonjour)
+sudo ufw reload          # Apply the new firewall rules
+sudo ufw status verbose  # Verify the rules are active
+
+##### Access Jellyfin Web UI for Initial Setup:
+
+Open a web browser on your Fedora laptop (or any other device on your network) and navigate to:
+
+http://<YOUR_SERVER_IP_ADDRESS>:8096
+
+    Replace <YOUR_SERVER_IP_ADDRESS> with the actual IP address of your Ubuntu server.
+
+You will be guided through the initial setup wizard:
+
+    Create an admin user.
+
+    Add your media libraries by pointing to the /data/movies and /data/series paths inside the container.
+
+    Configure metadata downloaders, language, etc.
+
+##### Install Jellyfin Clients:
+
+Download the official Jellyfin app for your phone (Android/iOS) or other PCs. You'll use the server's IP address and the port (8096) to connect.
+
+
+
+
+
+
+
+
+
+
+
+############# fail2ban - Protecting Jellyfin
+
+# Jellyfin doesn’t log in a fail2ban-friendly way out of the box. Workarounds:
+
+Option A: Use reverse proxy (e.g. NGINX) in front → fail2ban monitors reverse proxy logs.
+Option B: Use app-specific security: Jellyfin: Settings → enable brute-force protection
+
+# Try NGINX reverse proxy configs for Nextcloud / Jellyfin / HA to make fail2ban work better
+#############
+
+
+
