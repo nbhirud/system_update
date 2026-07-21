@@ -320,7 +320,8 @@ then
   echo "Use pre-installed Akregator instead of liferea and quiterss"
 
   echo "Installing apps to try out on KDE - dnf"
-  sudo dnf install -y kate kalarm kbackup
+  sudo dnf install -y kalarm kbackup
+  # kate
 fi
 
 echo "************************ Install and configure more flatpak packages ************************"
