@@ -320,7 +320,8 @@ then
   echo "Use pre-installed Akregator instead of liferea and quiterss"
 
   echo "Installing apps to try out on KDE - dnf"
-  sudo dnf install -y kate kalarm kbackup
+  sudo dnf install -y kalarm kbackup
+  # kate
 fi
 
 echo "************************ Install and configure more flatpak packages ************************"
@@ -334,7 +335,7 @@ export CHROME_EXECUTABLE=/usr/bin/brave-browser
 
 if [ "$SETUP_TYPE" = "full" ];
 then
-  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex network.loki.Session io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay app.organicmaps.desktop net.rpdev.OpenTodoList im.riot.Riot
+  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex network.loki.Session io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay app.organicmaps.desktop net.rpdev.OpenTodoList im.riot.Riot org.localsend.localsend_app
 
 
 
