@@ -1,0 +1,70 @@
+
+
+sudo apt install -y fail2ban
+# fail2ban: Watches logs (e.g., SSH) and bans IPs after repeated failed login attempts.
+
+
+echo "Enabling fail2ban..."
+sudo systemctl enable fail2ban --now # Monitors logs and bans suspicious IPs automatically (especially SSH). Protects from brute-force attacks.
+
+
+#############
+Fail2Ban reads:
+
+    Defaults from: /etc/fail2ban/jail.conf
+
+    Your changes from: /etc/fail2ban/jail.local or files in /etc/fail2ban/jail.d/*.conf
+
+    Never edit jail.conf directly.
+
+#############
+
+It may be necessary to set LogLevel VERBOSE in /etc/ssh/sshd_config to allow full fail2ban monitoring as otherwise password failures may not be logged correctly.
+
+#############
+
+
+sudo nano /etc/fail2ban/jail.d/ssh.conf
+# paste the following:
+```
+[sshd]
+enabled = true
+port    = $SSH_PORT    # <-- Replace with your SSH port
+logpath = %(sshd_log)s
+filter    = sshd
+#banaction = iptables
+banaction = ufw
+backend = systemd
+maxretry = 5
+bantime = 1h
+findtime = 10m
+ignoreip  = 127.0.0.1/8
+
+```
+
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+# sudo systemctl restart fail2ban
+
+sudo fail2ban-client status
+
+# To see specific jail:
+sudo fail2ban-client status nextcloud
+sudo fail2ban-client status cockpit
+sudo fail2ban-client status sshd
+
+
+#################################################
+
+# Separate app specific configs in corresponding files for:
+# Cockpit (port 9090)
+# Nextcloud (via NGINX or Apache logs)
+# Jellyfin & Home Assistant (limited support, but possible)
+
+
+#################################################
+
+
+# https://wiki.archlinux.org/title/Fail2ban
+
+

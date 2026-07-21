@@ -1,0 +1,200 @@
+
+echo "Setting up unattended upgrades..."
+sudo apt install -y unattended-upgrades # This package is usually installed by default on Ubuntu Server.
+dpkg-reconfigure --priority=low unattended-upgrades # Automatically installs security updates. Reduces maintenance burden and improves system safety.
+# sudo dpkg-reconfigure --priority=low unattended-upgrades
+# Select "Yes" when prompted to enable automatic updates.
+sudo systemctl status unattended-upgrades # Verify the service is running
+
+###################################### 20auto-upgrades
+
+# Control Frequency
+sudo nano /etc/apt/apt.conf.d/20auto-upgrades
+# Set to run daily:
+```
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::AutocleanInterval "7";
+APT::Periodic::Unattended-Upgrade "1";
+
+```
+
+###################################### 50unattended-upgrades
+
+To summarize, Recommended Config:
+sudo nano /etc/apt/apt.conf.d/50unattended-upgrades
+
+```
+// Send email alerts (optional)
+//Unattended-Upgrade::Mail "you@example.com";
+//Unattended-Upgrade::MailOnlyOnError "true";
+//Unattended-Upgrade::MailReport "on-change";
+
+// Automatically reboot if needed
+//Unattended-Upgrade::Automatic-Reboot "true";
+//Unattended-Upgrade::Automatic-Reboot-WithUsers "false";
+//Unattended-Upgrade::Automatic-Reboot-Time "04:00";
+
+// Remove unused packages
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
+
+// Logging
+Unattended-Upgrade::Verbose "true";
+
+//Unattended-Upgrade::Origins-Pattern {
+//    "o=Ubuntu,a=stable";
+//    "o=Ubuntu,a=ubuntu-security";
+//};
+
+Unattended-Upgrade::Allowed-Origins {
+"${distro_id}:${distro_codename}";
+"${distro_id}:${distro_codename}-security";
+// Extended Security Maintenance; doesn't necessarily exist for
+// every release and this system may not have it installed, but if
+// available, the policy for updates is such that unattended-upgrades
+// will also automatically install from there.
+"${distro_id}ESMApps:${distro_codename}-apps-security";
+"${distro_id}ESM:${distro_codename}-infra-security";
+
+// Uncomment to enable updates from the main repository (non-security)
+"${distro_id}:${distro_codename}-updates";
+
+// Uncomment to enable updates from the proposed repository (less stable)
+// "${distro_id}:${distro_codename}-proposed";
+
+// Uncomment to enable updates from the backports repository (newer features)
+// "${distro_id}:${distro_codename}-backports";
+};
+```
+
+######################################
+
+# Check Logs
+cat /var/log/unattended-upgrades/unattended-upgrades.log
+cat /var/log/unattended-upgrades/unattended-upgrades-dpkg.log
+
+# At the end, to apply changes:
+sudo systemctl restart unattended-upgrades.service
+
+# Testing Your Configuration (Dry Run)
+sudo unattended-upgrades --dry-run --debug
+
+
+
+
+
+######################################################
+######### Ignore stuff below #########################
+
+
+# There are two primary configuration files for unattended-upgrades:
+# 1. /etc/apt/apt.conf.d/20auto-upgrades: This file controls the frequency of updates. It's usually set up by dpkg-reconfigure unattended-upgrades.
+        APT::Periodic::Update-Package-Lists "1"; (Update package lists daily)
+        APT::Periodic::Unattended-Upgrade "1"; (Run unattended upgrades daily)
+# 2. /etc/apt/apt.conf.d/50unattended-upgrades: This is the main configuration file where you define what gets updated, reboot behavior, email notifications, and package blacklists. Lines starting with // are commented out.
+
+
+######################################
+
+# Auto reboot (automatically rebooting after a kernel update or other critical updates):
+
+# Messes up with availability as it'll be unavailable till disk encryption password is entered after reboot? Do it at night and check in the morning if credentials needed?
+
+sudo nano /etc/apt/apt.conf.d/50unattended-upgrades 
+# Find these lines and uncomment them (remove //):
+```
+// Automatically reboot WITHOUT CONFIRMATION if
+// the file /var/run/reboot-required is found after the upgrade
+Unattended-Upgrade::Automatic-Reboot "false";
+
+// If automatic reboot is enabled and a user is logged in, don't reboot
+// automatically if the file /var/run/reboot-required.pkgs exists.
+// Unattended-Upgrade::Automatic-Reboot-WithUsers "true"; // Change to "false" if you want to force reboot even with users logged in
+// Unattended-Upgrade::Automatic-Reboot-Time "02:00"; // Optional: Set a specific time for reboot (e.g., 2 AM)
+
+    Unattended-Upgrade::Automatic-Reboot "true";: This is the most important one if you want automatic reboots.
+
+    Unattended-Upgrade::Automatic-Reboot-WithUsers "true";: By default, it won't reboot if a user is logged in. For a home server, you might want to change this to "false" if you prioritize updates over potential minor disruption, or set a specific Automatic-Reboot-Time when you know no one will be using it.
+
+    Unattended-Upgrade::Automatic-Reboot-Time "HH:MM";: If you enable Automatic-Reboot, you can also set a specific time for the reboot to occur, which is useful for minimizing disruption. For example, "02:00" for 2 AM.
+```
+
+######################################
+
+# Enable Removal of Unused Dependencies (Recommended)
+
+sudo nano /etc/apt/apt.conf.d/50unattended-upgrades
+# Find this line and uncomment it:
+```
+// Do automatic removal of new unused dependencies after the upgrade
+// (equivalent to apt-get autoremove)
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+```
+
+######################################
+
+# Configure Email Notifications (Optional, but Recommended for Monitoring)
+# You'll need a mail transfer agent (MTA) like postfix or ssmtp installed and configured on your server for email to be sent. This is a separate setup.
+
+sudo nano /etc/apt/apt.conf.d/50unattended-upgrades
+# Find these lines and uncomment/modify them:
+```
+// Send email to this address for problems or packages upgraded
+// If you don't want any emails, comment this out.
+//Unattended-Upgrade::Mail "root"; // Change to your actual email address
+Unattended-Upgrade::Mail "your_email@example.com"; # Replace with your email
+
+// Do not send mails for packages that have no actual change.
+// (E.g. a security update that was just a dependency for a package that is not installed.)
+// Unattended-Upgrade::MailOnlyOnError "true"; // Change to "false" if you want all reports
+Unattended-Upgrade::MailReport "on-change"; # Recommended: Only send report if changes occurred
+// "always" will always send a report, "only-on-error" will only send if an error occurred.
+
+```
+
+######################################
+
+# Allow More Than Just Security Updates (Use with Caution!)
+# By default, unattended-upgrades only installs security updates (-security origin). If you want to automatically install all updates (including regular bug fixes and new features from the main repositories), you can uncomment more origins.
+
+sudo nano /etc/apt/apt.conf.d/50unattended-upgrades
+# Find the Unattended-Upgrade::Allowed-Origins section:
+```
+Unattended-Upgrade::Allowed-Origins {
+        "${distro_id}:${distro_codename}";
+        "${distro_id}:${distro_codename}-security";
+        // Extended Security Maintenance; doesn't necessarily exist for
+        // every release and this system may not have it installed, but if
+        // available, the policy for updates is such that unattended-upgrades
+        // will also automatically install from there.
+        "${distro_id}ESMApps:${distro_codename}-apps-security";
+        "${distro_id}ESM:${distro_codename}-infra-security";
+
+        // Uncomment to enable updates from the main repository (non-security)
+        // "${distro_id}:${distro_codename}-updates";
+
+        // Uncomment to enable updates from the proposed repository (less stable)
+        // "${distro_id}:${distro_codename}-proposed";
+
+        // Uncomment to enable updates from the backports repository (newer features)
+        // "${distro_id}:${distro_codename}-backports";
+};
+
+```
+# Recommendation: For a home server, it's generally safest to stick to only security updates (-security origin, which is enabled by default). Uncommenting "${distro_id}:${distro_codename}-updates"; will get you more general bug fixes and minor package updates, which is often acceptable for a home server, but increases the chance of minor issues. Avoid -proposed and -backports for a production-like home server unless you know exactly what you're doing.
+
+######################################
+
+# Package Blacklist (Optional)
+# If you ever find a specific package that causes issues when automatically updated, you can add it to a blacklist.
+
+sudo nano /etc/apt/apt.conf.d/50unattended-upgrades
+# Find this section and add package names:
+```
+// List of packages to not update by unattended-upgrades
+Unattended-Upgrade::Package-Blacklist {
+//  "vim";
+//  "libc6";
+};
+```

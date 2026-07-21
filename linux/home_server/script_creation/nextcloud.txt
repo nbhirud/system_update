@@ -1,0 +1,52 @@
+
+# todo - Face/object recognition in photos
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############# fail2ban - Protecting Nextcloud (Apache/Nginx-based)
+
+# do these steps only If using NGINX:
+sudo nano /etc/fail2ban/filter.d/nextcloud.conf
+# paste:
+```
+[Definition]
+failregex = .*\"PROPFIND .* 401.*Remote IP: <HOST>
+
+```
+sudo nano /etc/fail2ban/jail.d/nextcloud.conf
+# Adjust logpath based on your setup.
+# paste:
+```
+[nextcloud]
+enabled = true
+port = 80,443
+logpath = /var/log/nginx/access.log
+maxretry = 5
+findtime = 10m
+bantime = 1h
+
+```
+sudo systemctl restart fail2ban
+sudo fail2ban-client status nextcloud
+
+# Try NGINX reverse proxy configs for Nextcloud / Jellyfin / HA to make fail2ban work better
+
+#############

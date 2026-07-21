@@ -1,0 +1,348 @@
+Linux has been my OS of choice for many years and I am host comfortable using linux on my personal laptop. I use fedora linux on my laptop. I do not like using windows OS. I have always used linux with desktop environments like Gnome, KDE, etc. and do not have much experience using headless setups. But I understand that headless setups are less resource intensive for the use case I explain below. So help me choose between using desktop environment vs headless with a linux OS for this.
+
+I have an old desktop computer with the following specs:
+RAM - 12 GB (installed 4 x 4GB, but only recognizes 3 x 4GB of them)
+Hardware model - HP Compaq Pro 6305 SFF
+Processor - AMD A4-5300B APU with Radeon HD Graphics x 2
+HDD - 500 GB
+
+I wish to setup nextcloud for my home usage on this desktop. I would like to have the flexibility to also setup things like Plex, Jellyfin, Syncthing, home assistant, etc. I do not want to use snap packages. I would like to use docker or podman or kubernetes if that is recommended over direct installation. 
+What OS should I install on this hardware for my use case? Please explain in short. 
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# UBUNTU SERVER    
+
+
+I have decided to use the following stack:
+nextcloud for home cloud solution, 
+nextcloud photos for photo/video hosting and syncing.
+jellyfin for hosting videos like movies and series, 
+Navidrome for music hosting, 
+Audiobookshelf for hosting audiobooks and podcasts via xml feeds, 
+FreshRSS for hosting RSS feeds, 
+Calibre-Web for hosting ebooks (with Librera Reader on android and foliate on linux client pc),
+home assistant for managing IOT devices,
+Nextcloud Bookmarks + Floccus (on client web browsers) for bookmarks.
+Syncthing if needed. Find out.
+
+Nextcloud Calendar for calendar + DAVx⁵ on Android from fdroid on android + GNOME Calendar/Thunderbird/KOrganizer, Evolution/ Windows Calendar app on PCs (any CalDAV client on any platform)
+
+Nextcloud Contacts for contacts + DAVx⁵ on android and any CardDAV cliend on any platform (list of apps is almost same as calendar)
+
+
+
+I am using headless ubuntu server 25.04 as my OS. Will host the services preferably using docker. How should I setup this server? What all will I need on it? how do I secure it? How do I access it from my fedora laptop in the same network?
+
+refer ubuntu.txt
+
+Question:
+
+i have a fairly large collection on firefox bookmarks. what is the best software to host these on linux so that i can use them on my phone or any other pc within my router's network and also sync automatically to and from phone and pcs. Should be available in fiorefox and brave browsers
+
+i extensively use google Maps and have lots of saved and starred places. what is the best foss software/service to host these on linux so that i can use them on my phone or any other pc within my router's network and also sync automatically to and from phone and pcs. Should be available in firefox and brave browsers, and should sync with android, windows and fedora 
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# docker 
+
+I have ubuntu 25.04 server headless setup with ufw, fail2ban, Unattended Upgrades, ssh access, etc configured. I plan to use this server to host nextcloud, jellyfin and home assistant. Should I use docker or is there any better alternative? 
+
+Answer: use docker with docker compose
+
+I have ubuntu 25.04 server headless setup with ufw, fail2ban, Unattended Upgrades, ssh access, etc configured. I plan to use this server to host nextcloud, jellyfin and home assistant, but this script does not install these. Write a script to setup docker and docker compose on this server. 
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+# nextcloud
+
+
+
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+jellyfin
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+home assistant
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Linux has been my OS of choice for many years and I am host comfortable using linux on my personal laptop. I use fedora linux on my laptop. I do not like using windows OS. I have always used linux with desktop environments like Gnome, KDE, etc. and do not have much experience using headless setups. But I understand that headless setups are less resource intensive for the use case I explain below. 
+
+# NEW CONFIG
+I have an old desktop computer with the following specs:
+RAM - 16 GB 
+Hardware model - HP Compaq Pro 6305 SFF
+Processor - AMD A4-5300B APU with Radeon HD Graphics x 2
+HDD - 500 GB (sda) + 1 TB (sdb) + 1 TB (sdc) 
+OS - ubuntu server headless installed on sdb
+
+
+
+
+I wish to setup nextcloud for my home usage on this desktop. I do not want to use snap packages. I would like to use docker or podman or kubernetes if that is recommended over direct installation. 
+
+I have decided to use ubuntu 25.04 server (headless) for this setup. I will install the OS on my desktop PC using a live USB. Create a script that I can run post OS installation that would do the following:
+
+- this code file will be placed here: ~/nb/CodeProjects/home_server/<script goes here>
+- write all necessary comments to explain what, how, why, etc
+- feel free to change or optimize the sequence of steps or setups
+- rename the server to "nbserver"
+- create and change the default downloads directory to ~/nb/Downloads/
+- create the following directories. ~/nb/video/movies for movies, ~/nb/video/series for series, ~/nb/drive for nextcloud's google drive functionality,  ~/nb/audio for songs and audiobooks. Use these for nextcloud, jellyfin, home assistant, etc. wherever relevant
+- divide things into sections if necessary to make it more human readable and maintainable. divide different functionalities or unrelated major setups into separate files which get invoked from the main file.
+- setup ubuntu server for automatic scheduled updates from US servers
+- install drivers, firmware etc
+- setup packages like ufw fail2ban htop curl git fastfetch
+- setup to automatically replace the hosts file with StevenBlack hosts when an update is available
+- setup firewall with recommended rules. The server should be accessible to all PCs nd laptops and chromecast in my router's network only
+- setup clamav to do realtime protection
+- setup freshclam to update clamav regularly and automatically
+- setup docker and things it needs ffor my use case
+- setup Cockpit and Portainer (not sure if these go on server or my client machine which I would use to access the server)
+- if there are any literals or constants or paths or directories, define them at the top and then use them in this code
+- setup zsh and make it my default shell
+- setup bleachbit to run weekly for routine maintenance
+- setup cloudflare to be used for DNS over HTTPs 
+- setup Jellyfin. Use my movies, series and audio directories.
+- setup nextcloud. Use my drive directory for storing files
+- setup home assistant.
+
+
+#####################################################################################################
+
+
+############## Additional stuff (Not done):
+# Watchtower: Auto-update your Docker containers
+# Portainer: Web GUI for Docker
+# Tailscale: Secure access from anywhere
+
+# Next Steps (for your services):
+
+Once this base setup is solid, you'll proceed to:
+
+    Create a dedicated directory for your Docker containers (e.g., /srv/docker).
+
+    Create docker-compose.yml files for Nextcloud, Jellyfin, and Home Assistant.
+
+    Configure persistent volumes for your data.
+
+    Set up a reverse proxy (like Nginx Proxy Manager or Traefik, often run in Docker) to manage external access to your services with SSL (e.g., Let's Encrypt certificates). This is crucial if you plan to access them outside your home network.
+
+#############################
+
+## TODO:
+
+
+
+
+passwords - do not self host.
+Organic Maps bookmarks + Syncthing -  Save places/bookmarks
+
+Maps - Upload the KML/GPX files to a folder in your Nextcloud. You can then navigate to the file in your Nextcloud Files app and open it. Nextcloud's built-in "Maps" app can usually display KML/GPX files as an overlay. Do not self host. This adding to nextcloud is just for backup or fun
+
+What all can you do with a home server/home lab?
+Local and internet endpoints for each service like nextcloud, nextcloud WebDAV for Joplin, jellyfin, HA, etc
+Lfcs prep strategy in 2 months - ask an llm
+DNS server like pi hole. Also should it ideally be on separate server?
+Also figure out migration of data to these self hoated services from my current services
+Migrate podcasts subscriptions from yt to self hosted ask llm
+Migrate yt channel subs to Foss alternative YouTube apps
+Privacy focused and Foss mobile network service in Canada and USA
+Credit karma Foss alternative
+Foss app to tap and pay like google wallet or Samsung wallet, etc
+Mfp Foss
+Google fit Foss alt
+Download ayharvashircha and other audios
+Cred India foss, also similar thing for us ca
+Google home/geeni/sync/globesuite to HA migration
+Foss alternatives for cync, geeni, etc discovery and use and setup
+Best antivirus for android Foss and Linux and windows
+Foss VPN best for router, android, Lin, win (and cost effective)
+Foss alias email alternative for simplelogin
+Foss Google authenticator
+Foss best password thing like bitwarden or proton pass
+Best Foss SMS app android
+Sync smses with home server
+Script/service to input contacts CSV and export all dates exported that can be imported in calendar app with all possible dates like birthdays annivs etc or read from nextcloud or other hosted contacts and add to hosted calendar
+Best Foss google maps alt for android
+Best Foss vlc or alternative for android, fedora , win
+Kodi setup for Lin, win, android + keeping setups synced
+Streamio
+Calculator
+Keyboard
+Camera for and, win, lin
+Clock
+Automate android and windows setup too somehow via script, etc
+Foss os for my phones
+Fdroid repos setup best
+Ask llms to replace all android apps with Foss alts
+Gallery / photo viewer
+Most private / Foss google drive or proton drive alt
+Gmail / protonmail
+Google keep used to. But need best Foss alt
+Files app
+Launcher
+Google photos
+Play store Foss alternatives and their setups
+Private opinions for money or rewards services
+Samples and rewards and free stuff
+Is libreoffice the best Foss office suite?
+Gift ideas for anniversary
+Analyze YouTube playlist in detail and summarize or write script combining them in a modular way
+Ask llms for 30 most popular and relavent and non-ai-generated channels for Linux, python rust, aws, technology, software engineering, software industry, etc
+Ask for YouTube channels
+Ask for podcast links on these topics
+Also RSS feeds
+Access home servilliance cameras without proprietary apps and use them in python script or home assistant, etc
+Foss YouTube app for win, Lin, and
+Create android and Linux apps for operations on sqlite db. Read, write,etc
+Best Foss office suite and PDF app for LAW
+Clam av config script for Ubuntu SVR, Fedora desktop, win
+Syncthing and Rclone for syicing photos/ videos / etc
+better and cross platform (yt, odessey, peertube) subscriptions sync or management
+script to list all my youtube subscriptions
+gnome boxes vs virt-manager
+
+authenticator that works on android and linux
+control smart devices from linux desktop
+
+
+
+-----------------
+Rig Veda, Sama Veda, Yajur Veda and Atharva Veda
+sutra
+stotra
+sitar
+veena
+shashtra
+puran
+skanda puran
+other purans
+research types of indian ancient books and knowledge
+meditation
+natural
+Consciousness
+Healing
+mind
+subconscious
+diet
+mantra
+Yogic
+Marma
+Sattvic
+ancient
+chalisa
+spice
+masala
+coffee
+tandoori
+Recipes
+cookbook
+knife
+skillet
+chicken
+desi
+tadka
+great ancient authors like Vyas
+great authors like kane and abel guy
+Traditional 
+Culinary 
+Skills
+Breadmaking 
+Dairy 
+Preserving
+Ultimate
+Barbecue
+BBQ
+Lfcs
+python
+linux
+rhcsa
+linux+
+herb
+kitchen
+pizza
+oven
+bake
+keto
+Carb
+Diabetes
+umami
+delicious
+Flavors
+Cheese
+Calorie
+chef
+meat
+Favorites
+beans
+Chutney
+diet
+Signature
+cooker
+insta pot
+beer
+alcohol
+cocktails
+drinks
+Breakfast, Lunch, Dinner, and Dessert
+Fermentation
+Ingredient
+Authentic
+Spiked
+Infused
+Booze
+Party
+Secret
+Techniques
+
+
+Aditya K Sood
+
+
+thekanchanb@gmail.com
+Thekanchabb@2024
+thekanchabb@2024
+
+#################################
+ nbhirud@nbFedora  ~  ssh-keygen -t rsa -b 4096
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/nbhirud/.ssh/id_rsa):
+Enter passphrase for "/home/nbhirud/.ssh/id_rsa" (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /home/nbhirud/.ssh/id_rsa
+Your public key has been saved in /home/nbhirud/.ssh/id_rsa.pub
+The key fingerprint is:
+SHA256:FtwzGATtJQl5O6bj1rwLBh2e+XOP7sy/jojvx/T+mdk nbhirud@nbFedora
+The key's randomart image is:
++---[RSA 4096]----+
+|      o*o.       |
+|      ..=+.      |
+|      .o+++      |
+|     o +=. o     |
+|    . =oS.       |
+|     .oo  .      |
+|     .o+oo..     |
+|     .ooo*o+.  = |
+|     ..o**B+*o= E|
++----[SHA256]-----+                                                                                                                                                                                            /19.7s
+ nbhirud@nbFedora  ~ 
+#################################
+
+
+
+Intelligent, To the point with minimal fluff. 
+When I ask about something, also think about better alternatives or better ways of doing what I am asking. 
+When I ask about software tools, prefer FOSS tools but also let me know if there exist non FOSS alternatives which are much better or much more used or preferred. 
+When I ask about food or ingredients, also inform me about relevant nutritional information (based on Modern research and Ayurveda). 
+Tell it like it is; don't sugar-coat responses. 
+Take a forward-thinking view. 
+Readily share strong opinions. 
+Get right to the point. 
+Be practical above all.  
+Be innovative and think outside the box. 
+Wherever relevant, also show the data in a tabular format.
+
+
+
+I prefer to avoid Carb loaded, sugary, salty and too sour foods. I am trying to lose fat and get back in shape. I either exercise at gym or go on a very long walk every day, and I am doing 18:6 intermittent fasting. I have worn multiple hats in my career as a software engineer like database developer, then java developer, then technical support/maintenance, then python developer, and then AWS developer. I prefer Linux as my OS for PC and Android for mobile. I am studying or planning to learn Linux (LFCS), Docker, Rust, AWS, Postgres and more Python (FastAPI, using LLM using Python, etc). I love to cook and I cook each of my meal myself and I prefer eating nutritions over tasty. 

@@ -1,0 +1,34 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############# fail2ban - Protecting Home Assistant
+
+# Home Assistant doesn’t log in a fail2ban-friendly way out of the box. Workarounds:
+
+Option A: Use reverse proxy (e.g. NGINX) in front → fail2ban monitors reverse proxy logs.
+Option B: Use app-specific security: Home Assistant: Has built-in login rate limiting; pair with reverse proxy + 2FA for better protection
+
+# Try NGINX reverse proxy configs for Nextcloud / Jellyfin / HA to make fail2ban work better
+############# 
+
+
+
+
+
+
+
+

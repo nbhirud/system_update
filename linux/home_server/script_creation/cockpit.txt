@@ -1,0 +1,77 @@
+
+
+Cockpit is a web-based interface for Linux servers that provides a graphical overview and management tools. It's often beneficial for headless setups.
+Cockpit allows you to monitor resources, manage Docker containers, view logs, perform updates, and more, all from your browser.
+
+
+#################
+# Installation
+
+sudo apt install -y cockpit pcp python3-pcp # pcp and python3-pcp are needed for historic data
+sudo systemctl enable --now cockpit.socket
+sudo systemctl status cockpit.socket
+
+# Cockpit uses TCP port 9090 by default.
+sudo ufw allow 9090/tcp # For Cockpit
+sudo ufw reload
+
+#################
+# Access From remote PC:
+
+Open a browser on your Fedora laptop and go to:
+
+https://<SERVER_IP_ADDRESS>:9090
+
+Or using .local if Avahi is working:
+
+https://nbserver.local:9090
+
+# You'll get a self-signed certificate warning — click through.
+
+You'll likely get a certificate warning (since it's self-signed for internal use); accept it.
+
+    Log in with your adminuser credentials.
+
+######### Ignore stuff below #########################
+
+$ Test Network Reachability
+ping <server-ip>
+curl -vk https://<server-ip>:9090
+
+# Check Listening Port
+sudo ss -tuln | grep 9090
+# You should see something like: "LISTEN  0 100  [::]:9090  [::]:*"
+
+###############
+# fail2ban - Protecting Cockpit (port 9090)
+
+sudo nano /etc/fail2ban/filter.d/cockpit-auth.conf
+
+# Paste: 
+```
+[Definition]
+failregex = cockpit-ws.*authentication failed for user .* from <HOST>
+
+```
+
+sudo nano /etc/fail2ban/jail.d/cockpit.conf
+# Ensure cockpit.log exists and contains failed login attempts. If not, enable verbose logging.
+# paste:
+```
+[cockpit]
+enabled = true
+port = 9090
+logpath = /var/log/cockpit/cockpit.log
+maxretry = 5
+bantime = 1h
+findtime = 10m
+
+```
+sudo systemctl restart fail2ban
+
+sudo fail2ban-client status cockpit
+
+###############
+
+# https://wiki.archlinux.org/title/Cockpit
+

@@ -1,0 +1,5 @@
+🔐 LAN or Remote?
+
+    LAN access: use local IP or .local mDNS (e.g. http://nextcloud.local)
+
+    Remote: use Tailscale or reverse proxy with HTTPS
