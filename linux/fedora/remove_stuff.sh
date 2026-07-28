@@ -22,7 +22,7 @@
 
 
 # Libreoffice stuff
-sudo dnf remove -y libreoffice-calc libreoffice-draw libreoffice-impress libreoffice-math libreoffice-writer libreoffice-help
+sudo dnf remove -y libreoffice-calc libreoffice-draw libreoffice-impress libreoffice-math libreoffice-writer libreoffice-help libreoffice-help-en
 
 sudo dnf remove -y neochat kolourpaint khelpcenter mullvad-browser
 
