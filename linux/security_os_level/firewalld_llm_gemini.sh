@@ -7,7 +7,8 @@
 # Tell Fedora that your current Wi-Fi connection belongs to the 'home' zone
 # Public Wi-Fi: Your Fedora machine will use the public zone. Because our script sets the target to DROP, your laptop becomes a "black hole." Scanners won't even see that a device is there.
 # Home Wi-Fi: When you walk into your house, Fedora recognizes the SSID and automatically switches to the home zone, opening up your OpenHAB and Radicale ports so your devices can sync.
-sudo nmcli connection modify "Your_Home_SSID_Name" connection.zone home
+sudo nmcli connection modify "KNSv1" connection.zone home
+sudo nmcli connection modify "KNSv4" connection.zone home
 
 # To see exactly what the outside world sees on your Fedora machine right now, run:
 sudo firewall-cmd --get-active-zones
@@ -36,7 +37,7 @@ sudo firewall-cmd --reload
 
 # Automating the Switch - Now, you need to tell Fedora which Wi-Fi connection is your "Home." Run this while connected to your home router:
 # Replace 'MyHomeWiFi' with your actual Wi-Fi name (SSID)
-sudo nmcli connection modify "MyHomeWiFi" connection.zone home
+# sudo nmcli connection modify "MyHomeWiFi" connection.zone home
 # Now, whenever you connect to that Wi-Fi, Fedora instantly opens your OpenHAB and KDE Connect ports. When you disconnect or go to a coffee shop, it defaults back to the public zone, where it is a "Black Hole" again.
 
 # To verify which "Shield" is currently active and what it's blocking, run:
