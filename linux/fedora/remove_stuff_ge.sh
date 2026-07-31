@@ -65,7 +65,7 @@ DNF_REMOVE_COMMON=(
     "kontact"
     "akonadi-*"
     "kalarm"
-    "kleopatra"
+    # "kleopatra"
     "knotes"
 
     # RSS, Podcasts, Media
@@ -112,7 +112,8 @@ FLATPAK_REMOVE_TARGETS=(
 log_info "Removing bloatware RPM packages via DNF..."
 
 # Execute DNF removal silently ignoring missing packages
-if dnf remove -y "${DNF_REMOVE_TOTAL[@]}" &>/dev/null; then
+# if dnf remove -y "${DNF_REMOVE_TOTAL[@]}" &>/dev/null; then
+if dnf remove -y "${DNF_REMOVE_TOTAL[@]}"; then
     log_success "DNF package cleanup completed successfully."
 else
     log_warn "DNF encountered non-critical warnings during package removal. Proceeding..."
