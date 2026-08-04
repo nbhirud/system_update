@@ -557,22 +557,12 @@ fi
 # Add to nbReboot - update dnsmasq blocklists
 # Or maybe most of these just need to be cron jobs? (linux/common/cron_jobs.sh)
 
-
 # TODO - Edit nbclean for cosmic
 # sudo bleachbit doesn'tt work idirectly on cosmic. it blames wayland. Surround it with commands as follows to use xwayland
 # https://docs.bleachbit.org/doc/frequently-asked-questions.html
 # https://wiki.archlinux.org/title/Running_GUI_applications_as_root
 # xhost si:localuser:root && sudo bleachbit --clean --preset && xhost -si:localuser:root
 
-############################
-
-alias nbjoplinupdate="wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash"
-alias nbuvupdate="uv self update"
-
-
-
-alias gearlever='flatpak run it.mijorus.gearlever'
-# flatpak run it.mijorus.gearlever --update <name of appimage> # updates 1 appimage at a time
 #################################################################
 
 ZSHRC_EOF
