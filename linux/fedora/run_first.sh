@@ -519,9 +519,35 @@ alias nbtoroff=". torsocks off"
 alias nbshutdown="nbupdate && nbclean && shutdown"
 alias nbreboot="nbupdate && nbclean && reboot"
 
+############################
+
+alias nbjoplinupdate="wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash"
+alias nbuvupdate="uv self update"
+
+alias gearlever='flatpak run it.mijorus.gearlever'
+# flatpak run it.mijorus.gearlever --update <name of appimage> # updates 1 appimage at a time
+
+############################
+
+
+
 ### Stuff other than aliases:
 autoload -U compinit; compinit
 source ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh
+
+
+### Show hostname on the right - To identify ssh sessions more obviously:
+export RPROMPT='%F{yellow}%m%f'
+
+### Show SSH indicator in Agnoster prompt (not working?)
+if [[ -n "$SSH_CONNECTION" ]]; then
+    prompt_context() {
+        prompt_segment red black "%(!.%{%F{yellow}%}.)%n@%m [SSH]"
+    }
+fi
+
+
+### Enable tor
 . torsocks on
 
 # TODO: ##############################
@@ -531,22 +557,12 @@ source ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh
 # Add to nbReboot - update dnsmasq blocklists
 # Or maybe most of these just need to be cron jobs? (linux/common/cron_jobs.sh)
 
-
 # TODO - Edit nbclean for cosmic
 # sudo bleachbit doesn'tt work idirectly on cosmic. it blames wayland. Surround it with commands as follows to use xwayland
 # https://docs.bleachbit.org/doc/frequently-asked-questions.html
 # https://wiki.archlinux.org/title/Running_GUI_applications_as_root
 # xhost si:localuser:root && sudo bleachbit --clean --preset && xhost -si:localuser:root
 
-############################
-
-alias nbjoplinupdate="wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash"
-alias nbuvupdate="uv self update"
-
-
-
-alias gearlever='flatpak run it.mijorus.gearlever'
-# flatpak run it.mijorus.gearlever --update <name of appimage> # updates 1 appimage at a time
 #################################################################
 
 ZSHRC_EOF
