@@ -519,6 +519,18 @@ alias nbtoroff=". torsocks off"
 alias nbshutdown="nbupdate && nbclean && shutdown"
 alias nbreboot="nbupdate && nbclean && reboot"
 
+############################
+
+alias nbjoplinupdate="wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash"
+alias nbuvupdate="uv self update"
+
+alias gearlever='flatpak run it.mijorus.gearlever'
+# flatpak run it.mijorus.gearlever --update <name of appimage> # updates 1 appimage at a time
+
+############################
+
+
+
 ### Stuff other than aliases:
 autoload -U compinit; compinit
 source ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh
