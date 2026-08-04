@@ -31,6 +31,22 @@ sudo firewall-cmd --permanent --zone=home --add-port=8080/tcp
 sudo firewall-cmd --permanent --zone=home --add-port=8443/tcp
 sudo firewall-cmd --permanent --zone=home --add-port=5007/tcp
 sudo firewall-cmd --permanent --zone=home --add-port=5232/tcp
+
+
+# ## Grayjay - verify if following is even needed.
+# # 1. Allow mDNS (UDP 5353 + multicast)
+# sudo firewall-cmd --permanent --add-service=mdns
+# # 2. Allow the sync port
+# sudo firewall-cmd --permanent --add-port=12315/tcp
+
+# Get active default zone and open Grayjay sync port + mDNS
+ACTIVE_ZONE=$(sudo firewall-cmd --get-default-zone)
+
+sudo firewall-cmd --zone="$ACTIVE_ZONE" --add-port=12315/tcp --permanent
+sudo firewall-cmd --zone="$ACTIVE_ZONE" --add-service=mdns --permanent
+
+
+
 # Apply changes
 sudo firewall-cmd --reload
 
@@ -41,7 +57,8 @@ sudo nmcli connection modify "MyHomeWiFi" connection.zone home
 
 # To verify which "Shield" is currently active and what it's blocking, run:
 sudo firewall-cmd --get-active-zones
-
+# Verify
+sudo firewall-cmd --list-all
 
 
 
