@@ -534,6 +534,20 @@ alias gearlever='flatpak run it.mijorus.gearlever'
 ### Stuff other than aliases:
 autoload -U compinit; compinit
 source ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh
+
+
+### Show hostname on the right - To identify ssh sessions more obviously:
+export RPROMPT='%F{yellow}%m%f'
+
+### Show SSH indicator in Agnoster prompt (not working?)
+if [[ -n "$SSH_CONNECTION" ]]; then
+    prompt_context() {
+        prompt_segment red black "%(!.%{%F{yellow}%}.)%n@%m [SSH]"
+    }
+fi
+
+
+### Enable tor
 . torsocks on
 
 # TODO: ##############################
