@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# https://wiki.archlinux.org/title/Domain_name_resolution
+
 # https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
 # https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn-social/hosts # can make basic social interaction a lot difficult
 

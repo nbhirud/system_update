@@ -190,6 +190,12 @@ echo "************************ Adding brave browser repo ***********************
 sudo dnf install dnf-plugins-core
 sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
 
+# echo "************************ Adding helium copr repo ************************"
+# https://helium.computer/download#all-downloads
+# AppImage is their default option for linux
+# dnf copr enable imput/helium
+# sudo dnf install -y helium-bin
+
 echo "************************ Installing packages ************************"
 # install the packages
 sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher brave-browser
@@ -229,6 +235,10 @@ echo "************************ Removing packages ************************"
 # remove stuff
 sudo dnf remove -y totem yelp gnome-tour gnome-connections firefox
 # remove the gnome terminal ptyxis as we have installed
+
+sudo rm -r /opt/firefox
+rm ~/.local/share/applications/firefox.desktop
+rm -r ~/.mozilla
 
 #######################################
 
@@ -288,7 +298,8 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
 ######################################
 
 echo "************************ Install and configure more dnf packages ************************"
-sudo dnf install -y gh fzf fastfetch bleachbit
+sudo dnf install -y gh fzf fastfetch 
+# bleachbit - Fedora repo generally has a very old version. Installing latest stable version it below from bleachbit's rpm
 # sudo dnf install -y  gnome-browser-connector dnfdragora transmission
 # sudo dnf install -y akregator alligator kasts clementine
 # TODO - configure fzf
@@ -321,11 +332,83 @@ then
 
   echo "Installing apps to try out on KDE - dnf"
   sudo dnf install -y kalarm kbackup
-  # kate
+
+  # TODO manually: https://community.kde.org/Dolphin/FAQ/Freeze
+  
+  # try these file managers:
+
+  # Thunar:
+  sudo dnf install -y thunar thunar-archive-plugin thunar-volman tumbler
+
+  # yazi
+  # https://yazi-rs.github.io/docs/installation
+  # https://yazi-rs.github.io/docs/configuration/overview/
+  sudo dnf copr enable -y lihaohong/yazi
+  sudo dnf install -y yazi ffmpegthumbnailer ImageMagick poppler fd-find ripgrep fzf zoxide
+
+  # alternative using crgo
+  # cargo install --locked yazi-fm yazi-cli
+
+  # config: ~/.config/yazi/config.toml
+  #   yazi.toml - General configuration.
+  #   keymap.toml - Keybindings configuration.
+  #   theme.toml - Color scheme configuration.
+  sudo tee -a ~/.config/yazi/config.toml <<'YAZI_EOF'
+[manager]
+ratio = [1, 3, 4]         # Panel ratio: sidebar | file_list | preview
+show_hidden = true        # Show hidden files by default (you'll like this)
+sort_by = "alphabetical"  # Or "natural", "mtime", "size"
+sort_reverse = false
+
+[opener]
+edit = [
+	{ run = '${EDITOR:-nvim} "$@"', desc = "Edit with $EDITOR" },
+	{ run = 'yq "$@"', for = "unix", orphan = true, block = false }
+]
+open = [
+	{ run = 'xdg-open "$@"', desc = "Open", for = "linux" },
+	{ run = 'open "$@"', desc = "Open", for = "mac" },
+	{ run = 'start "" "$@"', desc = "Open", for = "windows" }
+]
+reveal = [
+	{ run = 'xdg-open "$(dirname "$1")"', desc = "Reveal", for = "linux" }
+]
+
+[preview]
+max_width = 200
+max_height = 100
+cache_dir = "/tmp/yazi-cache"  # Make sure this exists
+sixel = true                   # Enable sixel fallback for non-Kitty terminals
+
+[plugin]
+# Enable plugins
+fetchers = [
+	{ name = "*", cmd = "file", args = ["--mime-type", "-b"] }
+]
+YAZI_EOF
+
+  # install yazi plugins:
+  # Official plugin manager
+  ya pkg add yazi-rs/plugins:git          # Git status display
+  # ya pkg add yazi-rs/plugins:full-border  # Pretty borders
+  # ya pkg add yazi-rs/plugins:history      # Directory history (like ranger's)
+  # Community plugins
+  # ya pkg add S1mba/yazi-git-status        # Enhanced Git integration
+  ya pkg add yazi-rs/plugins:diff         # File diff preview
+  # List installed: ya pkg list
+  # Also added changes to 1. .zshrc, and 2. neovim setup
+
+  # krusader
+  sudo dnf install -y krusader p7zip p7zip-plugins
+
+  # kate - nah
+
 fi
 
+
+
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub org.signal.Signal it.mijorus.gearlever com.github.tchx84.Flatseal
+flatpak install -y flathub org.signal.Signal it.mijorus.gearlever com.github.tchx84.Flatseal io.github.amit9838.mousam
 # com.brave.Browser
 
 # TODO - check which brave is installed (flatpak vs dnf) and set following accordingly
@@ -429,6 +512,8 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh_orig.sh $DISTRO $SETUP_TYPE $DESKTO
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty_orig.sh
 
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/bleachbit.sh
+
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh $GIT_USER_EMAIL
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/syncthing.sh
@@ -438,8 +523,6 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh
 sudo sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEXTDNS_DEVICE_ID
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh $SETUP_TYPE $DESKTOP
-
-
 
 ######################################
 # Start up apps
@@ -513,7 +596,7 @@ alias nbupdateproton=". torsocks off && cd /home/nbhirud/nb/CodeProjects/system_
 # https://docs.fedoraproject.org/en-US/quick-docs/upgrading-fedora-offline/
 # alias nbdistu="sudo sudo dnf upgrade --refresh -y && sudo sudo dnf system-upgrade download --releasever=43 -y"
 alias nbreload="systemctl daemon-reload && source ~/.zshrc"
-alias nbclean="sync && sudo bleachbit --clean --preset && bleachbit --clean --preset && dnf clean -y all && yum clean -y all && flatpak uninstall --unused && sudo resolvectl flush-caches && sudo resolvectl reset-statistics"
+alias nbclean="sync && sudo dnf autoremove && dnf clean -y all && yum clean -y all && flatpak uninstall --unused && sudo bleachbit --clean --preset && bleachbit --clean --preset && sudo resolvectl flush-caches && sudo resolvectl reset-statistics"
 alias nbtoron=". torsocks on"
 alias nbtoroff=". torsocks off"
 alias nbshutdown="nbupdate && nbclean && shutdown"
@@ -546,7 +629,28 @@ if [[ -n "$SSH_CONNECTION" ]]; then
     }
 fi
 
+############################
+# yazi file manager
 
+# ~/.zshrc additions
+
+# Yazi shell function to cd into the directory where Yazi exits
+function y() {
+	temp="$(yazi "$@" --cwd-file)"
+	if [ -n "$temp" ]; then
+		cd "$temp" && pwd
+	fi
+}
+
+# Optional: bind yazi to Ctrl+O (opens Yazi from anywhere in shell)
+bindkey -s '^O' 'y\n'
+
+# For fzf integration (you already use fzf)
+# yazi can act as the picker instead of fzf
+alias ff="yazi"
+
+
+############################
 ### Enable tor
 . torsocks on
 

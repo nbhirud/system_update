@@ -47,6 +47,9 @@ fi
 
 echo "Configuring systemd-resolved for NextDNS DoT..."
 sudo tee /etc/systemd/resolved.conf >/dev/null <<EOF
+# https://wiki.archlinux.org/title/Systemd-resolved
+# https://wiki.archlinux.org/title/Domain_name_resolution
+#v
 [Resolve]
 DNS=45.90.28.0#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
 DNS=2a07:a8c0::#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
@@ -76,6 +79,100 @@ sudo systemctl daemon-reload # Reload systemd
 sudo resolvectl flush-caches
 sudo systemctl restart NetworkManager
 sudo systemctl restart systemd-resolved
+
+
+############ 
+# setup to run the NextDNS Linked IP update URL as a simple system-wide cron job - # TODO - This section is untested.
+############
+
+# Note: Before setting this up, 
+# 1. Go to router's admin panel
+# 2. Advanced → Network → DHCP Server (or LAN).
+# 3. Find the Primary DNS and Secondary DNS fields under the DHCP settings.
+# 4. Enter your two custom NextDNS IPv4 addresses.
+# 5. Clear any entries in additional DNS fields so no third-party fallback (like Google 8.8.8.8) is present.
+# 6. Click Save.
+
+SCRIPT_PATH="/usr/local/bin/update-nextdns-ip.sh"
+
+# Ensure target directory exists
+mkdir -p "$(dirname "$SCRIPT_PATH")"
+
+# Prompt user for the NextDNS DDNS / Update URL
+read -rp "Enter your NextDNS DDNS Update URL (from Dashboard -> Linked IP): " NEXTDNS_URL
+
+# Basic validation of the entered URL
+if [[ -z "$NEXTDNS_URL" || ! "$NEXTDNS_URL" =~ ^https://link-ip\.nextdns\.io/ ]]; then
+    echo "ERROR: Invalid URL. It should start with 'https://link-ip.nextdns.io/'" >&2
+    exit 1
+fi
+
+
+# Create the executable updater script
+sudo cat <<'UPDATE_NEXTDNS_EOF' > "$SCRIPT_PATH"
+#!/usr/bin/env bash
+
+# NextDNS Linked IP Updater Script
+# Keeps your home network's public WAN IP linked to your NextDNS profile.
+
+# Configured NextDNS DDNS Update URL
+NEXTDNS_UPDATE_URL="TARGET_URL_PLACEHOLDER"
+
+# Execute curl request silently with strict timeout to prevent hung processes
+if RESPONSE=$(curl -s --max-time 10 "$NEXTDNS_UPDATE_URL" 2>&1); then
+    # Log success to system logs (journalctl)
+    logger -t nextdns-ip-update "NextDNS Linked IP update succeeded: ${RESPONSE}"
+else
+    # Log failure to system logs
+    logger -t nextdns-ip-update "NextDNS Linked IP update failed: ${RESPONSE}"
+fi
+UPDATE_NEXTDNS_EOF
+
+# Substitute the user's actual NextDNS URL into the script
+sed -i "s|TARGET_URL_PLACEHOLDER|${NEXTDNS_URL}|g" "$SCRIPT_PATH"
+
+# Set strict permissions (root owner, executable by root only)
+chmod 700 "$SCRIPT_PATH"
+chown root:root "$SCRIPT_PATH"
+
+#Testing script execution..."
+# Run the newly created script once to confirm it works
+if "$SCRIPT_PATH"; then
+    echo "Initial update trigger sent successfully."
+else
+    echo "WARNING: Initial test trigger returned an error. Check network connectivity or URL."
+fi
+
+# Configuring root crontab
+# Fetch current root crontab (suppressing "no crontab for root" error)
+CURRENT_CRON=$(crontab -l 2>/dev/null || true)
+
+# Remove any existing entries for this specific script to prevent duplicates
+CLEANED_CRON=$(echo "$CURRENT_CRON" | grep -v "$SCRIPT_PATH" || true)
+
+# Define new cron entries: @reboot and every 30 minutes
+NEW_CRON_ENTRIES=$(cat <<EOF
+# NextDNS Linked IP Update Jobs
+@reboot ${SCRIPT_PATH} >/dev/null 2>&1
+*/30 * * * * ${SCRIPT_PATH} >/dev/null 2>&1
+EOF
+)
+
+# Append new entries to cleaned crontab and install
+if [ -z "$CLEANED_CRON" ]; then
+    echo "$NEW_CRON_ENTRIES" | crontab -
+else
+    printf "%s\n\n%s\n" "$CLEANED_CRON" "$NEW_CRON_ENTRIES" | crontab -
+fi
+
+# Verifying crontab configuration
+crontab -l | grep "$SCRIPT_PATH"
+
+############
+
+
+
+
 
 echo "########## DNS-over-HTTPS ##########"
 echo "https://dns.nextdns.io/$NEXTDNS_ID/${NEXTDNS_DEVICE_ID}_Firefox"

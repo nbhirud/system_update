@@ -7,6 +7,7 @@ should_be = {
 "’" : "\'",
 "“" : "\"",
 "”" : "\"",
+"  " : " ",
 }
 
 # Write code to do character replacements in input file

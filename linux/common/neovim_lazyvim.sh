@@ -52,3 +52,75 @@ echo "1. Fire up 'nvim' inside your terminal to watch LazyVim execute its depend
 echo "2. Run ':LazyHealth' once dependencies settle down to ensure everything satisfies health checks."
 echo "3. Remember to update your alacritty profile fonts to leverage the installed Nerd Font!"
 
+########################################
+# # To integrate yazi file manager dd to your LazyVim lua/plugins/yazi.lua:
+
+# return {
+#   {
+#     "mikavilpas/yazi.nvim",
+#     event = "VeryLazy",
+#     keys = {
+#       {
+#         "<leader>-",
+#         "<cmd>Yazi<cr>",
+#         desc = "Open Yazi at current file/directory",
+#       },
+#       {
+#         "<c-up>",
+#         "<cmd>Yazi toggle<cr>",
+#         desc = "Resume Yazi",
+#       },
+#     },
+#     opts = {
+#       -- Keymaps in Yazi
+#       keymaps = {
+#         show_help = "<f1>",
+#         open_file = "<enter>",
+#         open_files = { "<enter>" },
+#         open_cwd = "<c-d>",  -- Opens parent dir in yazi, then you can cd
+#         tab_new = "<a-t>",
+#         tab_rename = "<a-r>",
+#         -- Custom keymaps
+#         open_with_nvim = { "<space>e" },
+#       },
+#       open_for_directories = false,  -- Set true if you want Yazi to open folders too
+#       integrations = {
+#         -- Jump to file when opened from Neovim
+#         jump_to_markdown = true,
+#         -- Sync cwd between Neovim and Yazi
+#         sync_cwd = true,
+#       },
+#     },
+#   },
+#   -- Optional: Enhance preview inside Neovim
+#   {
+#     "echasnovski/mini.icons",
+#     lazy = true,
+#   },
+#   -- File type icons for Yazi
+#   {
+#     "stevearc/dressing.nvim",
+#     opts = {
+#       input = { default_title = false },
+#       confirm = { default_title = false },
+#     },
+#   },
+# }
+
+
+
+########################################
+# # After installing yazi.nvim, create the integration wrapper script:
+# mkdir -p ~/.config/yazi
+# cat > ~/.config/yazi/init.lua << 'EOF'
+# -- ~/.config/yazi/init.lua
+# local M = {}
+
+# function M.yazi_setup()
+#   -- Custom keybinding: Press <Space-e> to open in Neovim
+#   vim.keymap.set("n", "<Space-e>", "<cmd>yazi<CR>", { remap = false })
+# end
+
+# return M
+# EOF
+# # Then in your Neovim, run: :Yazi from any buffer. It opens at your current cursor location/file.
