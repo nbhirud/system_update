@@ -521,8 +521,6 @@ sudo sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEX
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh $SETUP_TYPE $DESKTOP
 
-
-
 ######################################
 # Start up apps
 ######################################
@@ -595,7 +593,7 @@ alias nbupdateproton=". torsocks off && cd /home/nbhirud/nb/CodeProjects/system_
 # https://docs.fedoraproject.org/en-US/quick-docs/upgrading-fedora-offline/
 # alias nbdistu="sudo sudo dnf upgrade --refresh -y && sudo sudo dnf system-upgrade download --releasever=43 -y"
 alias nbreload="systemctl daemon-reload && source ~/.zshrc"
-alias nbclean="sync && sudo bleachbit --clean --preset && bleachbit --clean --preset && dnf clean -y all && yum clean -y all && flatpak uninstall --unused && sudo resolvectl flush-caches && sudo resolvectl reset-statistics"
+alias nbclean="sync && sudo dnf autoremove && dnf clean -y all && yum clean -y all && flatpak uninstall --unused && sudo bleachbit --clean --preset && bleachbit --clean --preset && sudo resolvectl flush-caches && sudo resolvectl reset-statistics"
 alias nbtoron=". torsocks on"
 alias nbtoroff=". torsocks off"
 alias nbshutdown="nbupdate && nbclean && shutdown"
