@@ -298,7 +298,8 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
 ######################################
 
 echo "************************ Install and configure more dnf packages ************************"
-sudo dnf install -y gh fzf fastfetch bleachbit
+sudo dnf install -y gh fzf fastfetch 
+# bleachbit - Fedora repo generally has a very old version. Installing latest stable version it below from bleachbit's rpm
 # sudo dnf install -y  gnome-browser-connector dnfdragora transmission
 # sudo dnf install -y akregator alligator kasts clementine
 # TODO - configure fzf
@@ -510,6 +511,8 @@ fi
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh_orig.sh $DISTRO $SETUP_TYPE $DESKTOP $FILENAME_TIMESTAMP
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty_orig.sh
+
+sh $SYSUPDATE_CODE_BASE_DIR/linux/common/bleachbit.sh
 
 sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh $GIT_USER_EMAIL
 
