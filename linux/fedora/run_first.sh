@@ -236,6 +236,10 @@ echo "************************ Removing packages ************************"
 sudo dnf remove -y totem yelp gnome-tour gnome-connections firefox
 # remove the gnome terminal ptyxis as we have installed
 
+sudo rm -r /opt/firefox
+rm ~/.local/share/applications/firefox.desktop
+rm -r ~/.mozilla
+
 #######################################
 
 echo "************************ Enabling RPM Fusion ************************"
