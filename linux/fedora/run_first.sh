@@ -190,6 +190,12 @@ echo "************************ Adding brave browser repo ***********************
 sudo dnf install dnf-plugins-core
 sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
 
+# echo "************************ Adding helium copr repo ************************"
+# https://helium.computer/download#all-downloads
+# AppImage is their default option for linux
+# dnf copr enable imput/helium
+# sudo dnf install -y helium-bin
+
 echo "************************ Installing packages ************************"
 # install the packages
 sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher brave-browser
