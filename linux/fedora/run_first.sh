@@ -407,7 +407,7 @@ fi
 
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub org.signal.Signal it.mijorus.gearlever com.github.tchx84.Flatseal
+flatpak install -y flathub org.signal.Signal it.mijorus.gearlever com.github.tchx84.Flatseal io.github.amit9838.mousam
 # com.brave.Browser
 
 # TODO - check which brave is installed (flatpak vs dnf) and set following accordingly
