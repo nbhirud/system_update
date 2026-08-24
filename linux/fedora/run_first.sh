@@ -331,8 +331,80 @@ then
 
   echo "Installing apps to try out on KDE - dnf"
   sudo dnf install -y kalarm kbackup
-  # kate
+
+  # TODO manually: https://community.kde.org/Dolphin/FAQ/Freeze
+  
+  # try these file managers:
+
+  # Thunar:
+  sudo dnf install -y thunar thunar-archive-plugin thunar-volman tumbler
+
+  # yazi
+  # https://yazi-rs.github.io/docs/installation
+  # https://yazi-rs.github.io/docs/configuration/overview/
+  sudo dnf copr enable -y lihaohong/yazi
+  sudo dnf install -y yazi ffmpegthumbnailer ImageMagick poppler fd-find ripgrep fzf zoxide
+
+  # alternative using crgo
+  # cargo install --locked yazi-fm yazi-cli
+
+  # config: ~/.config/yazi/config.toml
+  #   yazi.toml - General configuration.
+  #   keymap.toml - Keybindings configuration.
+  #   theme.toml - Color scheme configuration.
+  sudo tee -a ~/.config/yazi/config.toml <<'YAZI_EOF'
+[manager]
+ratio = [1, 3, 4]         # Panel ratio: sidebar | file_list | preview
+show_hidden = true        # Show hidden files by default (you'll like this)
+sort_by = "alphabetical"  # Or "natural", "mtime", "size"
+sort_reverse = false
+
+[opener]
+edit = [
+	{ run = '${EDITOR:-nvim} "$@"', desc = "Edit with $EDITOR" },
+	{ run = 'yq "$@"', for = "unix", orphan = true, block = false }
+]
+open = [
+	{ run = 'xdg-open "$@"', desc = "Open", for = "linux" },
+	{ run = 'open "$@"', desc = "Open", for = "mac" },
+	{ run = 'start "" "$@"', desc = "Open", for = "windows" }
+]
+reveal = [
+	{ run = 'xdg-open "$(dirname "$1")"', desc = "Reveal", for = "linux" }
+]
+
+[preview]
+max_width = 200
+max_height = 100
+cache_dir = "/tmp/yazi-cache"  # Make sure this exists
+sixel = true                   # Enable sixel fallback for non-Kitty terminals
+
+[plugin]
+# Enable plugins
+fetchers = [
+	{ name = "*", cmd = "file", args = ["--mime-type", "-b"] }
+]
+YAZI_EOF
+
+  # install yazi plugins:
+  # Official plugin manager
+  ya pkg add yazi-rs/plugins:git          # Git status display
+  # ya pkg add yazi-rs/plugins:full-border  # Pretty borders
+  # ya pkg add yazi-rs/plugins:history      # Directory history (like ranger's)
+  # Community plugins
+  # ya pkg add S1mba/yazi-git-status        # Enhanced Git integration
+  ya pkg add yazi-rs/plugins:diff         # File diff preview
+  # List installed: ya pkg list
+  # Also added changes to 1. .zshrc, and 2. neovim setup
+
+  # krusader
+  sudo dnf install -y krusader p7zip p7zip-plugins
+
+  # kate - nah
+
 fi
+
+
 
 echo "************************ Install and configure more flatpak packages ************************"
 flatpak install -y flathub org.signal.Signal it.mijorus.gearlever com.github.tchx84.Flatseal
