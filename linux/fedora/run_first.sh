@@ -626,7 +626,28 @@ if [[ -n "$SSH_CONNECTION" ]]; then
     }
 fi
 
+############################
+# yazi file manager
 
+# ~/.zshrc additions
+
+# Yazi shell function to cd into the directory where Yazi exits
+function y() {
+	temp="$(yazi "$@" --cwd-file)"
+	if [ -n "$temp" ]; then
+		cd "$temp" && pwd
+	fi
+}
+
+# Optional: bind yazi to Ctrl+O (opens Yazi from anywhere in shell)
+bindkey -s '^O' 'y\n'
+
+# For fzf integration (you already use fzf)
+# yazi can act as the picker instead of fzf
+alias ff="yazi"
+
+
+############################
 ### Enable tor
 . torsocks on
 
