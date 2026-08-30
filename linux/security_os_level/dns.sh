@@ -46,28 +46,58 @@ if [ "$NEXTDNS_ID" = "" ] || [ "$NEXTDNS_DEVICE_ID" = "" ]; then
 fi
 
 echo "Configuring systemd-resolved for NextDNS DoT..."
+# sudo tee /etc/systemd/resolved.conf >/dev/null <<EOF
+# # https://wiki.archlinux.org/title/Systemd-resolved
+# # https://wiki.archlinux.org/title/Domain_name_resolution
+# #v
+# [Resolve]
+# DNS=45.90.28.0#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
+# DNS=2a07:a8c0::#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
+# DNS=45.90.30.0#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
+# DNS=2a07:a8c1::#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
+# FallbackDNS=9.9.9.9
+# FallbackDNS=2620:fe::fe
+# FallbackDNS=149.112.112.112
+# FallbackDNS=2620:fe::9
+# DNSOverTLS=yes
+# Domains=~.
+# #DNSSEC=no
+# Cache=yes
+# # Max Cache Capacity. Default DNSCacheSize is 4000
+# DNSCacheSize=10000
+# # Tells systemd-resolved not to store records for queries that originate from local applications targeting local addresses (127.0.0.1 or ::1)
+# CacheFromLocalhost=no
+# ReadEtcHosts=yes
+# # Disables local network discovery protocols to enhance privacy and security (prevents leaks)
+# LLMNR=no
+# MulticastDNS=no
+# # Prevent systemd-resolved from binding to 127.0.0.53:53
+# # DNSStubListener=no
+# EOF
+
+
 sudo tee /etc/systemd/resolved.conf >/dev/null <<EOF
-# https://wiki.archlinux.org/title/Systemd-resolved
-# https://wiki.archlinux.org/title/Domain_name_resolution
-#v
 [Resolve]
-DNS=45.90.28.0#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
-DNS=2a07:a8c0::#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
-DNS=45.90.30.0#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
-DNS=2a07:a8c1::#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
-FallbackDNS=9.9.9.9
-FallbackDNS=2620:fe::fe
-FallbackDNS=149.112.112.112
-FallbackDNS=2620:fe::9
+# Primary NextDNS servers with DoT SNI device identification (Space-separated)
+DNS=45.90.28.0#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io 2a07:a8c0::#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io 45.90.30.0#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io 2a07:a8c1::#$NEXTDNS_DEVICE_ID-$NEXTDNS_ID.dns.nextdns.io
+
+# Fallback DNS (Space-separated)
+FallbackDNS=9.9.9.9 2620:fe::fe 149.112.112.112 2620:fe::9
+
+# Enforcement & Routing
 DNSOverTLS=yes
 Domains=~.
 #DNSSEC=no
+
+# Caching Optimization
 Cache=yes
+DNSCacheSize=10000
+CacheFromLocalhost=no
 ReadEtcHosts=yes
-# Disables local network discovery protocols to enhance privacy and security (prevents leaks)
+
+# Security & Privacy Hardening
 LLMNR=no
 MulticastDNS=no
-# Prevent systemd-resolved from binding to 127.0.0.53:53
 # DNSStubListener=no
 EOF
 
