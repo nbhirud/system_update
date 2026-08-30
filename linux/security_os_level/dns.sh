@@ -91,6 +91,8 @@ Domains=~.
 
 # Caching Optimization
 Cache=yes
+DNSCacheSize=10000
+CacheFromLocalhost=no
 ReadEtcHosts=yes
 
 # Security & Privacy Hardening
