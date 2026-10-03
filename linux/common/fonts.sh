@@ -7,6 +7,32 @@ set -eux
 # 2. invoked via `linux/fedora/run_first.sh`
 # TODO - the script assumes a very rigid and specific file structure. Make it generic and resilient
 
+
+##########################################################################
+# Input data
+##########################################################################
+
+# TODO
+# if [[ -z $1 ]];
+# then
+#     echo "DESKTOP not provided. Identifying."
+#     HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
+#     SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
+#     DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
+# else 
+#     DESKTOP="$1"
+# fi
+
+HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
+SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
+DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/check_desktop_env.sh)
+
+echo "The current DESKTOP is $DESKTOP."
+
+##########################################################################
+# Set Constants, Variables, flags
+##########################################################################
+
 # USERNAME="nbhirud"
 # HOME_DIR="/home/$USERNAME/"
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
@@ -89,9 +115,7 @@ echo "************************ refresh font cache ************************"
 fc-cache -fr
 # fc-list | grep "JetBrains"
 
-echo "************************ Identify Desktop Environment ************************"
-DESKTOP=$(sh $SYSUPDATE_CODE_DIR/linux/common/check_desktop_env.sh)
-echo "Desktop Environment is $DESKTOP"
+
 
 if [ "$DESKTOP" = "gnome" ]
 then
@@ -100,4 +124,12 @@ then
     dconf write /org/gnome/desktop/interface/document-font-name "'Ubuntu Nerd Font 11'"
     dconf write /org/gnome/desktop/wm/preferences/titlebar-font "'Ubuntu Nerd Font Bold 11'"
     dconf write /org/gnome/desktop/interface/monospace-font-name "'JetBrainsMono Nerd Font 10'"
+
+elif  [ "$DESKTOP" = "kde" ]
+then
+    echo "************************ Setting default UI fonts to NotoSans and monospace font to Jetbrains ************************"
+    # KDE Plasma 6 font configuration
+    kwriteconfig6 --group "General" --key "font" "NotoSans Nerd Font,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"
+    kwriteconfig6 --group "General" --key "fixed" "JetBrainsMono Nerd Font,10,-1,5,50,0,0,0,0,0"
+
 fi
