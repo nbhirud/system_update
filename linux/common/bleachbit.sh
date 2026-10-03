@@ -9,8 +9,8 @@ set -eux
 
 
 HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
-DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
-DOWNLOADS_DIR_BLEACHBIT="$DOWNLOADS_DIR/Bleachbit/bleachbit_$(date +%Y-%m-%d_%H-%M-%S)"
+SCRIPT_DOWNLOADS_DIR="$HOME_DIR/nb/nb_script_downloads"
+DOWNLOADS_DIR_BLEACHBIT="$SCRIPT_DOWNLOADS_DIR/Bleachbit/bleachbit_$(date +%Y-%m-%d_%H-%M-%S)"
 
 mkdir -p "$DOWNLOADS_DIR_BLEACHBIT"
 cd "$DOWNLOADS_DIR_BLEACHBIT" || exit
