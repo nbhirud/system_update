@@ -28,38 +28,38 @@ set -eux
 #     # Add your specific directories here
 # )
 
-REPOS=(
-    ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-    ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-    ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab
-)
+# REPOS=(
+#     ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+#     ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+#     ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab
+# )
 
 
 
 
-# --- LOGIC ---
-for repo in "${REPOS[@]}"; do
-    if [[ ! -d "$repo/.git" ]]; then
-        echo "⚠️  SKIP: $repo (Not a git repo)"
-        continue
-    fi
+# # --- LOGIC ---
+# for repo in "${REPOS[@]}"; do
+#     if [[ ! -d "$repo/.git" ]]; then
+#         echo "⚠️  SKIP: $repo (Not a git repo)"
+#         continue
+#     fi
 
-    cd "$repo"
+#     cd "$repo"
 
-    # Safety: Skip if working tree has changes
-    if ! git diff-index --quiet HEAD --; then
-        echo "🛑 SKIPPED: $repo (Dirty working tree - local changes exist)"
-        cd - > /dev/null
-        continue
-    fi
+#     # Safety: Skip if working tree has changes
+#     if ! git diff-index --quiet HEAD --; then
+#         echo "🛑 SKIPPED: $repo (Dirty working tree - local changes exist)"
+#         cd - > /dev/null
+#         continue
+#     fi
 
-    echo "🔄 PULLING: $repo"
-    git pull --rebase --autostash
+#     echo "🔄 PULLING: $repo"
+#     git pull --rebase --autostash
     
-    cd - > /dev/null
-done
+#     cd - > /dev/null
+# done
 
-echo "✅ Update process finished."
+# echo "✅ Update process finished."
 
 
 
@@ -77,7 +77,7 @@ gup() {
     local repo="$1"
     
     if [[ -z "$repo" ]]; then
-        echo "📁 Usage: gup /path/to/repo"
+        echo "📁 Either the path is incorrect or usage is incorrect. Usage: gup /path/to/repo"
         return 1
     fi
     
@@ -101,16 +101,28 @@ gup() {
     cd - > /dev/null
 }
 
+REPOS=(
+    "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}"/plugins/zsh-syntax-highlighting
+    "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}"/plugins/zsh-autosuggestions
+    "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}"/plugins/fzf-tab
+)
+
+# --- LOGIC ---
+for repo in "${REPOS[@]}"; do
+    # echo $repo
+    gup $repo
+done
+
 ############################################
 # same thing as a stand alone script: pass directories one by one
 
 
-#!/usr/bin/env bash
-set -euo pipefail
+# #!/usr/bin/env bash
+# set -euo pipefail
 
-repo="${1:-}"
-[[ -z "$repo" ]] && { echo "Usage: gup.sh <path>"; exit 1; }
+# repo="${1:-}"
+# [[ -z "$repo" ]] && { echo "Usage: gup.sh <path>"; exit 1; }
 
-[[ ! -d "$repo/.git" ]] && { echo "Skip: Not a git repo"; exit 0; }
-cd "$repo"
-git diff-index --quiet HEAD -- && echo "🔄 Pulling..." && git pull --rebase --autostash || echo "🛑 Dirty tree - skipped"
+# [[ ! -d "$repo/.git" ]] && { echo "Skip: Not a git repo"; exit 0; }
+# cd "$repo"
+# git diff-index --quiet HEAD -- && echo "🔄 Pulling..." && git pull --rebase --autostash || echo "🛑 Dirty tree - skipped"
