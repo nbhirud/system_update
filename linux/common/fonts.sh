@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -eux
 
@@ -34,6 +34,24 @@ echo "The current DESKTOP is $DESKTOP."
 ##########################################################################
 
 # USERNAME="nbhirud"
+
+# Deletes downloaded intermediate data like git repo, etc after setting up fonts.
+CLEANUP_DELETE_LATER=true
+SET_DEFAULT_FONTS=true
+
+# full - downloads the complete git repo with depth 1 and then works on it (slowest multi-GB download)
+# sparse - only fetch metadata and the specific paths configured
+# archive - fetch only the specific release zip files directly from GitHub Releases. Nerd Fonts publishes individual, self-contained zip files for every font family with every release. (fastest download)
+DOWNLOAD_METHOD="archive" # Choose one of "full", "sparse", "archive"
+
+
+# echo "************************ Identify Desktop Environment ************************"
+# DESKTOP=$(sh "$SYSUPDATE_CODE_DIR"/linux/common/check_desktop_env.sh)
+# echo "Desktop Environment is $DESKTOP"
+
+##########################################################################
+# Set Directories
+##########################################################################
 # HOME_DIR="/home/$USERNAME/"
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
 CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects"
@@ -47,6 +65,7 @@ PATCHED_FONTS_DIR="$NERD_FONTS_DIR/patched-fonts"
 # echo "BASEDIR = $BASEDIR" # outputs "linux/common"
 FONT_NAMES_FILE_PATH="$SYSUPDATE_CODE_DIR/linux/common/data/fonts.txt"
 
+##########################################################################
 # TODO - Figure out a way to check first:
 # 1. Whether there has been any update in the repo at all
 # 2. If yes, whether there has been any change to the folders (fonts) I am using
