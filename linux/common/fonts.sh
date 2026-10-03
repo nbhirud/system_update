@@ -125,7 +125,10 @@ find $DEST_DIR -name "LICENSE" -type f -delete
 find $DEST_DIR -name ".uuid" -type f -delete
 pwd
 
+echo "************************ delete unused nerd-fonts repo ************************"
 # rm -rf ~/nb/CodeProjects/nerd-fonts
+rm -rf "$NERD_FONTS_DIR"
+
 cd $HOME_DIR || exit
 echo "************************ sync ************************"
 sync
