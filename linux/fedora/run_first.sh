@@ -134,72 +134,17 @@ color=always
 
 EOL
 
-#######################################
-# LibreWolf, Mullvad browser, codium, etc
-#######################################
-
-echo "************************ Adding Librewolf repo ************************"
-# LibreWolf - https://librewolf.net/installation/fedora/
-# add the repo
-
-# cd
-# mkdir -p nb/temp
-# cd nb/temp
-# wget https://librewolf.net/installation/fedora/
-# cat index.html | grep pkexec
-
-# add the repo
-curl -fsSL https://repo.librewolf.net/librewolf.repo | pkexec tee /etc/yum.repos.d/librewolf.repo
-
-echo "************************ Adding Mullvad repo ************************"
-# https://mullvad.net/en/download/browser/linux
-# Add the Mullvad repository server to dnf
-# curl https://mullvad.net/en/download/browser/linux | grep addrepo
-sudo dnf config-manager addrepo --from-repofile=https://repository.mullvad.net/rpm/stable/mullvad.repo
-
-echo "************************ Adding VSCodium repo ************************"
-### VSCodium
-# https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo
-
-sudo tee /etc/yum.repos.d/vscodium.repo <<'EOF'
-[gitlab.com_paulcarroty_vscodium_repo]
-name=gitlab.com_paulcarroty_vscodium_repo
-baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/
-enabled=1
-gpgcheck=1
-repo_gpgcheck=1
-gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
-metadata_expire=1h
-EOF
-
-echo "************************ Adding Tor repo ************************"
-# Tor - https://community.torproject.org/relay/setup/bridge/fedora/
-
-sudo tee /etc/yum.repos.d/tor.repo <<'EOF'
-[tor]
-name=Tor for Fedora $releasever - $basearch
-baseurl=https://rpm.torproject.org/fedora/$releasever/$basearch
-enabled=1
-gpgcheck=1
-gpgkey=https://rpm.torproject.org/fedora/public_gpg.key
-cost=100
-EOF
-
-echo "************************ Adding brave browser repo ************************"
-# https://brave.com/linux/
-sudo dnf install dnf-plugins-core
-sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
 
 # echo "************************ Adding helium copr repo ************************"
 # https://helium.computer/download#all-downloads
-# AppImage is their default option for linux
+# AppImage is their default option for linux - install this
 # dnf copr enable imput/helium
 # sudo dnf install -y helium-bin
 
 echo "************************ Installing packages ************************"
 # install the packages
-sudo dnf install -y librewolf git mullvad-browser codium flatpak tor torbrowser-launcher brave-browser
-# obfs4
+sudo dnf install -y git flatpak
+
 # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
 
 # Set codium as the default text editor

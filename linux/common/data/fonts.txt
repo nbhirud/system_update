@@ -4,6 +4,7 @@ CodeNewRoman
 ComicShannsMono
 FiraCode
 FiraMono
+GoogleSansCode
 Hack
 IBMPlexMono
 Inconsolata
