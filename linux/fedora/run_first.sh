@@ -20,8 +20,14 @@ HOSTNAME=""
 GIT_USER_EMAIL=""
 NEXTDNS_ID=""
 NEXTDNS_DEVICE_ID="$HOSTNAME"
-SETUP_TYPE="light" # full or light (or minimal - TBD - bare minimum, remove all optional stuff)
+
+# Not in use yet
 PC_TYPE="paranoid" # public or private or paranoid
+
+# Default is light
+# minimal removes stuff like libreoffice, etc. and installs bare minimum things
+SETUP_TYPE="light" # full or light (or minimal - TBD - bare minimum, remove all optional stuff)
+
 
 echo "************************ Setting User-Defined Flags ************************"
 
@@ -59,8 +65,10 @@ PUBLIC_DIR="$NBDIR/Public"
 TEMPLATES_DIR="$NBDIR/Templates"
 PROJECTS_DIR="$NBDIR/Projects"
 
-SCRIPT_BACKUPS_DIR="$NBDIR/nb_script_backups" 
-SCRIPT_DOWNLOADS_DIR="$NBDIR/nb_script_downloads" 
+SCRIPT_DATA="$NBDIR/nb_script_data"
+SCRIPT_BACKUPS_DIR="$SCRIPT_DATA/backups"
+SCRIPT_DOWNLOADS_DIR="$SCRIPT_DATA/downloads"
+SCRIPT_LOGS_DIR="$SCRIPT_DATA/logs" 
 
 FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
 
@@ -72,8 +80,8 @@ echo "************************ Create directories ************************"
 # TODO - use this downloads dir for downloads of ProtonAG installers, etc
 # TODO - Use this backup fir for backup of configs, etc before replacing or editing like .zshrc
 
-mkdir -p $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
-sudo chown $USER:$USER $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
+mkdir -p $SCRIPT_DATA $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $SCRIPT_LOGS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
+sudo chown $USER:$USER $SCRIPT_DATA $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $SCRIPT_LOGS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
 
 echo "************************ Identify Desktop Environment ************************"
 DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
