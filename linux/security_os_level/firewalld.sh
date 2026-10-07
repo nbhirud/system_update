@@ -36,6 +36,14 @@ sudo dnf install firewalld firewall-cmd firewall-config
 
 
 
+# Sets a firewalld zone to a connection such that whenever connected to that wifi/ethernet connection, the PC automatically switches to the assigned zone 
+# Needs to be set only once when a new wifi/ethernet connection is added
+# Usage
+# nbFirewalldSetConnectionZone "Wired connection 1" home
+# nbFirewalldSetConnectionZone <connection name> <firewalld zone>
+nbFirewalldSetConnectionZone() {
+    bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld_assign_zone_to_connection.sh "$@"
+}
 
 # ensure you're in a LAN-friendly zone:- If home Desktop/Laptop
 # sudo firewall-cmd --set-default-zone=home
