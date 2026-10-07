@@ -1503,13 +1503,13 @@ fi
 #########################################################
 
 
-sudo tee -a ~/.zshrc <<'FIREWALLD_ZSHRC_EOF'
+sudo tee -a "$HOME_DIR/.zshrc" <<'FIREWALLD_ZSHRC_EOF'
 
 ############################
 # firewalld stuff
 ############################
 
-Configured zones: home, public, drop
+# Configured zones: home, public, drop
 
 # script that is intended to just set a firewalld zone only for current usage without affecting the global defaults
 # Usage
@@ -1517,7 +1517,7 @@ Configured zones: home, public, drop
 # nbFirewalldSwitchZone status
 # nbFirewalldSwitchZone <firewalld_zone|status>
 nbFirewalldSwitchZone() {
-    bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld_switch_current_zone.sh "$@"
+    sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld_switch_current_zone.sh "$@"
 }
 
 
@@ -1527,7 +1527,7 @@ nbFirewalldSwitchZone() {
 # nbFirewalldSetConnectionZone "Wired connection 1" home
 # nbFirewalldSetConnectionZone <connection name> <firewalld zone>
 nbFirewalldSetConnectionZone() {
-    bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld_assign_zone_to_connection.sh "$@"
+    sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld_assign_zone_to_connection.sh "$@"
 }
 
 ############################
