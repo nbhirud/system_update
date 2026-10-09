@@ -1,4 +1,4 @@
-baseURL = 'https://github.com/nbhirud/system_update/'
+baseURL = 'https://sysupdate.nbhirud.com'
 locale = 'en-us'
 title = 'System Update'
 theme = ['github.com/nunocoracao/blowfish/v2']
