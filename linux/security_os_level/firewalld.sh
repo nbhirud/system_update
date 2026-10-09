@@ -101,7 +101,7 @@ HOME_DIR=$(getent passwd "$SUDO_USER" | cut -d: -f6)
 NBDIR="$HOME_DIR/nb"
 SCRIPT_DATA="$NBDIR/nb_script_data"
 SCRIPT_BACKUPS_DIR="$SCRIPT_DATA/backups"
-
+ZSHRC="$HOME_DIR/.zshrc"
 # HOME_DIR=$(getent passwd $USER | cut -d: -f6)
 # NBDIR="$HOME_DIR/nb"
 # CODEPROJECTS_DIR="$NBDIR/CodeProjects"
@@ -1518,6 +1518,11 @@ fi
 #########################################################
 
 
+SEARCH_STRING="firewalld_switch_current_zone|firewalld_assign_zone_to_connection"
+
+if ! grep -E -q "$SEARCH_STRING" "$ZSHRC"; then
+    echo "Adding functions to $ZSHRC..."
+
 sudo tee -a "$HOME_DIR/.zshrc" <<'FIREWALLD_ZSHRC_EOF'
 
 ############################
@@ -1548,6 +1553,11 @@ nbFirewalldSetConnectionZone() {
 ############################
 
 FIREWALLD_ZSHRC_EOF
+
+else
+    echo "Firewall aliases may already exist in $ZSHRC. Not adding. Please verify."
+fi
+
 
 
 #########################################################
