@@ -1,4 +1,6 @@
-
+---
+title: "Linux"
+---
 
 # Things to note: 
 
@@ -7,7 +9,8 @@
 ### 3. Once the defining is satisfactorily done, my goal is to try to automate all of the defined steps if that is possible. I do not know if this is possible and how, but I am a believer in FOSS community and I am sure that I will find a way when I search If not, let's try to create a good enough script or something to do so.
 
 
-Further reading:
+## Further reading:
+
 https://docs.kernel.org/
 https://www.wiki.kernel.org/
 https://git.kernel.org/
@@ -15,3 +18,8 @@ https://planet.kernel.org/
 https://bugzilla.kernel.org/
 https://subspace.kernel.org/vger.kernel.org.html
 https://subspace.kernel.org/lists.linux.dev.html
+
+
+
+## Some automation related further reading
+https://www.the-art-of-web.com/system/
