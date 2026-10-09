@@ -1,0 +1,19 @@
+baseURL = 'https://github.com/nbhirud/system_update/'
+locale = 'en-us'
+title = 'System Update'
+theme = ['github.com/nunocoracao/blowfish/v2']
+
+[params]
+  defaultTheme = "dark"
+  colorScheme = "default"
+
+[module]
+  [[module.imports]]
+    path = "github.com/nunocoracao/blowfish/v2"
+    disable = false
+  [[module.mounts]]
+    source = "linux"
+    target = "content/linux"
+  [[module.mounts]]
+    source = "python"
+    target = "content/python"

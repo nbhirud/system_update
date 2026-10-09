@@ -1,0 +1,16 @@
+{{ $file := .Get 0 }}
+{{ $marker := .Get 1 }}
+{{ $lang := .Get 2 | default "bash" }}
+{{ $path := path.Join (path.Dir .Page.File.Path) $file }}
+{{ $content := readFile $path }}
+{{ if $marker }}
+  {{ $pattern := printf "(?s)# --- \\[start: %s\\](.*?# --- \\[end: %s\\])" $marker $marker }}
+  {{ $matches := findRE $pattern $content }}
+  {{ if gt (len $matches) 0 }}
+    {{ highlight (index $matches 0) $lang "" }}
+  {{ else }}
+    {{ errorf "Marker %s not found in %s" $marker $file }}
+  {{ end }}
+{{ else }}
+  {{ highlight $content $lang "" }}
+{{ end }}
