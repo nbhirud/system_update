@@ -94,7 +94,10 @@ fi
 
 FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
 
-HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+# HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+# Get the actual user's home when runing a script with sudo
+HOME_DIR=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+
 NBDIR="$HOME_DIR/nb"
 SCRIPT_DATA="$NBDIR/nb_script_data"
 SCRIPT_BACKUPS_DIR="$SCRIPT_DATA/backups"
