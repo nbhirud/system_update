@@ -2,7 +2,12 @@ baseURL = 'https://sysupdate.nbhirud.com'
 locale = 'en-us'
 title = 'System Update'
 theme = ['github.com/nunocoracao/blowfish/v2']
+enableGitInfo = true
 
+[frontmatter]
+  date = [":git", ":fileModTime", "date"]
+  lastmod = [":git", ":fileModTime", "lastmod"]
+  
 [params]
   defaultTheme = "dark"
   colorScheme = "default"
@@ -19,3 +24,28 @@ theme = ['github.com/nunocoracao/blowfish/v2']
   [[module.mounts]]
     source = "python"
     target = "content/python"
+  [[module.mounts]]
+    source = "python"
+    target = "content/python"
+  [[module.mounts]]
+    source = "wsl"
+    target = "content/wsl"
+  [[module.mounts]]
+    source = "windows"
+    target = "content/windows"
+  [[module.mounts]]
+    source = "macos"
+    target = "content/macos"
+  [[module.mounts]]
+    source = "data_recovery"
+    target = "content/data_recovery"
+  [[module.mounts]]
+    source = "android"
+    target = "content/android"
+  [[module.mounts]]
+    source = "misc"
+    target = "content/misc"
+  [[module.mounts]]
+    source = "static_site_generators"
+    target = "content/static_site_generators"
+
