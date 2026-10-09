@@ -69,6 +69,18 @@ set -eux
 # In case of these predefined services, we can just add or remove a service using its name without having to specify ports, etc
 
 #########################################################
+# Root check
+#########################################################
+
+# Run-as-root check
+if [ ${EUID:-0} -ne 0 ] || [ "$(id -u)" -ne 0 ]; then
+  echo "Please run as root (or with sudo). You are running as $(whoami)."
+  exit 1
+else
+  echo "You are running as $(whoami)"
+fi
+
+#########################################################
 # Input data processing
 #########################################################
 
