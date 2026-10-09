@@ -6,6 +6,8 @@ theme = ['github.com/nunocoracao/blowfish/v2']
 [params]
   defaultTheme = "dark"
   colorScheme = "default"
+  defaultAppearance = "dark"
+  autoSwitchAppearance = false
 
 [module]
   [[module.imports]]
