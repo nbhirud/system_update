@@ -69,6 +69,18 @@ set -eux
 # In case of these predefined services, we can just add or remove a service using its name without having to specify ports, etc
 
 #########################################################
+# Root check
+#########################################################
+
+# Run-as-root check
+if [ ${EUID:-0} -ne 0 ] || [ "$(id -u)" -ne 0 ]; then
+  echo "Please run as root (or with sudo). You are running as $(whoami)."
+  exit 1
+else
+  echo "You are running as $(whoami)"
+fi
+
+#########################################################
 # Input data processing
 #########################################################
 
@@ -82,11 +94,14 @@ set -eux
 
 FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
 
-HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+# HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+# Get the actual user's home when runing a script with sudo
+HOME_DIR=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+
 NBDIR="$HOME_DIR/nb"
 SCRIPT_DATA="$NBDIR/nb_script_data"
 SCRIPT_BACKUPS_DIR="$SCRIPT_DATA/backups"
-
+ZSHRC="$HOME_DIR/.zshrc"
 # HOME_DIR=$(getent passwd $USER | cut -d: -f6)
 # NBDIR="$HOME_DIR/nb"
 # CODEPROJECTS_DIR="$NBDIR/CodeProjects"
@@ -1503,6 +1518,11 @@ fi
 #########################################################
 
 
+SEARCH_STRING="firewalld_switch_current_zone|firewalld_assign_zone_to_connection"
+
+if ! grep -E -q "$SEARCH_STRING" "$ZSHRC"; then
+    echo "Adding functions to $ZSHRC..."
+
 sudo tee -a "$HOME_DIR/.zshrc" <<'FIREWALLD_ZSHRC_EOF'
 
 ############################
@@ -1533,6 +1553,11 @@ nbFirewalldSetConnectionZone() {
 ############################
 
 FIREWALLD_ZSHRC_EOF
+
+else
+    echo "Firewall aliases may already exist in $ZSHRC. Not adding. Please verify."
+fi
+
 
 
 #########################################################
