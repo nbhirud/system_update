@@ -1868,3 +1868,24 @@ hostsplay/
 linux/security_os_level/hostsplay/
 
 ###########################################
+
+
+
+
+###########################################
+# hugo
+###########################################
+# Hugo build output directory
+/public/
+
+# Hugo caches and asset generation
+/resources/_gen/
+.hugo_build.lock
+
+# OS and Editor junk files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+
