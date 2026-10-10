@@ -624,10 +624,11 @@ for z in "$DROP_ZONE" "$PUBLIC_ZONE" "$HOME_ZONE"; do
     done < <(firewall-cmd --permanent --zone="$z" --list-rich-rules)
 
     for s in $(firewall-cmd --permanent --zone="$z" --list-services); do
-    echo "zone = $z and service = $s"
+        echo "zone = $z and service = $s"
     done
+    
     for p in $(firewall-cmd --permanent --zone="$z" --list-ports); do
-    echo "zone = $z and port = $p"
+        echo "zone = $z and port = $p"
     done
 done
 
@@ -1599,6 +1600,30 @@ done
 
 systemctl is-active firewalld
 systemctl is-enabled firewalld
+
+# Print current state after we complete the setup
+for z in "$DROP_ZONE" "$PUBLIC_ZONE" "$HOME_ZONE"; do
+    echo "zone = $z ##############"
+    
+    # Loop through and remove each rich rule safely
+    while read -r rule; do
+        [ -n "$rule" ] && echo "zone = $z and rule = $rule"
+    done < <(firewall-cmd --permanent --zone="$z" --list-rich-rules)
+
+    for s in $(firewall-cmd --permanent --zone="$z" --list-services); do
+        echo "zone = $z and service = $s"
+    done
+
+    for p in $(firewall-cmd --permanent --zone="$z" --list-ports); do
+        echo "zone = $z and port = $p"
+    done
+done
+
+
+#########################################################
+# Debugging, Testing, Troubleshooting, and additional info
+#########################################################
+
 
 # The zone details are stored in xml files here. Not sure if they are just an output for use and not the actual place for configuration
 # cd /etc/firewalld/zones
