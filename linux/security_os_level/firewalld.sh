@@ -536,7 +536,10 @@ need_root() {
 #########################################################
 
 # firewalld should be already installed, but just in case
-sudo dnf install -y firewalld firewall-config
+sudo dnf install -y firewalld firewall-config firewall-applet
+
+# https://firewalld.org/documentation/utilities/firewall-applet.html
+# firewall-applet - is an official tray applet for firewalld
 
 sudo systemctl enable --now firewalld
 
@@ -614,8 +617,8 @@ echo "Backup: $FIREWALLD_BACKUP_DIR"
 # Clean the slate:
 #########################################################
 
-# Print current state before we reset everythinf
-for z in "$PUBLIC_ZONE" "$HOME_ZONE" "$DROP_ZONE"; do
+# Print current state before we reset everything
+for z in "$DROP_ZONE" "$PUBLIC_ZONE" "$HOME_ZONE"; do
     echo "zone = $z ##############"
     
     # Loop through and remove each rich rule safely
@@ -624,10 +627,11 @@ for z in "$PUBLIC_ZONE" "$HOME_ZONE" "$DROP_ZONE"; do
     done < <(firewall-cmd --permanent --zone="$z" --list-rich-rules)
 
     for s in $(firewall-cmd --permanent --zone="$z" --list-services); do
-    echo "zone = $z and service = $s"
+        echo "zone = $z and service = $s"
     done
+    
     for p in $(firewall-cmd --permanent --zone="$z" --list-ports); do
-    echo "zone = $z and port = $p"
+        echo "zone = $z and port = $p"
     done
 done
 
@@ -686,12 +690,12 @@ clean_zone() {
 # done
 # clean_zone "$HOME_ZONE"
 
-# for z in "$HOME_ZONE" "$PUBLIC_ZONE" "$DROP_ZONE"; do
+# for z in "$DROP_ZONE" "$PUBLIC_ZONE" "$HOME_ZONE"; do
 #   clean_zone "$z"
 # done
 
 # Better than clean_zone() - here we go through the list of all currently added ports, services as well as rich rules one by one and remove them in looks
-# for z in "$HOME_ZONE" "$PUBLIC_ZONE" "$DROP_ZONE"; do
+# for z in "$DROP_ZONE" "$PUBLIC_ZONE" "$HOME_ZONE"; do
 # #   firewall-cmd --permanent --delete-all-rich-rules --zone="$z" || true
 #   firewall-cmd --permanent --remove-rich-rule --zone="$z" || true
 #   for s in $(firewall-cmd --permanent --zone="$z" --list-services); do
@@ -703,25 +707,26 @@ clean_zone() {
 # done
 
 # Corrected version of above:
-for z in "$HOME_ZONE" "$PUBLIC_ZONE" "$DROP_ZONE"; do
-  # Loop through and remove each rich rule safely
-  while read -r rule; do
-    [ -n "$rule" ] && firewall-cmd --permanent --zone="$z" --remove-rich-rule="$rule" || true
-  done < <(firewall-cmd --permanent --zone="$z" --list-rich-rules)
+for z in "$DROP_ZONE" "$PUBLIC_ZONE" "$HOME_ZONE"; do
+    # Loop through and remove each rich rule safely
+    while read -r rule; do
+        [ -n "$rule" ] && firewall-cmd --permanent --zone="$z" --remove-rich-rule="$rule" || true
+    done < <(firewall-cmd --permanent --zone="$z" --list-rich-rules)
 
-  for s in $(firewall-cmd --permanent --zone="$z" --list-services); do
-    firewall-cmd --permanent --zone="$z" --remove-service="$s" || true
-  done
-  for p in $(firewall-cmd --permanent --zone="$z" --list-ports); do
-    firewall-cmd --permanent --zone="$z" --remove-port="$p" || true
-  done
+    for s in $(firewall-cmd --permanent --zone="$z" --list-services); do
+        firewall-cmd --permanent --zone="$z" --remove-service="$s" || true
+    done
+
+    for p in $(firewall-cmd --permanent --zone="$z" --list-ports); do
+        firewall-cmd --permanent --zone="$z" --remove-port="$p" || true
+    done
 done
 
 
 
 # Create zones if missing
 # No custom zones are created. Firewalld ships with "home", "public" and "drop"
-for z in "$HOME_ZONE" "$PUBLIC_ZONE" "$DROP_ZONE"; do
+for z in "$DROP_ZONE" "$PUBLIC_ZONE" "$HOME_ZONE"; do
   if ! firewall-cmd --get-zones | grep -qw "$z"; then
     echo "Creating zone: $z"
     sudo firewall-cmd --permanent --new-zone="$z"
@@ -1512,6 +1517,23 @@ fi
 # # Verify it was set:
 # nmcli -f connection.zone connection show "$CONNECTION_NAME"
 
+#########################################################
+# Enable firewall-applet tray tool to autostart
+#########################################################
+
+mkdir -p ~/.config/autostart
+
+cat << 'EOF' > ~/.config/autostart/firewall-applet.desktop
+[Desktop Entry]
+Type=Application
+Name=Firewall Applet
+Comment=Firewall panel applet
+Exec=firewall-applet
+Icon=firewall-config
+Terminal=false
+Categories=System;
+X-KDE-autostart-enabled=true
+EOF
 
 #########################################################
 # Create aliases in .zshrc
@@ -1585,7 +1607,7 @@ sudo firewall-cmd --list-all
 
 systemctl is-active firewalld
 
-for z in "$PUBLIC_ZONE" "$HOME_ZONE" "$DROP_ZONE"; do
+for z in "$DROP_ZONE" "$PUBLIC_ZONE" "$HOME_ZONE"; do
   if firewall-cmd --get-zones | grep -qw "$z"; then
     echo "--- Zone: $z ---"
     firewall-cmd --zone="$z" --list-all
@@ -1598,6 +1620,30 @@ done
 
 systemctl is-active firewalld
 systemctl is-enabled firewalld
+
+# Print current state after we complete the setup
+for z in "$DROP_ZONE" "$PUBLIC_ZONE" "$HOME_ZONE"; do
+    echo "zone = $z ##############"
+    
+    # Loop through and remove each rich rule safely
+    while read -r rule; do
+        [ -n "$rule" ] && echo "zone = $z and rule = $rule"
+    done < <(firewall-cmd --permanent --zone="$z" --list-rich-rules)
+
+    for s in $(firewall-cmd --permanent --zone="$z" --list-services); do
+        echo "zone = $z and service = $s"
+    done
+
+    for p in $(firewall-cmd --permanent --zone="$z" --list-ports); do
+        echo "zone = $z and port = $p"
+    done
+done
+
+
+#########################################################
+# Debugging, Testing, Troubleshooting, and additional info
+#########################################################
+
 
 # The zone details are stored in xml files here. Not sure if they are just an output for use and not the actual place for configuration
 # cd /etc/firewalld/zones
