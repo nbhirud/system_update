@@ -536,7 +536,10 @@ need_root() {
 #########################################################
 
 # firewalld should be already installed, but just in case
-sudo dnf install -y firewalld firewall-config
+sudo dnf install -y firewalld firewall-config firewall-applet
+
+# https://firewalld.org/documentation/utilities/firewall-applet.html
+# firewall-applet - is an official tray applet for firewalld
 
 sudo systemctl enable --now firewalld
 
