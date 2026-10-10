@@ -1517,6 +1517,23 @@ fi
 # # Verify it was set:
 # nmcli -f connection.zone connection show "$CONNECTION_NAME"
 
+#########################################################
+# Enable firewall-applet tray tool to autostart
+#########################################################
+
+mkdir -p ~/.config/autostart
+
+cat << 'EOF' > ~/.config/autostart/firewall-applet.desktop
+[Desktop Entry]
+Type=Application
+Name=Firewall Applet
+Comment=Firewall panel applet
+Exec=firewall-applet
+Icon=firewall-config
+Terminal=false
+Categories=System;
+X-KDE-autostart-enabled=true
+EOF
 
 #########################################################
 # Create aliases in .zshrc
