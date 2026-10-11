@@ -13,6 +13,10 @@ enableGitInfo = true
   colorScheme = "default"
   defaultAppearance = "dark"
   autoSwitchAppearance = false
+  enableSearch = true
+
+[outputs]
+  home = ["HTML", "RSS", "JSON"]
 
 [module]
   [[module.imports]]
