@@ -1,20 +1,31 @@
 sudo dnf install hugo golang
 
 
-hugo mod init github.com/nbhirud/system_update
+hugo mod init sysupdate.nbhirud.com
 
 hugo mod get github.com/nunocoracao/blowfish/v2
 
 Create a hugo.toml file in your repository root with following content:
 ```
-baseURL = 'https://github.com/nbhirud/system_update/'
+baseURL = 'https://sysupdate.nbhirud.com'
 locale = 'en-us'
 title = 'System Update'
 theme = ['github.com/nunocoracao/blowfish/v2']
+enableGitInfo = true
 
+[frontmatter]
+  date = [":git", ":fileModTime", "date"]
+  lastmod = [":git", ":fileModTime", "lastmod"]
+  
 [params]
   defaultTheme = "dark"
   colorScheme = "default"
+  defaultAppearance = "dark"
+  autoSwitchAppearance = false
+  enableSearch = true
+
+[outputs]
+  home = ["HTML", "RSS", "JSON"]
 
 [module]
   [[module.imports]]
@@ -26,6 +37,32 @@ theme = ['github.com/nunocoracao/blowfish/v2']
   [[module.mounts]]
     source = "python"
     target = "content/python"
+  [[module.mounts]]
+    source = "python"
+    target = "content/python"
+  [[module.mounts]]
+    source = "wsl"
+    target = "content/wsl"
+  [[module.mounts]]
+    source = "windows"
+    target = "content/windows"
+  [[module.mounts]]
+    source = "macos"
+    target = "content/macos"
+  [[module.mounts]]
+    source = "data_recovery"
+    target = "content/data_recovery"
+  [[module.mounts]]
+    source = "android"
+    target = "content/android"
+  [[module.mounts]]
+    source = "misc"
+    target = "content/misc"
+  [[module.mounts]]
+    source = "static_site_generators"
+    target = "content/static_site_generators"
+
+
 ```
 
 mkdir -p layouts/shortcodes
