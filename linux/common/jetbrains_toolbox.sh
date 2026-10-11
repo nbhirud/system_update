@@ -3,6 +3,7 @@
 set -eux
 
 # https://www.jetbrains.com/help/pycharm/installation-guide.html#toolbox
+# https://docs.fedoraproject.org/en-US/quick-docs/installing-from-source/
 
 # TODO - Make this an "Install, or update if already installed" script
 # Need to run this to open toolbox and then click update: 

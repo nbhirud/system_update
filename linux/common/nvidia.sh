@@ -1,6 +1,7 @@
 
 
 # https://docs.nvidia.com/datacenter/tesla/driver-installation-guide/fedora.html
+# https://docs.fedoraproject.org/en-US/quick-docs/mok-enrollment/
 # The above uses https://developer.download.nvidia.com/compute/cuda/repos/fedora43/x86_64/
 
 #sudo dnf config-manager addrepo --from-repofile=https://developer.download.nvidia.com/compute/cuda/repos/fedora43/x86_64/cuda-fedora43.repo

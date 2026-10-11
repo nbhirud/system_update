@@ -2,6 +2,8 @@
 
 set -eux
 
+# TODO: linux/common/zsh.sh is the latest. But needs verification before use.
+
 DISTRO=""
 SETUP_TYPE=""
 DESKTOP=""

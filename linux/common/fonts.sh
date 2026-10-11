@@ -7,6 +7,7 @@ set -eux
 # 2. invoked via `linux/fedora/run_first.sh`
 # TODO - the script assumes a very rigid and specific file structure. Make it generic and resilient
 
+# https://docs.fedoraproject.org/en-US/quick-docs/fonts/
 
 ##########################################################################
 # Input data

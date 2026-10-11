@@ -1,3 +1,8 @@
+#!/bin/sh
+
+set -eux
+
+# https://wiki.archlinux.org/title/Avahi
 
 echo "************************ Setup avahi mDNS ************************"
 sudo dnf install avahi
