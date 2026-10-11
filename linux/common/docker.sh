@@ -5,6 +5,7 @@ set -eux
 # https://github.com/docker/docker-install/blob/master/install.sh
 # https://github.com/docker/docker-install/blob/master/verify-docker-install
 # https://github.com/sandervanvugt/ckad/blob/master/minikube-docker-setup.sh
+# https://docs.fedoraproject.org/en-US/quick-docs/installing-docker/
 
 DOCKER_DIR="$HOME/nb/Docker/"
 mkdir -p "$DOCKER_DIR"
