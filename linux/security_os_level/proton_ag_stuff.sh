@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -eux
+
 # Do not run as root
 
 # ################# The following isn't POSIX compliant because EUID is undefined in POSIX
@@ -21,6 +23,9 @@ is_user_root ()
 {
     [ "$(id -u)" -eq 0 ]
 }
+
+HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
+SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
 
 # DO NOT initialize these here. Pass them instead while calling this script
 SETUP_TYPE=""
@@ -51,9 +56,6 @@ fi
 if [[ -z $2 ]];
 then
   echo "DESKTOP not provided. Identifying."
-
-  HOME_DIR=$(getent passwd $USER | cut -d: -f6)
-  SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
   DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
 
 else 
@@ -81,9 +83,6 @@ else
   exit 1
 fi
 
-set -eux
-
-
 ################################################
 # TODO - implement the following:
 # 
@@ -106,14 +105,13 @@ set -eux
 ################################################
 
 echo "************************ Setting literals and constants ************************"
-HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
 
 CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects"
 SYSUPDATE_SEC_CODE_DIR="$CODE_BASE_DIR/system_update/linux/security_os_level/"
 SYSUPDATE_FEDORA_CODE_DIR="$CODE_BASE_DIR/system_update/linux/fedora/"
 
-DOWNLOADS_DIR="$HOME_DIR/nb/Downloads"
-DOWNLOADS_DIR_PROTON="$DOWNLOADS_DIR/ProtonAG/proton_ag_downloads_$(date +%Y-%m-%d_%H-%M-%S)"
+SCRIPT_DOWNLOADS_DIR="$HOME_DIR/nb/nb_script_downloads"
+DOWNLOADS_DIR_PROTON="$SCRIPT_DOWNLOADS_DIR/ProtonAG/proton_ag_downloads_$(date +%Y-%m-%d_%H-%M-%S)"
 
 FEDORA_RELEASE_VERSION=$(sh "$SYSUPDATE_FEDORA_CODE_DIR"/get_fedora_release_version.sh)
 
@@ -198,13 +196,20 @@ then
   # Remove any leading or trailing quotes
   SHA_ProtonAuthenticator=${SHA_ProtonAuthenticator%\"} # Remove a single quote from the end
   SHA_ProtonAuthenticator=${SHA_ProtonAuthenticator#\"} # Remove a single quote from the beginning
-  # Calculate *.rpm file's SHA for debugging:
-  SHA_CALCULATED_PROTAUTH=$(sha512sum ProtonAuthenticator.rpm)
-  echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTAUTH" 
   # Confirm the package's integrity
-  echo "$SHA_ProtonAuthenticator" ProtonAuthenticator.rpm | sha512sum --check -
-  # Install it
-  sudo dnf install -y ProtonAuthenticator.rpm
+  # echo "$SHA_ProtonAuthenticator" ProtonAuthenticator.rpm | sha512sum --check -
+  
+  if echo "$SHA_ProtonAuthenticator" ProtonAuthenticator.rpm | sha512sum --check --status -; then
+    echo "ProtonAuthenticator - Checksum verification passed. Proceeding with installation..."
+    # Install it
+    sudo dnf install -y ProtonAuthenticator.rpm
+  else
+    # Calculate *.rpm file's SHA for debugging:
+    SHA_CALCULATED_PROTAUTH=$(sha512sum ProtonAuthenticator.rpm)
+    echo "Calculated SHA512sum of *.rpm file: $SHA_CALCULATED_PROTAUTH did not match SHA512sum from json file: $SHA_ProtonAuthenticator" 
+    echo "ERROR: ProtonAuthenticator - Checksum verification failed." >&2
+    # exit 1
+  fi
 
 
   ######################### ProtonPass ###################################################################
@@ -220,14 +225,21 @@ then
   # Remove any leading or trailing quotes
   SHA_ProtonPass=${SHA_ProtonPass%\"} # Remove a single quote from the end
   SHA_ProtonPass=${SHA_ProtonPass#\"} # Remove a single quote from the beginning
-  # Calculate *.rpm file's SHA for debugging:
-  SHA_CALCULATED_PROTPASS=$(sha512sum ProtonPass.rpm)
-  echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTPASS" 
   # Confirm the package's integrity
-  echo "$SHA_ProtonPass ProtonPass.rpm" | sha512sum --check -
-  # Install it
-  # sudo rpm -i --force ProtonPass.rpm # OFFICIAL way, but RedHat seems to discourage this usage
-  sudo dnf install -y ProtonPass.rpm
+  # echo "$SHA_ProtonPass ProtonPass.rpm" | sha512sum --check -
+  
+  if echo "$SHA_ProtonPass ProtonPass.rpm" | sha512sum --check --status -; then
+    echo "ProtonPass - Checksum verification passed. Proceeding with installation..."
+    # Install it
+    # sudo rpm -i --force ProtonPass.rpm # OFFICIAL way, but RedHat seems to discourage this usage
+    sudo dnf install -y ProtonPass.rpm
+  else
+    # Calculate *.rpm file's SHA for debugging:
+    SHA_CALCULATED_PROTPASS=$(sha512sum ProtonPass.rpm)
+    echo "Calculated SHA512sum of *.rpm file: $SHA_CALCULATED_PROTPASS did not match SHA512sum from json file: $SHA_ProtonPass" 
+    echo "ERROR: ProtonPass - Checksum verification failed." >&2
+    # exit 1
+  fi
 
 
   ######################### ProtonMail ###################################################################
@@ -250,15 +262,25 @@ then
   # Remove any leading or trailing quotes from the variable
   SHA_ProtonMail=${SHA_ProtonMail%\"} # Remove a single quote from the end
   SHA_ProtonMail=${SHA_ProtonMail#\"} # Remove a single quote from the beginning
-  # Calculate *.rpm file's SHA for debugging:
-  SHA_CALCULATED_PROTMAIL=$(sha512sum ProtonMail-desktop-beta.rpm)
-  echo "Calculated SHA512sum of *.rpm file = $SHA_CALCULATED_PROTMAIL" 
   # check the RPM file's integrity
-  echo "$SHA_ProtonMail ProtonMail-desktop-beta.rpm" | sha512sum --check -
-  # Install it
-  sudo dnf install -y ./ProtonMail-desktop-beta.rpm
+  # echo "$SHA_ProtonMail ProtonMail-desktop-beta.rpm" | sha512sum --check -
+
+  if echo "$SHA_ProtonMail ProtonMail-desktop-beta.rpm" | sha512sum --check --status -; then
+      echo "ProtonMail - Checksum verification passed. Proceeding with installation..."
+      # Install it
+      sudo dnf install -y ./ProtonMail-desktop-beta.rpm
+  else
+      # Calculate *.rpm file's SHA for debugging:
+      SHA_CALCULATED_PROTMAIL=$(sha512sum ProtonMail-desktop-beta.rpm)
+      echo "Calculated SHA512sum of *.rpm file: $SHA_CALCULATED_PROTMAIL did not match SHA512sum from json file: $SHA_ProtonMail" 
+      echo "ERROR: ProtonMail - Checksum verification failed." >&2
+      # exit 1
+  fi
 
 
+# echo "************************ Installing Proton Calendar ************************"
+# https://proton.me/calendar/download - this just downloads ProtonMail app which has a calendar section too.
+# https://proton.me/download/mail/linux/1.13.4/ProtonMail-desktop-beta.rpm
 
   ######################### ProtonMeet ###################################################################
   echo "************************ Installing ProtonMeet ************************"
