@@ -91,6 +91,7 @@ fi
 # HOME_LAN_SUBNET
 # HOME_ZONE_CONNECTIONS
 # PUBLIC_ZONE_CONNECTIONS
+# DESKTOP
 
 FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
 
@@ -102,13 +103,12 @@ NBDIR="$HOME_DIR/nb"
 SCRIPT_DATA="$NBDIR/nb_script_data"
 SCRIPT_BACKUPS_DIR="$SCRIPT_DATA/backups"
 ZSHRC="$HOME_DIR/.zshrc"
-# HOME_DIR=$(getent passwd $USER | cut -d: -f6)
-# NBDIR="$HOME_DIR/nb"
-# CODEPROJECTS_DIR="$NBDIR/CodeProjects"
-# SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
 
+CODEPROJECTS_DIR="$NBDIR/CodeProjects"
+SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
 
-
+DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/check_desktop_env.sh)
+echo "Desktop Environment is $DESKTOP"
 
 # HOME_LAN_SUBNET="192.168.0.0/24"   
 
@@ -536,10 +536,16 @@ need_root() {
 #########################################################
 
 # firewalld should be already installed, but just in case
-sudo dnf install -y firewalld firewall-config firewall-applet
+sudo dnf install -y firewalld firewall-config
 
-# https://firewalld.org/documentation/utilities/firewall-applet.html
-# firewall-applet - is an official tray applet for firewalld
+if  [ "$DESKTOP" = "kde" ]
+then
+
+    # https://firewalld.org/documentation/utilities/firewall-applet.html
+    # firewall-applet - is an official tray applet for firewalld
+    sudo dnf install -y firewall-applet
+
+fi
 
 sudo systemctl enable --now firewalld
 
