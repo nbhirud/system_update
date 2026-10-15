@@ -1,0 +1,173 @@
+# ==============================================================================
+# Alacritty Configuration for Nik's Fleet
+# Optimized for Fedora 44 (Wayland), Zsh, and Privacy
+# Author: Lumo
+# Date: 2026-06-13
+# ==============================================================================
+
+# --- FONTS ---
+# Primary: Noto Mono for Powerline (as requested for terminals)
+# Fallbacks included for robustness
+font:
+  normal:
+    family: "Noto Mono for Powerline"
+    style: Regular
+  bold:
+    family: "Noto Mono for Powerline"
+    style: Bold
+  italic:
+    family: "Noto Mono for Powerline"
+    style: Italic
+  bold_italic:
+    family: "Noto Mono for Powerline"
+    style: Bold Italic
+  
+  # Size adjustment: 13.0 is optimal for 1080p, scales well on higher DPI
+  size: 13.0
+  
+  # Disable ligatures if you prefer strict character alignment for code debugging
+  # enable_ligatures: true  # Set to false if you find them distracting
+  use_built_in_glyph_cache: true
+
+# --- WINDOW BEHAVIOR ---
+window:
+  # Startup: Maximized for full-screen focus, but allows manual resizing
+  startup_mode: "Maximized"
+  
+  # Decorations: "full" keeps KDE title bar; "none" gives pure terminal look.
+  # Kept "full" for KDE taskbar integration and window switching shortcuts.
+  decorations: "full"
+  
+  # Opacity: 0.95 balances transparency with readability (KDE Blur effect works well)
+  opacity: 0.95
+  
+  # Dynamic Title: True means prompt changes title (e.g., "bash ~ | vim file.py")
+  dynamic_title: true
+  
+  # Option Key behavior: Essential for Vim users (Ctrl+H, etc.)
+  option_as_alt: "Both"
+
+# --- CURSOR ---
+cursor:
+  style:
+    # Block cursor is standard for coding; Beam for read-only shells
+    shape: "Block"
+    blinking: "On" # Always blinking to indicate active input
+    
+    # Vi mode cursor (if using vi-mode plugin in zsh/tmux)
+    # vi_mode_style: "Beam" 
+
+# --- PERFORMANCE & HARDWARE ACCELERATION ---
+# For Wayland on Fedora 44, Alacritty auto-selects OpenGL/Vulkan.
+# We force backend to ensure smooth rendering on NVIDIA (PC3) and Intel.
+window.gl_backend: "Vulkan" # Try Vulkan first (faster on Wayland), falls back to GLX
+  
+# Scrollback Buffer: 
+# PC1 (31GB RAM): Can handle huge buffers. 
+# PC2/PC4 (Low RAM): Smaller buffer saves memory.
+# We set a balanced default. Adjust per machine manually if needed.
+scrolling:
+  history: 5000
+  multiplier: 3
+
+# --- PRIVACY & SECURITY HARDENING ---
+# Environment variables are sanitized here to prevent leaks via terminal child processes.
+env:
+  # Prevent proxy hijacking from parent shell unless explicitly set
+  http_proxy: ""
+  https_proxy: ""
+  NO_PROXY: "localhost,127.0.0.1"
+  
+  # Ensure TERM is correctly identified for color support
+  TERM: "xterm-256color"
+  
+  # Disable any potential telemetry (Alacritty doesn't have any, but good practice)
+  TELEMETRY_DISABLED: "1"
+
+# --- COLOR SCHEME (Dark / Kapha-Friendly) ---
+# A low-saturation dark theme reduces eye strain and mental agitation.
+colors:
+  # Default colors
+  primary:
+    background: '#1e1e1e' # Deep charcoal (not pure black, easier on eyes)
+    foreground: '#d4d4d4' # Soft white/grey
+    dim_foreground: '#adadad'
+    bright_foreground: '#ffffff'
+    cursor: '#ffffff'
+    cursor_text_color: '#1e1e1e'
+
+  # Normal colors (Low saturation)
+  normal:
+    black:   '#2d2d2d'
+    red:     '#cc6666'
+    green:   '#b5bd68'
+    yellow:  '#f0c674'
+    blue:    '#81a2be'
+    magenta: '#b294bb'
+    cyan:    '#8abeb7'
+    white:   '#c5c8c6'
+
+  # Bright colors
+  bright:
+    black:   '#666666'
+    red:     '#d65d5d'
+    green:   '#a4b963'
+    yellow:  '#e4b864'
+    blue:    '#729ecf'
+    magenta: '#a578aa'
+    cyan:    '#7abfb4'
+    white:   '#e0e0e0'
+
+  # Dim colors (for muted text)
+  dim:
+    black:   '#282828'
+    red:     '#a45858'
+    green:   '#99a058'
+    yellow:  '#c7a560'
+    blue:    '#6c8a9e'
+    magenta: '#947c99'
+    cyan:    '#749fa0'
+    white:   '#a6a9a8'
+
+# --- KEYBINDINGS ---
+# Custom bindings for efficiency
+key_bindings:
+  # Quit
+  - { key: Q, mods: Control, action: Quit }
+  
+  # New Window/Clear
+  - { key: Return, mods: Alt, action: SpawnNewInstance } # Alt+Enter for new window
+  - { key: L, mods: Control, action: ClearLogNotice }
+  - { key: L, mods: Control, chars: "\f" } # Ctrl+L clears scrollback
+
+  # Copy/Paste (Standard Linux conventions)
+  - { key: C, mods: Control|Shift, action: Copy }
+  - { key: V, mods: Control|Shift, action: Paste }
+  
+  # Increase/Decrease Font Size (Handy for presentations)
+  - { key: Equal, mods: Control, action: IncreaseFontSize }
+  - { key: Minus, mods: Control, action: DecreaseFontSize }
+  - { key: Zero, mods: Control, action: ResetFontSize }
+
+# --- HINTS (URL/Path detection) ---
+# Auto-highlight URLs and paths
+hints:
+  alphabet: "jfkdlsahgtuorwiyeblcpqmvznx"
+  hints:
+    - regex: '(?:mailto:)?[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}'
+      action: Open
+      post_processing: true
+    - regex: 'https?://(?:[\w-]+\.)+[\w-]+(/[\w- ./?%&=]*)?'
+      action: Open
+      post_processing: true
+    - regex: '[./]?/home/[^ ]+'
+      action: Copy
+
+
+
+
+# NVIDIA Optimization (PC3 Only): If you run this on nbXPS (NVIDIA GTX 960M) and experience flickering or lag:
+
+#     Edit ~/.config/alacritty/alacritty.toml.
+#     Change window.gl_backend: "Vulkan" to window.gl_backend: "Glx".
+#     Why: Older NVIDIA drivers sometimes struggle with Vulkan backend on Wayland. Glx is more stable for your specific GPU generation.
