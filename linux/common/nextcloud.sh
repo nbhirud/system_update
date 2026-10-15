@@ -100,3 +100,12 @@ sudo docker run \
 # sudo systemctl enable --now mariadb
 
 # I read further instructions and decided to go with AIO way
+
+
+###########################################
+# Testing / verification / Troubleshooting
+###########################################
+
+# http://127.0.0.1:8384
+
+# ss -tulpn | grep -E "8384|nextcloud"
