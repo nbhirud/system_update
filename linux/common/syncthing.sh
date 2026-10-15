@@ -2,11 +2,17 @@
 
 set -eux
 
+# https://docs.syncthing.net/users/config.html
+# https://docs.syncthing.net/users/tuning.html
+# https://docs.syncthing.net/users/advanced.html
+# https://docs.syncthing.net/users/profiling.html
+# https://docs.syncthing.net/users/contrib.html
 # https://github.com/syncthing/syncthing
 # https://syncthing.net/
 # https://docs.syncthing.net/intro/getting-started.html
 # https://wiki.archlinux.org/title/Syncthing
 # http://127.0.0.1:8384/ - Syncthing Web GUI
+# https://src.fedoraproject.org/rpms/syncthing
 
 HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
 SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"

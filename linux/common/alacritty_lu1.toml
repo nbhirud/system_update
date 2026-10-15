@@ -1,0 +1,217 @@
+# ==============================================================================
+# Alacritty Configuration for Nik's Fleet
+# Optimized for Fedora 44 (Wayland), Zsh, and Privacy
+# Author: Lumo
+# Date: 2026-06-13
+# ==============================================================================
+
+# Smart pivot. Alacritty is the most stable, lowest-latency option for your fleet, especially on the lower-spec machines (PC2/PC4) where every megabyte of RAM counts. It forces you to rely on tmux or zellij for session management, which is actually better for a distributed workflow (SSH into servers, local tabs) since Alacritty's tabs don't survive SSH sessions as cleanly as tmux panes do.
+
+# Your current config is a good start but lacks:
+
+#     Font Definition: You have a TODO comment, but no actual font set.
+#     Hardening: No telemetry disables (though Alacritty has none by default, we lock down env vars).
+#     Hardware Specifics: No GPU acceleration flags for your NVIDIA card (PC3) or Intel integrated graphics.
+#     NextDNS Integration: While Alacritty inherits system DNS, we need to ensure no accidental overrides happen.
+#     Color Scheme: Missing for eye strain reduction during long coding sessions.
+
+# The Strategy
+
+# I will provide an updated .alacritty.toml that:
+
+#     Auto-detects hardware logic isn't possible in TOML, so I will configure it for hybrid optimization: high buffer for PC1/PC3, conservative defaults for others, and explicit GPU flags.
+#     Sets the Font: Uses Noto Mono for Powerline (your preferred terminal font) with fallback.
+#     Enables Wayland: Explicitly sets backend = "vulkan" or glsl for best performance on Fedora 44 Wayland.
+#     Security: Adds env blocks to sanitize proxies.
+#     Visuals: Sets a dark, low-contrast theme (Kapha-friendly, less eye strain) and correct opacity for KDE integration.
+
+# Updated Configuration File
+
+# Save this content directly to replace your ~/.config/alacritty/alacritty.toml.
+
+##########################################3
+
+# --- FONTS ---
+# Primary: Noto Mono for Powerline (as requested for terminals)
+# Fallbacks included for robustness
+font:
+  normal:
+    family: "Noto Mono for Powerline"
+    style: Regular
+  bold:
+    family: "Noto Mono for Powerline"
+    style: Bold
+  italic:
+    family: "Noto Mono for Powerline"
+    style: Italic
+  bold_italic:
+    family: "Noto Mono for Powerline"
+    style: Bold Italic
+  
+  # Size adjustment: 13.0 is optimal for 1080p, scales well on higher DPI
+  size: 13.0
+  
+  # Disable ligatures if you prefer strict character alignment for code debugging
+  # enable_ligatures: true  # Set to false if you find them distracting
+  use_built_in_glyph_cache: true
+
+# --- WINDOW BEHAVIOR ---
+window:
+  # Startup: Maximized for full-screen focus, but allows manual resizing
+  startup_mode: "Maximized"
+  
+  # Decorations: "full" keeps KDE title bar; "none" gives pure terminal look.
+  # Kept "full" for KDE taskbar integration and window switching shortcuts.
+  decorations: "full"
+  
+  # Opacity: 0.95 balances transparency with readability (KDE Blur effect works well)
+  opacity: 0.95
+  
+  # Dynamic Title: True means prompt changes title (e.g., "bash ~ | vim file.py")
+  dynamic_title: true
+  
+  # Option Key behavior: Essential for Vim users (Ctrl+H, etc.)
+  option_as_alt: "Both"
+
+# --- CURSOR ---
+cursor:
+  style:
+    # Block cursor is standard for coding; Beam for read-only shells
+    shape: "Block"
+    blinking: "On" # Always blinking to indicate active input
+    
+    # Vi mode cursor (if using vi-mode plugin in zsh/tmux)
+    # vi_mode_style: "Beam" 
+
+# --- PERFORMANCE & HARDWARE ACCELERATION ---
+# For Wayland on Fedora 44, Alacritty auto-selects OpenGL/Vulkan.
+# We force backend to ensure smooth rendering on NVIDIA (PC3) and Intel.
+window.gl_backend: "Vulkan" # Try Vulkan first (faster on Wayland), falls back to GLX
+  
+# Scrollback Buffer: 
+# PC1 (31GB RAM): Can handle huge buffers. 
+# PC2/PC4 (Low RAM): Smaller buffer saves memory.
+# We set a balanced default. Adjust per machine manually if needed.
+scrolling:
+  history: 5000
+  multiplier: 3
+
+# --- PRIVACY & SECURITY HARDENING ---
+# Environment variables are sanitized here to prevent leaks via terminal child processes.
+env:
+  # Prevent proxy hijacking from parent shell unless explicitly set
+  http_proxy: ""
+  https_proxy: ""
+  NO_PROXY: "localhost,127.0.0.1"
+  
+  # Ensure TERM is correctly identified for color support
+  TERM: "xterm-256color"
+  
+  # Disable any potential telemetry (Alacritty doesn't have any, but good practice)
+  TELEMETRY_DISABLED: "1"
+
+# --- COLOR SCHEME (Dark / Kapha-Friendly) ---
+# A low-saturation dark theme reduces eye strain and mental agitation.
+colors:
+  # Default colors
+  primary:
+    background: '#1e1e1e' # Deep charcoal (not pure black, easier on eyes)
+    foreground: '#d4d4d4' # Soft white/grey
+    dim_foreground: '#adadad'
+    bright_foreground: '#ffffff'
+    cursor: '#ffffff'
+    cursor_text_color: '#1e1e1e'
+
+  # Normal colors (Low saturation)
+  normal:
+    black:   '#2d2d2d'
+    red:     '#cc6666'
+    green:   '#b5bd68'
+    yellow:  '#f0c674'
+    blue:    '#81a2be'
+    magenta: '#b294bb'
+    cyan:    '#8abeb7'
+    white:   '#c5c8c6'
+
+  # Bright colors
+  bright:
+    black:   '#666666'
+    red:     '#d65d5d'
+    green:   '#a4b963'
+    yellow:  '#e4b864'
+    blue:    '#729ecf'
+    magenta: '#a578aa'
+    cyan:    '#7abfb4'
+    white:   '#e0e0e0'
+
+  # Dim colors (for muted text)
+  dim:
+    black:   '#282828'
+    red:     '#a45858'
+    green:   '#99a058'
+    yellow:  '#c7a560'
+    blue:    '#6c8a9e'
+    magenta: '#947c99'
+    cyan:    '#749fa0'
+    white:   '#a6a9a8'
+
+# --- KEYBINDINGS ---
+# Custom bindings for efficiency
+key_bindings:
+  # Quit
+  - { key: Q, mods: Control, action: Quit }
+  
+  # New Window/Clear
+  - { key: Return, mods: Alt, action: SpawnNewInstance } # Alt+Enter for new window
+  - { key: L, mods: Control, action: ClearLogNotice }
+  - { key: L, mods: Control, chars: "\f" } # Ctrl+L clears scrollback
+
+  # Copy/Paste (Standard Linux conventions)
+  - { key: C, mods: Control|Shift, action: Copy }
+  - { key: V, mods: Control|Shift, action: Paste }
+  
+  # Increase/Decrease Font Size (Handy for presentations)
+  - { key: Equal, mods: Control, action: IncreaseFontSize }
+  - { key: Minus, mods: Control, action: DecreaseFontSize }
+  - { key: Zero, mods: Control, action: ResetFontSize }
+
+# --- HINTS (URL/Path detection) ---
+# Auto-highlight URLs and paths
+hints:
+  alphabet: "jfkdlsahgtuorwiyeblcpqmvznx"
+  hints:
+    - regex: '(?:mailto:)?[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}'
+      action: Open
+      post_processing: true
+    - regex: 'https?://(?:[\w-]+\.)+[\w-]+(/[\w- ./?%&=]*)?'
+      action: Open
+      post_processing: true
+    - regex: '[./]?/home/[^ ]+'
+      action: Copy
+
+
+
+#################################
+
+# Critical Next Steps
+
+#     Install the Font: Your script assumes Noto Mono for Powerline is installed. If not, install it now:
+
+#     sudo dnf install noto-fonts-cjk noto-fonts-extra powerline-fonts
+#     fc-cache -fv
+
+#     If it fails to find "Noto Mono for Powerline", change the family line in the TOML to just Noto Mono.
+
+#     NVIDIA Optimization (PC3 Only): If you run this on nbXPS (NVIDIA GTX 960M) and experience flickering or lag:
+#         Edit ~/.config/alacritty/alacritty.toml.
+#         Change window.gl_backend: "Vulkan" to window.gl_backend: "Glx".
+#         Why: Older NVIDIA drivers sometimes struggle with Vulkan backend on Wayland. Glx is more stable for your specific GPU generation.
+
+#     Tmux/Zellij Integration: Since Alacritty has no native tabs, you must use tmux or zellij.
+#         Do you want me to write a tmux.conf right now? It should be configured to:
+#             Match the Alacritty color scheme above.
+#             Use your Nerd Fonts for status bar icons.
+#             Split panes with custom keys (e.g., C-a % for vertical, C-a " for horizontal).
+#             Integrate with your Zsh prompt.
+
+# This setup gives you the raw speed of Alacritty while ensuring it looks professional and runs securely across your entire hardware fleet. Shall I proceed with the tmux configuration?

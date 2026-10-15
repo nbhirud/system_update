@@ -5,6 +5,15 @@ set -eux
 
 echo "Run this after running nerd fonts script and alacritty script"
 
+###############################
+# Leearn to use - Notes
+###############################
+# https://www.baeldung.com/linux/neovim-copy-text
+
+
+###############################
+###############################
+
 # https://github.com/jesseduffield/lazygit
 sudo dnf copr enable -y dejan/lazygit
 
@@ -52,75 +61,47 @@ echo "1. Fire up 'nvim' inside your terminal to watch LazyVim execute its depend
 echo "2. Run ':LazyHealth' once dependencies settle down to ensure everything satisfies health checks."
 echo "3. Remember to update your alacritty profile fonts to leverage the installed Nerd Font!"
 
-########################################
-# # To integrate yazi file manager dd to your LazyVim lua/plugins/yazi.lua:
 
-# return {
-#   {
-#     "mikavilpas/yazi.nvim",
-#     event = "VeryLazy",
-#     keys = {
-#       {
-#         "<leader>-",
-#         "<cmd>Yazi<cr>",
-#         desc = "Open Yazi at current file/directory",
-#       },
-#       {
-#         "<c-up>",
-#         "<cmd>Yazi toggle<cr>",
-#         desc = "Resume Yazi",
-#       },
-#     },
-#     opts = {
-#       -- Keymaps in Yazi
-#       keymaps = {
-#         show_help = "<f1>",
-#         open_file = "<enter>",
-#         open_files = { "<enter>" },
-#         open_cwd = "<c-d>",  -- Opens parent dir in yazi, then you can cd
-#         tab_new = "<a-t>",
-#         tab_rename = "<a-r>",
-#         -- Custom keymaps
-#         open_with_nvim = { "<space>e" },
-#       },
-#       open_for_directories = false,  -- Set true if you want Yazi to open folders too
-#       integrations = {
-#         -- Jump to file when opened from Neovim
-#         jump_to_markdown = true,
-#         -- Sync cwd between Neovim and Yazi
-#         sync_cwd = true,
-#       },
-#     },
-#   },
-#   -- Optional: Enhance preview inside Neovim
-#   {
-#     "echasnovski/mini.icons",
-#     lazy = true,
-#   },
-#   -- File type icons for Yazi
-#   {
-#     "stevearc/dressing.nvim",
-#     opts = {
-#       input = { default_title = false },
-#       confirm = { default_title = false },
-#     },
-#   },
-# }
+sudo tee -a ~/.config/nvim/init.lua <<'EOF'
+vim.opt.termguicolors = true
+EOF
+
+###############################################################
+# tmux
+###############################################################
+
+# TODO - check if tmux is installed first
+
+
+# # Ensure Neovim sends to the correct register. Since we set set-clipboard on in tmux, Neovim needs to know to use unnamedplus.
+
+# -- init.lua
+# vim.opt.clipboard = "unnamedplus" -- Maps * and " registers to system clipboard via OSC 52
+# vim.opt.mouse = "a"               -- Enable mouse support for easier pane switching
+
+sudo tee -a ~/.config/nvim/init.lua <<'EOF'
+vim.opt.clipboard = "unnamedplus" -- Maps * and " registers to system clipboard via OSC 52
+vim.opt.mouse = "a"               -- Enable mouse support for easier pane switching
+EOF
+
+# #####################################
+
+# # Workflow Optimization (Keyboard Shortcuts)
+
+# # Since you use LazyVim, you likely use <leader> keys. Here is the practical way to manage tmux panes without leaving Neovim's flow.
+
+# # Create a mapping in ~/.tmux.conf to move focus with arrow keys:
+# Maybe dont do this so as to remain good at tmux defaults - useful in servers, and already set up environments
+# # Move between tmux panes with Ctrl+Arrows (mimics Neovim split movement)
+# bind h select-pane -L
+# bind j select-pane -D
+# bind k select-pane -U
+# bind l select-pane -R
+
+# # Create splits easily
+# bind | split-window -h
+# bind - split-window -v
 
 
 
-########################################
-# # After installing yazi.nvim, create the integration wrapper script:
-# mkdir -p ~/.config/yazi
-# cat > ~/.config/yazi/init.lua << 'EOF'
-# -- ~/.config/yazi/init.lua
-# local M = {}
 
-# function M.yazi_setup()
-#   -- Custom keybinding: Press <Space-e> to open in Neovim
-#   vim.keymap.set("n", "<Space-e>", "<cmd>yazi<CR>", { remap = false })
-# end
-
-# return M
-# EOF
-# # Then in your Neovim, run: :Yazi from any buffer. It opens at your current cursor location/file.
