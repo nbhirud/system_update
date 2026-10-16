@@ -1,3 +1,6 @@
+#!/bin/sh
+
+set -eux
 
 sudo dnf install gsmartcontrol
 

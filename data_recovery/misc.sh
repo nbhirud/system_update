@@ -1,3 +1,6 @@
+#!/bin/sh
+
+set -eux
 
 # https://superuser.com/questions/1848296/fix-a-hdd-that-got-bricked-due-to-reboot-during-formatting
 
