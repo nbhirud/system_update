@@ -1,3 +1,6 @@
+#!/bin/sh
+
+set -eux
 
 ### ddrescue
 sudo dnf install ddrescue
