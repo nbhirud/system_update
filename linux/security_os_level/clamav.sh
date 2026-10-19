@@ -507,6 +507,24 @@ sudo semanage fcontext -a -t antivirus_db_t "$QUARANTINE_DIR(/.*)?" 2>/dev/null 
   || sudo semanage fcontext -m -t antivirus_db_t "$QUARANTINE_DIR(/.*)?"
 sudo restorecon -R "$QUARANTINE_DIR"
 
+# We have set root:root 700 for the quarantine directory. The clamonacc service runs as root (we have User=root in the service file), so this should work. However, if we ever change clamonacc to run as clamscan user, quarantine will fail.
+# Verify quarantine directory accessibility
+if systemctl is-active --quiet clamav-clamonacc.service 2>/dev/null; then
+    QUIZ_USER=$(systemctl show clamav-clamonacc.service -p User --value)
+    QUIZ_GROUP=$(systemctl show clamav-clamonacc.service -p Group --value)
+    
+    QUIZ_OWNERSHIP=$(stat -c '%U:%G' "$QUARANTINE_DIR")
+    
+    if [ "$QUIZ_USER" = "root" ]; then
+        echo "INFO: clamonacc runs as root; quarantine ownership OK"
+    else
+        echo "WARN: clamonacc runs as $QUIZ_USER:$QUIZ_GROUP"
+        if [ "$QUIZ_OWNERSHIP" != "$QUIZ_USER:$QUIZ_GROUP" ]; then
+            echo "ERROR: Quarantine ownership mismatch. clamonacc will fail to quarantine."
+            sudo chown "$QUIZ_USER:$QUIZ_GROUP" "$QUARANTINE_DIR"
+        fi
+    fi
+fi
 
 #########################################################
 # Fangfrisch - Skip this. We are using clamav-unofficial-sigs instead
