@@ -2336,7 +2336,13 @@ sudo systemctl daemon-reload
 # Update databases for the first time
 #########################################################
 
-sudo freshclam
+# sudo freshclam
+
+# Instead of running freshclam interactively (which risks lock errors if the service starts concurrently),
+# trigger and wait for the official freshclam systemd service to complete its run safely.
+# sudo systemctl start clamav-freshclam.service  # We are enabline --now this later
+
+# Maybe add a check here which runs "sudo freshclam" only after checking if the service isn't locking it
 
 
 #########################################################
