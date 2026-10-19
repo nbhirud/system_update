@@ -994,6 +994,10 @@ set_config_value "$UNOFFICIAL_SIGS_OS_CONF" reload_dbs yes
 
 sudo sed -i '/^Example/d' "$SCAN_CONF"
 
+# set_config_value / add_config_value only add or replace; they never delete directives that
+# older runs or hand edits left behind. Remove the ones this script no longer wants:
+sudo sed -i -E '/^(ScanOnAccess|OnAccessExcludePath|OnAccessMountPath)[[:space:]]/d' "$SCAN_CONF"
+
 # sudo sed -i "s|^#LogFile.*|LogFile $CLAMD_LOG|" "$SCAN_CONF"
 # sudo sed -i 's|^#LogTime.*|LogTime yes|' "$SCAN_CONF"
 # sudo sed -i 's|^#LogRotate.*|LogRotate yes|' "$SCAN_CONF"
@@ -1009,7 +1013,9 @@ sudo sed -i '/^Example/d' "$SCAN_CONF"
 
 set_config_value "$SCAN_CONF" LogFile "$CLAMD_LOG"
 set_config_value "$SCAN_CONF" LogTime yes
+set_config_value "$SCAN_CONF" LogFileMaxSize 10M    # ClamAV renames the full log to clamd-<timestamp>.log
 set_config_value "$SCAN_CONF" LogRotate yes
+set_config_value "$SCAN_CONF" LogSyslog yes    # sends logs to journald, which has its own retention.
 set_config_value "$SCAN_CONF" PidFile "$CLAMD_PID"
 set_config_value "$SCAN_CONF" FixStaleSocket yes
 set_config_value "$SCAN_CONF" User "$CLAM_USER"
