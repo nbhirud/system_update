@@ -1805,6 +1805,15 @@ ExecStart=/usr/local/bin/clamav-usb-scan.sh /dev/%I
 Nice=19
 IOSchedulingClass=idle
 TimeoutStartSec=infinity
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=read-only
+# PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
 EOF
 
 # Manual scan: identify a mounted USB filesystem's device with lsblk, then scan it.
@@ -2248,14 +2257,26 @@ sudo chmod +x /usr/local/bin/clamav-weekly-scan.sh
 sudo tee /etc/systemd/system/clamav-weekly-scan.service > /dev/null <<EOF
 [Unit]
 Description=ClamAV Weekly Full System Scan
+Wants=clamd@scan.service
+After=clamd@scan.service
 
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/clamav-weekly-scan.sh
 # User=root
+# Group=root
 Nice=19
 IOSchedulingClass=idle
 CPUSchedulingPolicy=idle
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
 # ConditionACPower=true   # laptops: skip on battery (nbXPS, nbLenovo)
 EOF
 
