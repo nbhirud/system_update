@@ -1041,15 +1041,18 @@ set_config_value "$SCAN_CONF" LocalSocket "$CLAMD_SOCK"
 # echo "LocalSocketMode 600" | sudo tee -a "$SCAN_CONF" >/dev/null
 
 # Restrict socket access to its owner only.
-set_config_value "$SCAN_CONF" LocalSocketMode 600
+# set_config_value "$SCAN_CONF" LocalSocketMode 600
 
 # LocalSocketMode 600 allows only the socket owner (clamscan, in your setup) to access the socket. If you run clamdscan as your normal desktop user, it may no longer be able to connect.
 # If you need regular-user access, use a group-based arrangement instead, like:
-# set_config_value "$SCAN_CONF" LocalSocketGroup clamscan
+set_config_value "$SCAN_CONF" LocalSocketGroup clamscan
 # set_config_value "$SCAN_CONF" LocalSocketMode 660
+# sudo usermod -aG clamscan "$REAL_USER"
 
-
-
+# the socket is root-only, so a compromised user session can't stop clamd.
+set_config_value "$SCAN_CONF" LocalSocketMode 600
+sudo sed -i '/^LocalSocketGroup/d' "$SCAN_CONF"    # TODO - What does this do?
+sudo gpasswd -d "$REAL_USER" clamscan 2>/dev/null || true    # undo earlier membership
 
 
 
