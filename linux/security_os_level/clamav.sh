@@ -1839,13 +1839,24 @@ sudo udevadm control --reload-rules
 # # Allow clamonacc to scan user home directories
 # sudo setsebool -P antivirus_scan_home_dirs 1
 
-
-for b in antivirus_can_scan_system antivirus_use_jit; do
-    if getsebool "$b" >/dev/null 2>&1; then sudo setsebool -P "$b" 1
-    else echo "SELinux boolean $b not present, skipping"; fi
+# antivirus_scan_home_dirs might be absent. We are checking 
+for b in antivirus_can_scan_system antivirus_use_jit antivirus_scan_home_dirs; do
+    if getsebool "$b" >/dev/null 2>&1; then 
+        sudo setsebool -P "$b" 1
+        echo "SELinux boolean $b set to active."
+    else 
+        echo "SELinux boolean $b not present, skipping"
+    fi
 done
 
-
+# # This boolean broadens the antivirus domain's access to system paths.
+# # Keep it enabled only because this configuration intentionally scans system paths.
+# if getsebool antivirus_can_scan_system >/dev/null 2>&1; then
+#     sudo setsebool -P antivirus_can_scan_system 1
+# else
+#     echo "SELinux boolean antivirus_can_scan_system not present, skipping"
+# fi
+# # Do not enable antivirus_use_jit unless a specific ClamAV feature requires it.
 
 #########################################################
 # Create a systemd service for ClamOnAcc
