@@ -274,7 +274,7 @@ UNOFFICIAL_SIGS_OS_CONF="/etc/clamav-unofficial-sigs/os.conf"
 
 # CLAM_USER="clamav"
 CLAM_USER="clamscan"
-# UPDATE_USER="clamupdate"
+UPDATE_USER="clamupdate" 
 
 
 #########################################################
@@ -464,7 +464,11 @@ sudo chmod 640 "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
 
 
 # DB dir: ownership kept as you have it; dirs need +x, files don't (your TODO at L169)
-sudo chown -R "$CLAM_USER:$CLAM_USER" "$SIG_DB_DIR"
+# sudo chown -R "$CLAM_USER:$CLAM_USER" "$SIG_DB_DIR"
+
+# owner = updater (rw), group = clamd (read-only)
+sudo chown -R "$UPDATE_USER:$CLAM_USER" "$SIG_DB_DIR"
+
 sudo find "$SIG_DB_DIR" -type d -exec chmod 750 {} +
 sudo find "$SIG_DB_DIR" -type f -exec chmod 640 {} +
 
@@ -947,8 +951,13 @@ set_config_value "$FRESH_CONF" LogFileMaxSize 20M
 set_config_value "$FRESH_CONF" LogRotate yes
 set_config_value "$FRESH_CONF" LogSyslog yes # sends logs to journald, which has its own retention.
 set_config_value "$FRESH_CONF" UpdateLogFile "$FRESH_LOG"
-set_config_value "$FRESH_CONF" DatabaseOwner "$CLAM_USER"
-set_config_value "$FRESH_CONF" NotifyClamd "$SCAN_CONF"
+
+# This is Fedora's default layout: freshclam owns the DB, clamd can only read it. clamd's own SelfCheck (default every 600 s) reloads changed databases.
+set_config_value "$FRESH_CONF" DatabaseOwner "$UPDATE_USER"
+
+# clamupdate cannot (and should not) talk to the root-only socket
+# set_config_value "$FRESH_CONF" NotifyClamd "$SCAN_CONF"
+
 set_config_value "$FRESH_CONF" Checks 12
 # set_config_value "$FRESH_CONF" SafeBrowsing yes
 set_config_value "$FRESH_CONF" Bytecode yes
@@ -964,7 +973,8 @@ set_config_value "$FRESH_CONF" DNSDatabaseInfo yes
 
 # Use set_config_value instead of directly setting using sed
 set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" user_configuration_complete yes
-set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user "$CLAM_USER"
+# set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user "$CLAM_USER"
+set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user  "$UPDATE_USER"
 set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_group "$CLAM_USER"
 
 
@@ -988,6 +998,11 @@ set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_pid "$CLAMD_PID"
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_socket "$CLAMD_SOCK"
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_reload_opt "clamdscan --config-file=$SCAN_CONF --reload"
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" reload_dbs yes
+
+# set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user "$CLAM_USER"
+set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user  "$UPDATE_USER"
+set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_group "$CLAM_USER"
+
 
 
 # Daemon (clamd) Config:
