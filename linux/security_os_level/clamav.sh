@@ -2676,8 +2676,18 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now clamav-freshclam.service
 sudo systemctl enable --now clamav-unofficial-sigs.timer
 sudo systemctl enable --now clamd@scan.service
+
+# if [ "$PC_TYPE" = desktop ]; then
+#     sudo systemctl enable --now clamav-clamonacc.service
+# elif systemctl is-enabled --quiet clamav-clamonacc.service 2>/dev/null; then
+#     sudo systemctl disable --now clamav-clamonacc.service
+# fi
+
 sudo systemctl enable --now clamav-clamonacc.service
+
 # sudo systemctl enable --now fangfrisch.timer
+
+echo "Configuration validated successfully."
 
 
 
