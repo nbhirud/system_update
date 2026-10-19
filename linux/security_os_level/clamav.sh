@@ -2157,223 +2157,312 @@ echo "Configuring background weekly system scan timer..."
 
 
 
+################################
+################################
+
+
+# sudo tee /usr/local/bin/clamav-weekly-scan.sh > /dev/null <<'EOF'
+# #!/bin/bash
+# set -u
+
+# # Prevent overlapping weekly scan instances.
+# exec 9>/run/clamav-weekly-scan.lock
+# # if ! flock -n 9; then
+# #     echo "A weekly scan is already running; exiting."
+# #     exit 0
+# # fi
+# flock -n 9 || { echo "weekly scan already running"; exit 0; }
+
+# echo "Weekly scan started: $(date --iso-8601=seconds)"
+
+# LOG_DIR="/var/log/clamav"
+# # LOGFILE="${LOG_DIR}/weekly_scan_$(date +\%Y-\%m-\%d).log"
+# # LOGFILE="${LOG_DIR}/weekly_scan_$(date +%Y-%m-%d).log"
+# LOGFILE="${LOG_DIR}/weekly_scan.log"        # fixed name: logrotate handles retention
+
+# # Run with low CPU/IO priority to avoid overloading the system
+# # nice -n 19 ionice -c 3 clamdscan --multiscan -r / \
+# #     --exclude-dir="/proc|/sys|/dev|/run|/var/log|/var/spool/postfix" \
+# #     --infected --log="$LOGFILE"
+
+
+# # The above exclusion argument is a regular expression, not a list of independent path arguments. That means the expression needs to match the paths as they are presented to ClamAV. The following excludes the listed top-level directories and their descendants.
+# # nice -n 19 ionice -c 3 clamdscan --multiscan -r / \
+# #     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
+# #     --infected --log="$LOGFILE"
+# # SCAN_STATUS=$?
+
+# # The above version uses clamdscan (https://docs.clamav.net/manual/Usage/Scanning.html#clamdscan). And the below version uses clamscan (https://docs.clamav.net/manual/Usage/Scanning.html#clamscan)
+
+
+# # Scan where malware lives; /usr is rpm-verifiable (see opinions table). /srv covers nbServer's data disks.
+# ROOTS=()
+# for d in /home /root /etc /opt /srv /usr/local /var/tmp /tmp; do
+#     if [ -d "$d" ]; then ROOTS+=("$d"); fi
+# done
+
+# # nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes --log="$LOGFILE" \
+# #     --exclude-dir='^/var/quarantine(/|$)' \
+# #     --exclude-dir='^/var/lib/(docker|containers)(/|$)' \
+# #     --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
+# #     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
+# #     "${ROOTS[@]}"
+
+# # clamdscan --multiscan --fdpass reuses the already-loaded databases and can use multiple threads. The above (clamscan) reloads everything every time and is single-threaded by nature of clamscan.
+
+# # nice -n 19 ionice -c 3 clamdscan --multiscan --fdpass \
+# nice -n 19 ionice -c 3 clamdscan --wait --ping 90:2 --multiscan --fdpass \
+#     --infected --log="$LOGFILE" \
+#     --exclude-dir='^/var/quarantine(/|$)' \
+#     --exclude-dir='^/var/lib/(docker|containers)(/|$)' \
+#     --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
+#     --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
+#     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
+#     "${ROOTS[@]}"
+
+# SCAN_STATUS=$?
+
+
+# # Find the first active graphical desktop user (UID >= 1000)
+# # ACTIVE_USER=$(loginctl list-sessions --no-legend | awk '{print $2}' | while read -r user; do id -u "$user" &>/dev/null && [ "$(id -u "$user")" -ge 1000 ] && echo "$user" && break; done)
+
+# # Use awk '{print $3}' instead of $2 - gives user rather than uid
+# # ACTIVE_USER=$(loginctl list-sessions --no-legend |
+# #     awk '{print $3}' |
+# #     while read -r user; do
+# #         id -u "$user" &>/dev/null &&
+# #         [ "$(id -u "$user")" -ge 1000 ] &&
+# #         echo "$user" &&
+# #         break
+# #     done)
+
+# # ACTIVE_USER=$(
+# #     loginctl list-sessions --no-legend |
+# #         awk '{print $3}' |
+# #         while read -r user; do
+# #             [[ -n "$user" ]] || continue
+
+# #             user_uid=$(id -u "$user" 2>/dev/null) || continue
+
+# #             if (( user_uid >= 1000 && user_uid < 65534 )); then
+# #                 printf '%s\n' "$user"
+# #                 break
+# #             fi
+# #         done
+# # )
+
+# # # Fallback if no active session is found
+# # if [ -z "$ACTIVE_USER" ]; then
+# #     ACTIVE_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1}' /etc/passwd | head -n 1)
+# # fi
+
+
+# find_active_graphical_user() {
+#     local session_id _session_uid _session_user _rest session_info
+#     local session_name session_active session_remote session_type session_class
+
+#     while read -r session_id _session_uid _session_user _rest; do
+#         [[ -n "$session_id" ]] || continue
+#         session_info=$(loginctl show-session "$session_id" \
+#             -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
+
+#         session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
+#         session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
+#         session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
+#         session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
+#         session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
+
+#         if [[ "$session_active" == yes && "$session_remote" == no &&
+#               "$session_class" == user &&
+#               ( "$session_type" == wayland || "$session_type" == x11 ) &&
+#               -n "$session_name" ]]; then
+#             printf '%s\n' "$session_name"
+#             return 0
+#         fi
+#     done < <(loginctl list-sessions --no-legend 2>/dev/null)
+
+#     return 1
+# }
+
+# notify_desktop_user() {
+#     local title=$1 message=$2 icon=$3 urgency=$4 active_user user_uid runtime_dir
+
+#     active_user=$(find_active_graphical_user) || active_user=""
+#     [[ -n "$active_user" ]] || {
+#         log "No active local graphical session; notification was not displayed: $title"
+#         return 0
+#     }
+
+#     user_uid=$(id -u -- "$active_user") || return 0
+#     runtime_dir="/run/user/$user_uid"
+#     [[ -S "$runtime_dir/bus" ]] || {
+#         log "No session D-Bus socket for $active_user; notification was not displayed."
+#         return 0
+#     }
+
+#     if ! runuser -u "$active_user" -- /usr/bin/env \
+#         XDG_RUNTIME_DIR="$runtime_dir" \
+#         DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime_dir/bus" \
+#         /usr/bin/notify-send -u "$urgency" -i "$icon" -- "$title" "$message"; then
+#         log "Failed to send desktop notification to $active_user: $title"
+#     fi
+# }
 
 
 
 
+# # # Check for infections and notify if found
+# # if grep -q "Infected files: [1-9]" "$LOGFILE"; then
+# #     sudo -u "$SUDO_USER" DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u "$SUDO_USER")/bus \
+# #         notify-send "⚠ ClamAV Alert" "Infected files found during weekly scan! Check $LOGFILE" -i dialog-warning
+# # fi
+
+# # if grep -q "Infected files: [1-9]" "$LOGFILE"; then
+# #     if [ -n "$ACTIVE_USER" ]; then
+# #         USER_UID=$(id -u "$ACTIVE_USER")
+# #         sudo -u "$ACTIVE_USER" DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$USER_UID/bus \
+# #             notify-send "⚠ ClamAV Alert" "Infected files found during weekly scan! Check $LOGFILE" -i dialog-warning
+# #     fi 
+# # fi
+
+
+# if grep -qE 'Infected files: [1-9][0-9]*' "$LOGFILE" ||
+#    [ "$SCAN_STATUS" -eq 1 ]; then
+
+#     NOTIFICATION_TITLE="⚠ ClamAV Alert"
+#     NOTIFICATION_MESSAGE="Infection detected during weekly scan. Exit status: $SCAN_STATUS. Check $LOGFILE"
+#     NOTIFICATION_ICON="dialog-warning"
+#     NOTIFICATION_URGENCY="critical"
+#     logger -t clamav-alert "$NOTIFICATION_MESSAGE"
+#     # logger -p authpriv.warning -t clamav-alert "Weekly scan: INFECTED files found, see $LOGFILE" ;;
+
+# elif [ "$SCAN_STATUS" -eq 0 ]; then
+
+#     NOTIFICATION_TITLE="ClamAV Scan Complete"
+#     NOTIFICATION_MESSAGE="No infections found during weekly scan. Check $LOGFILE"
+#     NOTIFICATION_ICON="dialog-information"
+#     NOTIFICATION_URGENCY="normal"
+#     logger -t clamav-scan "$NOTIFICATION_MESSAGE"
+
+# else
+
+#     NOTIFICATION_TITLE="⚠ ClamAV Scan Error"
+#     NOTIFICATION_MESSAGE="Weekly scan failed or was incomplete. Exit status: $SCAN_STATUS. Check $LOGFILE"
+#     NOTIFICATION_ICON="dialog-error"
+#     NOTIFICATION_URGENCY="critical"
+#     logger -t clamav-scan "$NOTIFICATION_MESSAGE"
+#     # logger -p authpriv.err     -t clamav-alert "Weekly scan finished with errors (SCAN_STATUS=$SCAN_STATUS), see $LOGFILE" ;;
+
+# fi
+
+
+# # Display the result to the active desktop user, if available.
+# # if [ -n "$ACTIVE_USER" ]; then
+# #     USER_UID=$(id -u "$ACTIVE_USER")
+# #     sudo -u "$ACTIVE_USER" \
+# #         DISPLAY=:0 \
+# #         DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USER_UID/bus" \
+# #         notify-send -u normal -i "$NOTIFICATION_ICON" \
+# #         "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE"
+# # fi
+
+# notify_desktop_user "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE" \
+#     "$NOTIFICATION_ICON" "$NOTIFICATION_URGENCY"
+
+# echo "Weekly scan finished: $(date --iso-8601=seconds)"
+# exit 0
+
+# EOF
+################################
+################################
+
+# The above implementation has been replaced for security reasons. Explained below:
+
+# Problem 1: Trust boundary
+# Old design: clamd (the process most likely to be compromised) → sudo → root helper
+# New designNothing in the chain gains privilege. clamd only calls logger.
+
+# Problem 2: Fragility
+# Old design: Three copies of session-detection code that parse loginctl and build D-Bus addresses. They break silently when you’re logged out or on SSH, and NoNewPrivileges or SELinux can kill the sudo path.
+# New design: Components write events to the journal. One small program running as you shows popups.
+
+# Problem 3: Duplication
+# Old design: Weekly, USB and VirusEvent each have their own notifier
+# New design: One popup service for every source
+
+
+# What authpriv is: the syslog facility (category) number 10, meaning security and authentication messages. warning and err are priorities (4 and 3). journald stores both, so you can filter with journalctl -p warning -t clamav-alert. Any facility would work. We use authpriv because these are security events.
 
 sudo tee /usr/local/bin/clamav-weekly-scan.sh > /dev/null <<'EOF'
 #!/bin/bash
 set -u
 
-# Prevent overlapping weekly scan instances.
-exec 9>/run/clamav-weekly-scan.lock
-# if ! flock -n 9; then
-#     echo "A weekly scan is already running; exiting."
-#     exit 0
-# fi
 flock -n 9 || { echo "weekly scan already running"; exit 0; }
 
 echo "Weekly scan started: $(date --iso-8601=seconds)"
 
-LOG_DIR="/var/log/clamav"
-# LOGFILE="${LOG_DIR}/weekly_scan_$(date +\%Y-\%m-\%d).log"
-# LOGFILE="${LOG_DIR}/weekly_scan_$(date +%Y-%m-%d).log"
-LOGFILE="${LOG_DIR}/weekly_scan.log"        # fixed name: logrotate handles retention
+# ---- 1. WHICH SCANNER? ------------------------------------------------------
+# The installer (snippet after this heredoc) swaps @ENGINE@ for "clamdscan" (SSD machines) or
+# "clamscan" (HDD machines). Override on one machine without editing this file:
+#     sudo systemctl edit clamav-weekly-scan.service
+#     [Service]
+#     Environment=CLAMAV_WEEKLY_ENGINE=clamscan
+# ${VAR:-default} means: use $VAR if set and non-empty, otherwise the default.
+ENGINE="${CLAMAV_WEEKLY_ENGINE:-@ENGINE@}"
 
-# Run with low CPU/IO priority to avoid overloading the system
-# nice -n 19 ionice -c 3 clamdscan --multiscan -r / \
-#     --exclude-dir="/proc|/sys|/dev|/run|/var/log|/var/spool/postfix" \
-#     --infected --log="$LOGFILE"
-
-
-# The above exclusion argument is a regular expression, not a list of independent path arguments. That means the expression needs to match the paths as they are presented to ClamAV. The following excludes the listed top-level directories and their descendants.
-# nice -n 19 ionice -c 3 clamdscan --multiscan -r / \
-#     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
-#     --infected --log="$LOGFILE"
-# SCAN_STATUS=$?
-
-# The above version uses clamdscan (https://docs.clamav.net/manual/Usage/Scanning.html#clamdscan). And the below version uses clamscan (https://docs.clamav.net/manual/Usage/Scanning.html#clamscan)
-
-
-# Scan where malware lives; /usr is rpm-verifiable (see opinions table). /srv covers nbServer's data disks.
+# ---- 2. WHAT TO SCAN --------------------------------------------------------
+# Where malware lands, not the whole disk: /usr is better checked with `rpm -Va`.
+# The [ -d ] guard stops the scanner failing on machines without e.g. /srv.
 ROOTS=()
 for d in /home /root /etc /opt /srv /usr/local /var/tmp /tmp; do
     if [ -d "$d" ]; then ROOTS+=("$d"); fi
 done
 
-# nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes --log="$LOGFILE" \
-#     --exclude-dir='^/var/quarantine(/|$)' \
-#     --exclude-dir='^/var/lib/(docker|containers)(/|$)' \
-#     --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
-#     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
-#     "${ROOTS[@]}"
+# ---- 3. SCAN ----------------------------------------------------------------
+# Output goes to stdout -> systemd -> journald: no log file to rotate or to symlink-attack.
+# "|| SCAN_STATUS=$?" captures the exit code without tripping errexit.
+# Exit codes (both scanners): 0 = clean, 1 = infection found, 2+ = error.
+SCAN_STATUS=0
+case "$ENGINE" in
+    clamscan)
+        # Standalone scanner: loads its OWN copy of the signatures, ignores scan.conf, so the flags
+        # that matter are repeated here. nice/ionice really work because THIS process does the reading.
+        nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes \
+            --detect-pua=yes --alert-broken=yes \
+            --exclude='^/etc/hosts$' \
+            --exclude-dir='/nb_script_data/hostsplay(/|$)' \
+            --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
+            --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
+            "${ROOTS[@]}" || SCAN_STATUS=$?
+        ;;
+    *)
+        # Daemon client: clamd (already running, config in scan.conf) does the work.
+        # --fdpass: THIS root process opens each file and hands the descriptor to clamd (user
+        #   clamscan), which could not otherwise read your 0700 home. ExcludePath in scan.conf is
+        #   applied by clamdscan itself (it ignores --exclude-dir, tested).
+        # --wait --ping 90:2: wait up to 3 minutes for clamd to finish loading signatures.
+        clamdscan --wait --ping 90:2 --multiscan --fdpass --infected "${ROOTS[@]}" || SCAN_STATUS=$?
+        ;;
+esac
 
-# clamdscan --multiscan --fdpass reuses the already-loaded databases and can use multiple threads. The above (clamscan) reloads everything every time and is single-threaded by nature of clamscan.
+# ---- 4. REPORT --------------------------------------------------------------
+# logger writes to the journal. -t = tag (what the popup service filters on),
+# -p facility.priority, "--" = stop option parsing (nothing in the message can be read as a flag).
+case "$SCAN_STATUS" in
+    0) logger -t clamav-scan -- "Weekly scan ($ENGINE) finished: clean" ;;
+    1) logger -p authpriv.warning -t clamav-alert -- "Weekly scan ($ENGINE): INFECTED files found. See: journalctl -u clamav-weekly-scan" ;;
+    *) logger -p authpriv.err -t clamav-alert -- "Weekly scan ($ENGINE) finished with errors (exit $SCAN_STATUS). See: journalctl -u clamav-weekly-scan" ;;
+esac
 
-# nice -n 19 ionice -c 3 clamdscan --multiscan --fdpass \
-nice -n 19 ionice -c 3 clamdscan --wait --ping 90:2 --multiscan --fdpass \
-    --infected --log="$LOGFILE" \
-    --exclude-dir='^/var/quarantine(/|$)' \
-    --exclude-dir='^/var/lib/(docker|containers)(/|$)' \
-    --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
-    --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
-    --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
-    "${ROOTS[@]}"
-
-SCAN_STATUS=$?
-
-
-# Find the first active graphical desktop user (UID >= 1000)
-# ACTIVE_USER=$(loginctl list-sessions --no-legend | awk '{print $2}' | while read -r user; do id -u "$user" &>/dev/null && [ "$(id -u "$user")" -ge 1000 ] && echo "$user" && break; done)
-
-# Use awk '{print $3}' instead of $2 - gives user rather than uid
-# ACTIVE_USER=$(loginctl list-sessions --no-legend |
-#     awk '{print $3}' |
-#     while read -r user; do
-#         id -u "$user" &>/dev/null &&
-#         [ "$(id -u "$user")" -ge 1000 ] &&
-#         echo "$user" &&
-#         break
-#     done)
-
-# ACTIVE_USER=$(
-#     loginctl list-sessions --no-legend |
-#         awk '{print $3}' |
-#         while read -r user; do
-#             [[ -n "$user" ]] || continue
-
-#             user_uid=$(id -u "$user" 2>/dev/null) || continue
-
-#             if (( user_uid >= 1000 && user_uid < 65534 )); then
-#                 printf '%s\n' "$user"
-#                 break
-#             fi
-#         done
-# )
-
-# # Fallback if no active session is found
-# if [ -z "$ACTIVE_USER" ]; then
-#     ACTIVE_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1}' /etc/passwd | head -n 1)
-# fi
-
-
-find_active_graphical_user() {
-    local session_id _session_uid _session_user _rest session_info
-    local session_name session_active session_remote session_type session_class
-
-    while read -r session_id _session_uid _session_user _rest; do
-        [[ -n "$session_id" ]] || continue
-        session_info=$(loginctl show-session "$session_id" \
-            -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
-
-        session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
-        session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
-        session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
-        session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
-        session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
-
-        if [[ "$session_active" == yes && "$session_remote" == no &&
-              "$session_class" == user &&
-              ( "$session_type" == wayland || "$session_type" == x11 ) &&
-              -n "$session_name" ]]; then
-            printf '%s\n' "$session_name"
-            return 0
-        fi
-    done < <(loginctl list-sessions --no-legend 2>/dev/null)
-
-    return 1
-}
-
-notify_desktop_user() {
-    local title=$1 message=$2 icon=$3 urgency=$4 active_user user_uid runtime_dir
-
-    active_user=$(find_active_graphical_user) || active_user=""
-    [[ -n "$active_user" ]] || {
-        log "No active local graphical session; notification was not displayed: $title"
-        return 0
-    }
-
-    user_uid=$(id -u -- "$active_user") || return 0
-    runtime_dir="/run/user/$user_uid"
-    [[ -S "$runtime_dir/bus" ]] || {
-        log "No session D-Bus socket for $active_user; notification was not displayed."
-        return 0
-    }
-
-    if ! runuser -u "$active_user" -- /usr/bin/env \
-        XDG_RUNTIME_DIR="$runtime_dir" \
-        DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime_dir/bus" \
-        /usr/bin/notify-send -u "$urgency" -i "$icon" -- "$title" "$message"; then
-        log "Failed to send desktop notification to $active_user: $title"
-    fi
-}
-
-
-
-
-# # Check for infections and notify if found
-# if grep -q "Infected files: [1-9]" "$LOGFILE"; then
-#     sudo -u "$SUDO_USER" DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u "$SUDO_USER")/bus \
-#         notify-send "⚠ ClamAV Alert" "Infected files found during weekly scan! Check $LOGFILE" -i dialog-warning
-# fi
-
-# if grep -q "Infected files: [1-9]" "$LOGFILE"; then
-#     if [ -n "$ACTIVE_USER" ]; then
-#         USER_UID=$(id -u "$ACTIVE_USER")
-#         sudo -u "$ACTIVE_USER" DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$USER_UID/bus \
-#             notify-send "⚠ ClamAV Alert" "Infected files found during weekly scan! Check $LOGFILE" -i dialog-warning
-#     fi 
-# fi
-
-
-if grep -qE 'Infected files: [1-9][0-9]*' "$LOGFILE" ||
-   [ "$SCAN_STATUS" -eq 1 ]; then
-
-    NOTIFICATION_TITLE="⚠ ClamAV Alert"
-    NOTIFICATION_MESSAGE="Infection detected during weekly scan. Exit status: $SCAN_STATUS. Check $LOGFILE"
-    NOTIFICATION_ICON="dialog-warning"
-    NOTIFICATION_URGENCY="critical"
-    logger -t clamav-alert "$NOTIFICATION_MESSAGE"
-    # logger -p authpriv.warning -t clamav-alert "Weekly scan: INFECTED files found, see $LOGFILE" ;;
-
-elif [ "$SCAN_STATUS" -eq 0 ]; then
-
-    NOTIFICATION_TITLE="ClamAV Scan Complete"
-    NOTIFICATION_MESSAGE="No infections found during weekly scan. Check $LOGFILE"
-    NOTIFICATION_ICON="dialog-information"
-    NOTIFICATION_URGENCY="normal"
-    logger -t clamav-scan "$NOTIFICATION_MESSAGE"
-
-else
-
-    NOTIFICATION_TITLE="⚠ ClamAV Scan Error"
-    NOTIFICATION_MESSAGE="Weekly scan failed or was incomplete. Exit status: $SCAN_STATUS. Check $LOGFILE"
-    NOTIFICATION_ICON="dialog-error"
-    NOTIFICATION_URGENCY="critical"
-    logger -t clamav-scan "$NOTIFICATION_MESSAGE"
-    # logger -p authpriv.err     -t clamav-alert "Weekly scan finished with errors (SCAN_STATUS=$SCAN_STATUS), see $LOGFILE" ;;
-
-fi
-
-
-# Display the result to the active desktop user, if available.
-# if [ -n "$ACTIVE_USER" ]; then
-#     USER_UID=$(id -u "$ACTIVE_USER")
-#     sudo -u "$ACTIVE_USER" \
-#         DISPLAY=:0 \
-#         DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USER_UID/bus" \
-#         notify-send -u normal -i "$NOTIFICATION_ICON" \
-#         "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE"
-# fi
-
-notify_desktop_user "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE" \
-    "$NOTIFICATION_ICON" "$NOTIFICATION_URGENCY"
-
-echo "Weekly scan finished: $(date --iso-8601=seconds)"
 exit 0
 
 EOF
+
+
+# bake the machine-specific choice in using existing SSD detection:
+WEEKLY_ENGINE=clamdscan
+if ! $SSD_PRESENT; then WEEKLY_ENGINE=clamscan; fi   # HDD: reads must run at idle I/O priority
+sudo sed -i "s/@ENGINE@/$WEEKLY_ENGINE/" /usr/local/bin/clamav-weekly-scan.sh
 
 
 sudo chmod +x /usr/local/bin/clamav-weekly-scan.sh
@@ -2395,7 +2484,7 @@ CPUSchedulingPolicy=idle
 NoNewPrivileges=yes
 ProtectSystem=full
 ProtectHome=read-only
-PrivateTmp=yes
+# PrivateTmp=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
