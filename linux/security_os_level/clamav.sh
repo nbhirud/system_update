@@ -2561,6 +2561,21 @@ echo "Configuring background weekly system scan timer..."
 
 # What authpriv is: the syslog facility (category) number 10, meaning security and authentication messages. warning and err are priorities (4 and 3). journald stores both, so you can filter with journalctl -p warning -t clamav-alert. Any facility would work. We use authpriv because these are security events.
 
+# clamdscan vs clamscan for the weekly scan (decision notes)
+#  clamdscan --fdpass : client of the running clamd. Follows scan.conf (PUA, limits, ExcludePath = one source of
+#                       truth). No extra RAM (clamd ~1.2 GiB here), no signature-load delay. BUT: the reading and
+#                       matching happen inside clamd, so nice/ionice/Nice=/IOSchedulingClass only affect the tiny
+#                       client; only clamd's CPUWeight applies (shared with on-access). The scan uses clamd's
+#                       thread pool, so on-access requests can queue behind it. --exclude-dir is IGNORED
+#                       (warning only); ExcludePath from scan.conf is applied by the client instead. --multiscan
+#                       with --fdpass showed no speedup in my I/O-bound test (CPU-bound untested). Needs clamd up.
+#  clamscan           : standalone. Loads its own signature copy (+~1.2 GB RAM, load time every run), ignores
+#                       scan.conf (repeat --detect-pua/--alert-broken), single-threaded. BUT: every knob applies
+#                       to the scanner itself (idle I/O, nice), isolated from clamd/on-access, --exclude-dir works,
+#                       no dependency on clamd, no SELinux confinement surprises.
+#  Choice: SSD -> clamdscan; HDD -> clamscan (seek contention is what makes the desktop lag).
+#  Override: CLAMAV_WEEKLY_ENGINE=clamscan|clamdscan in the service environment.
+
 sudo tee /usr/local/bin/clamav-weekly-scan.sh > /dev/null <<'EOF'
 #!/bin/bash
 set -u
