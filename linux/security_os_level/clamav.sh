@@ -357,7 +357,6 @@ if [ "$ONACC_THREADS" -gt 5 ]; then ONACC_THREADS=5; fi
 echo "RAM profile=$RAM_PROFILE threads=$RECOMMENDED_THREADS prevention=$ONACC_PREVENT concurrent_reload=$CONC_RELOAD"
 
 
-ROLE=$(. /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop)
 
 
 #########################################################
