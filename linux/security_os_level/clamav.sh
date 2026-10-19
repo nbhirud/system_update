@@ -2557,23 +2557,24 @@ sudo chmod 0755 /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-ro
 
 
 
-# Narrow exception: clamscan may run only this fixed, root-owned helper as root.
-# No SETENV is granted, and notify-send itself is no longer sudo-authorized.
-sudo tee /etc/sudoers.d/clamav-notify > /dev/null <<'EOF'
-clamscan ALL=(root) NOPASSWD: NOSETENV: /usr/local/sbin/clamav-notify-root
-EOF
-sudo chown root:root /etc/sudoers.d/clamav-notify
-sudo chmod 0440 /etc/sudoers.d/clamav-notify
+# # Narrow exception: clamscan may run only this fixed, root-owned helper as root.
+# # No SETENV is granted, and notify-send itself is no longer sudo-authorized.
+# sudo tee /etc/sudoers.d/clamav-notify > /dev/null <<'EOF'
+# clamscan ALL=(root) NOPASSWD: NOSETENV: /usr/local/sbin/clamav-notify-root
+# EOF
+# sudo chown root:root /etc/sudoers.d/clamav-notify
+# sudo chmod 0440 /etc/sudoers.d/clamav-notify
 
-if ! sudo visudo -cf /etc/sudoers.d/clamav-notify; then
-    echo "ERROR: Invalid sudoers configuration for ClamAV notifications." >&2
-    exit 1
-fi
-if ! sudo visudo -c; then
-    echo "ERROR: The complete sudoers configuration is invalid." >&2
-    exit 1
-fi
+# if ! sudo visudo -cf /etc/sudoers.d/clamav-notify; then
+#     echo "ERROR: Invalid sudoers configuration for ClamAV notifications." >&2
+#     exit 1
+# fi
+# if ! sudo visudo -c; then
+#     echo "ERROR: The complete sudoers configuration is invalid." >&2
+#     exit 1
+# fi
 
+# The above /etc/sudoers.d/clamav-notify gives the exposed process a path to a root helper. Without an argument spec, any arguments are allowed. The helper then drops to your session and shows attacker-chosen popup text.
 
 #########################################################
 # SELinux: Restore expected contexts before service start
