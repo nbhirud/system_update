@@ -1129,9 +1129,16 @@ set_config_value "$SCAN_CONF" ConcurrentDatabaseReload "$CONC_RELOAD"
 set_config_value "$SCAN_CONF" ExtendedDetectionInfo yes  # logs size + hash with each detection
 
 # ExitOnOOM makes clamd exit cleanly on an out-of-memory condition and lets systemd restart it. The cost is a full signature reload.
-set_config_value "$SCAN_CONF" ExitOnOOM yes             
+# set_config_value "$SCAN_CONF" ExitOnOOM yes
 
-
+# ExitOnOOM yes means if the system experiences memory pressure, ClamAV exits and systemd restarts it. During heavy scans on low-RAM machines, this could create a restart loop and deny service.
+if [ "$RAM_PROFILE" = "low" ]; then
+    echo "INFO: Low RAM detected. Leaving ExitOnOOM disabled to avoid restart loops."
+    set_config_value "$SCAN_CONF" ExitOnOOM no
+else
+    echo "INFO: Mid/High RAM profile. ExitOnOOM enabled."
+    set_config_value "$SCAN_CONF" ExitOnOOM yes
+fi
 
 
 # FixStaleSocket yes - explaination - If the system crashes or services are abruptly restarted, a stale clamd.sock can linger in /run/clamd.scan/, causing the daemon to refuse startup on subsequent boots. While you have FixStaleSocket yes commented out or handled via runtime directory recreation, enforcing it explicitly in the config ensures bulletproof recovery.
