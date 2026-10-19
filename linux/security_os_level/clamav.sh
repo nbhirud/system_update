@@ -1118,14 +1118,16 @@ set_config_value "$SCAN_CONF" ExitOnOOM yes
 # add_config_value "$SCAN_CONF" ExcludePath /path/to/another/file
 # add_config_value "$SCAN_CONF" ExcludePath /path/to/cache
 
-# ExcludePath takes regexes, and it is honored even for fd-passed scans. Avoid backslashes, because awk -v mangles them and your dedupe would break:
-# Excluding /var/lib/clamav/ matters because signature files can match each other.
+# ExcludePath takes regexes, and it is honored even for fd-passed scans. Avoid backslashes, because awk -v mangles them and your dedupe would break. it is honored by clamdscan, not by clamonacc.
+# Excluding /var/lib/clamav/ matters because signature files can match each other. 
 for p in '^/proc/' '^/sys/' '^/dev/' '^/run/' '^/var/quarantine/' '^/var/lib/clamav/' \
          '^/var/log/clamav/' '^/var/lib/docker/' '^/var/lib/containers/' \
          '^/home/[^/]+/[.]local/share/containers/'; do
     add_config_value "$SCAN_CONF" ExcludePath "$p"
 done
 
+add_config_value "$SCAN_CONF" ExcludePath '^/etc/hosts$'
+add_config_value "$SCAN_CONF" ExcludePath "^$SCRIPT_DATA/hostsplay/"
 
 # Content Scanning Options
 # sudo sed -i 's|^#ScanPE.*|ScanPE yes|' "$SCAN_CONF"
