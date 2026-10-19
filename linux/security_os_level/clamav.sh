@@ -2641,9 +2641,14 @@ fi
 sudo restorecon -Rv /var/log/clamav
 sudo restorecon -Rv /var/lib/clamav
 
-sudo restorecon -v /usr/local/bin/clamav-usb-scan.sh /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root
-sudo restorecon -v /etc/udev/rules.d/99-clamav-usb.rules /etc/systemd/system/clamav-usb-scan@.service /etc/sudoers.d/clamav-notify
+# sudo restorecon -v /usr/local/bin/clamav-usb-scan.sh /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root
+# sudo restorecon -v /etc/udev/rules.d/99-clamav-usb.rules /etc/systemd/system/clamav-usb-scan@.service /etc/sudoers.d/clamav-notify
 
+for f in /usr/local/bin/clamav-usb-scan.sh /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root \
+         /usr/local/bin/clamav-weekly-scan.sh /usr/local/bin/clamav-alert-popups /etc/sudoers.d/clamav-notify \
+         /etc/udev/rules.d/99-clamav-usb.rules /etc/systemd/system/clamav-usb-scan@.service; do
+    if [ -e "$f" ]; then sudo restorecon -v "$f"; fi
+done
 
 #########################################################
 # Service Activation
