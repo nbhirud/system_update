@@ -1073,6 +1073,9 @@ set_config_value "$SCAN_CONF" VirusEvent /usr/local/bin/clamav-notify.sh
 
 # fi
 
+sudo sed -i '/^TemporaryDirectory/d' "$SCAN_CONF"   # clears machines already configured; /tmp is tmpfs on Fedora
+
+
 # # ConcurrentDatabaseReload yes (Storage Optimization) - Allows clamd to load updated virus definitions in the background using a secondary thread pool while continuing to handle scan requests uninterrupted.
 # # Why it relates to SSDs: Database files are large and frequently updated by freshclam. Reloading them concurrently causes heavy concurrent disk I/O. While it works on HDDs, it performs significantly better on fast storage (SSDs or NVMe drives) without causing I/O bottlenecks.
 # # SSD-specific optimizations
