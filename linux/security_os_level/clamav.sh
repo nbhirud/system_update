@@ -2678,6 +2678,17 @@ WEEKLY_ENGINE=clamdscan
 if ! $SSD_PRESENT; then WEEKLY_ENGINE=clamscan; fi   # HDD: reads must run at idle I/O priority
 sudo sed -i "s/@ENGINE@/$WEEKLY_ENGINE/" /usr/local/bin/clamav-weekly-scan.sh
 
+# To override without re-running setup
+# Override scan engine (uncomment and change for HDD-only machines):
+# sudo systemctl edit clamav-weekly-scan.service"
+# [Service]
+# Environment=CLAMAV_WEEKLY_ENGINE=clamscan
+
+
+grep -q "CLAMAV_WEEKLY_ENGINE=@ENGINE@" /usr/local/bin/clamav-weekly-scan.sh && \
+    echo "ERROR: Engine substitution failed" >&2 && exit 1
+echo "Scan engine set to: $WEEKLY_ENGINE"
+
 
 sudo chmod +x /usr/local/bin/clamav-weekly-scan.sh
 
