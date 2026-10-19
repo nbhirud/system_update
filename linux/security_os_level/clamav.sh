@@ -1325,20 +1325,38 @@ sudo sed -i '/^OnAccessIncludePath/d' "$SCAN_CONF"
 ONACC_DIRS=(
     "$HOME_DIR/Downloads"
     "$NBDIR/Downloads"
-    "$NBDIR/Torrents/Completed"
     "$NBDIR/nb_script_downloads"
-    "$NBDIR/Syncthing/"   # Syncthing folders that receive files from other devices
-    "$HOME_DIR/.kodi/"   # Because it uses random repos
+    "$NBDIR/Syncthing"   # Syncthing folders that receive files from other devices
 )
 
-# Basically, the following skips the onaccess path inclusions for servers
-if [ "$ROLE" = desktop ]; then
-    for d in "${ONACC_DIRS[@]}"; do
-        if [ -d "$d" ]; then add_config_value "$SCAN_CONF" OnAccessIncludePath "$d"; fi
-    done
+# Conditionally append completed Torrents path if a torrent client is present
+if [ "${HAS_TORRENT_CLIENT:-false}" = true ]; then
+    ONACC_DIRS+=("$NBDIR/Torrents/Completed")
 fi
 
+# Conditionally append Kodi path if Kodi is installed
+# Because it uses random repos
+if [ "${HAS_KODI:-false}" = true ]; then
+    ONACC_DIRS+=("$HOME_DIR/.kodi") # Because it uses random repos
+fi
 
+# Basically, the following skips the onaccess path inclusions for servers
+# Apply inclusions (skipping servers / non-desktop PCs)
+# if [ "$PC_TYPE" = desktop ]; then
+# if [ "${PC_TYPE:-desktop}" = "desktop" ]; then
+#     for d in "${ONACC_DIRS[@]}"; do
+#         if [ -d "$d" ]; then
+#             add_config_value "$SCAN_CONF" OnAccessIncludePath "$d"
+#         fi
+#     done
+# fi
+
+# Actually the dirs like downloads should be scanned even on server
+for d in "${ONACC_DIRS[@]}"; do
+    if [ -d "$d" ]; then
+        add_config_value "$SCAN_CONF" OnAccessIncludePath "$d"
+    fi
+done
 
 
 #########################################################
