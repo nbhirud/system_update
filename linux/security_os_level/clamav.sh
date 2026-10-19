@@ -1971,6 +1971,12 @@ ExecStart=/usr/sbin/clamonacc \
 
 Restart=on-failure
 RestartSec=5
+NoNewPrivileges=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
 
 [Install]
 WantedBy=multi-user.target
