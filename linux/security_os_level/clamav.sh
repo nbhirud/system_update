@@ -2780,6 +2780,10 @@ echo "Configuration validated successfully."
 #     exit 1
 # fi
 
+echo "Waiting for clamd to load signatures (can take minutes on the HDD machines)..."
+if ! sudo clamdscan --config-file="$SCAN_CONF" --ping 60:3; then
+    sudo journalctl -u clamd@scan -n 50 --no-pager; exit 1
+fi
 
 echo "Checking ClamAV services..."
 
@@ -2808,16 +2812,20 @@ fi
 
 echo "Validating generated systemd units and logrotate configuration..."
 sudo systemd-analyze verify \
+    /etc/systemd/system/clamav-usb-scan@.service \
     /etc/systemd/system/clamav-clamonacc.service \
     /etc/systemd/system/clamav-weekly-scan.service \
     /etc/systemd/system/clamav-weekly-scan.timer
-sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
+# sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
 
 echo "ClamAV services and timers are active."
 clamdscan --version
 
 # Check the custom scan-log rotation configuration without changing any logs:
-sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
+# sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
+
+# clean machines already configured with removed logrotate:
+# sudo rm -f /etc/logrotate.d/clamav-custom-scans
 
 #########################################################
 # Scanning syntax:
