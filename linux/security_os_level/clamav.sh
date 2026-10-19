@@ -976,7 +976,7 @@ set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" user_configuration_complete yes
 # set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user "$CLAM_USER"
 set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user  "$UPDATE_USER"
 set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_group "$CLAM_USER"
-
+# set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" urlhaus_enabled no   # domain list: matches blocklist hosts files by design
 
 # Enable only trusted free sources
 # sudo sed -i 's|^#enable_.*sanesecurity.*|enable_sanesecurity="yes"|' $UNOFFICIAL_SIGS_MASTER_CONF
@@ -991,8 +991,6 @@ set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_group "$CLAM_USER"
 # sudo sed -i "s|^reload_dbs=.*|reload_dbs=\"yes\"|" "$UNOFFICIAL_SIGS_OS_CONF"
 
 
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user "$CLAM_USER"
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_group "$CLAM_USER"
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_dbs "$SIG_DB_DIR"
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_pid "$CLAMD_PID"
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_socket "$CLAMD_SOCK"
@@ -1873,6 +1871,10 @@ done
 # fi
 # # Do not enable antivirus_use_jit unless a specific ClamAV feature requires it.
 
+
+
+
+
 #########################################################
 # Create a systemd service for ClamOnAcc
 #########################################################
@@ -2032,6 +2034,23 @@ cat <<EOF | sudo tee /etc/systemd/system/clamd@scan.service.d/override.conf
 CPUWeight=50
 Restart=on-failure
 RestartSec=10
+# --- sandboxing (defense in depth; SELinux already confines clamd) ---
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX
+# MemoryDenyWriteExecute
 EOF
 
 
@@ -2925,6 +2944,13 @@ clamdscan --version
 # Debugging / Testing / Troubleshooting:
 #########################################################
 
+# read the logs from journalctl when "LogSyslog yes" is set
+# journalctl -u clamd@scan -u clamav-freshclam -u clamav-clamonacc -b
+# journalctl -t clamav-alert -t clamav-scan
+# journalctl -u clamav-weekly-scan
+# journalctl -u 'clamav-usb-scan@*'
+# journalctl --list-boots  # Check the journal is persistent - more than one boot listed means yes
+
 # Check if the script is syntactically correct:
 # bash -n clamav.sh
 # shellcheck clamav.sh
@@ -3108,3 +3134,8 @@ clamdscan --version
 # echo $EICAR | sudo tee /tmp/eicar.txt
 # sudo clamscan /tmp/eicar.txt
 # Should detect it as "Win.Test.EICAR_HDB-1"
+
+# JIT boolean
+# sudo setsebool -P antivirus_use_jit 0 && sudo systemctl restart clamd@scan
+# scan EICAR and a zip file, then: sudo ausearch -m avc -ts recent | grep -i execmem
+# if you see execmem denials: sudo setsebool -P antivirus_use_jit 1
