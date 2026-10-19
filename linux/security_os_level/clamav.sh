@@ -23,6 +23,15 @@ fi
 # root (sudo) check
 [ "$(id -u)" -ne 0 ] || { echo "Run as your normal user; the script calls sudo itself"; exit 1; }
 
+# Pre-authenticate sudo
+# sudo -v
+# Pre-authenticate sudo (non-blocking)
+if sudo -n -v 2>/dev/null; then
+    echo "[+] Sudo already authenticated"
+else
+    sudo -v || { echo "ERROR: Sudo authentication failed"; exit 1; }
+fi
+
 #########################################################
 # Useful Reading:
 #########################################################
@@ -37,6 +46,194 @@ fi
 # https://wiki.archlinux.org/title/Clam_AntiVirus
 # https://www.linuxcapable.com/install-clamav-on-fedora-linux/
 
+
+#########################################################
+# Inputs:
+#########################################################
+
+# # TODO: Take following as inputs as named options. If not provided, use the defaults below
+# # HAS_TORRENT_CLIENT
+# # HAS_KODI
+# # REAL_USER
+# # FILENAME_TIMESTAMP
+# # SCRIPT_BACKUPS_DIR
+# # PC_TYPE
+
+# REAL_USER="${SUDO_USER:-$USER}"
+
+# FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
+# # HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+# # Get the actual user's home when runing a script with sudo
+# HOME_DIR=$(getent passwd "$REAL_USER" | cut -d: -f6)
+# NBDIR="$HOME_DIR/nb"
+# SCRIPT_DATA="$NBDIR/nb_script_data"
+# SCRIPT_BACKUPS_DIR="$SCRIPT_DATA/backups"
+# CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
+
+# PC_TYPE=$(. /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop)
+
+# HAS_TORRENT_CLIENT=true # default true for PC_TYPE desktop and false for server
+# HAS_KODI=true # default true for PC_TYPE desktop and false for server
+
+
+##############################
+# # INPUTS & CONFIGURATION DEFAULTS - using positional arguments
+
+# # 1. PC_TYPE (default detected via OS release if not provided)
+# : "${PC_TYPE:=$( [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop )}"
+
+# # 2. REAL_USER (defaults to SUDO_USER or current user)
+# : "${REAL_USER:=${SUDO_USER:-$USER}}"
+
+# # 3. FILENAME_TIMESTAMP (defaults to current timestamp)
+# : "${FILENAME_TIMESTAMP:=$(date +%Y-%m-%d_%H-%M-%S)}"
+
+# # Derived paths using REAL_USER and TIMESTAMP
+# HOME_DIR="$(getent passwd "$REAL_USER" | cut -d: -f6)"
+# NBDIR="$HOME_DIR/nb"
+# SCRIPT_DATA="$NBDIR/nb_script_data"
+
+# # 4. SCRIPT_BACKUPS_DIR (defaults to standard path under nb_script_data)
+# : "${SCRIPT_BACKUPS_DIR:="$SCRIPT_DATA/backups"}"
+# CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
+
+# # 5. HAS_TORRENT_CLIENT (default: true for desktop, false for server)
+# if [ -z "${HAS_TORRENT_CLIENT:-}" ]; then
+#     [ "$PC_TYPE" = "desktop" ] && HAS_TORRENT_CLIENT=true || HAS_TORRENT_CLIENT=false
+# fi
+
+# # 6. HAS_KODI (default: true for desktop, false for server)
+# if [ -z "${HAS_KODI:-}" ]; then
+#     [ "$PC_TYPE" = "desktop" ] && HAS_KODI=true || HAS_KODI=false
+# fi
+
+
+##############################
+# INPUTS & CONFIGURATION DEFAULTS - using named options
+
+
+# DEFAULT VALUES (Fallback if not provided)
+
+PC_TYPE=""
+REAL_USER=""
+FILENAME_TIMESTAMP=""
+SCRIPT_BACKUPS_DIR=""
+HAS_TORRENT_CLIENT=""
+HAS_KODI=""
+
+
+# PARSE NAMED OPTIONS
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --pc-type=*)
+            PC_TYPE="${1#*=}"
+            shift
+            ;;
+        --pc-type)
+            PC_TYPE="$2"
+            shift 2
+            ;;
+        --real-user=*)
+            REAL_USER="${1#*=}"
+            shift
+            ;;
+        --real-user)
+            REAL_USER="$2"
+            shift 2
+            ;;
+        --torrent-client=*)
+            HAS_TORRENT_CLIENT="${1#*=}"
+            shift
+            ;;
+        --torrent-client)
+            HAS_TORRENT_CLIENT="$2"
+            shift 2
+            ;;
+        --kodi=*)
+            HAS_KODI="${1#*=}"
+            shift
+            ;;
+        --kodi)
+            HAS_KODI="$2"
+            shift 2
+            ;;
+        --backup-dir=*)
+            SCRIPT_BACKUPS_DIR="${1#*=}"
+            shift
+            ;;
+        --backup-dir)
+            SCRIPT_BACKUPS_DIR="$2"
+            shift 2
+            ;;
+        --timestamp=*)
+            FILENAME_TIMESTAMP="${1#*=}"
+            shift
+            ;;
+        --timestamp)
+            FILENAME_TIMESTAMP="$2"
+            shift 2
+            ;;
+        -h|--help)
+            echo "Usage: $0 [OPTIONS]"
+            echo "  --pc-type <desktop|laptop|server>"
+            echo "  --real-user <username>"
+            echo "  --torrent-client <true|false>"
+            echo "  --kodi <true|false>"
+            echo "  --backup-dir <path>"
+            echo "  --timestamp <YYYY-MM-DD_HH-MM-SS>"
+            exit 0
+            ;;
+        *)
+            echo "ERROR: Unknown option: $1" >&2
+            exit 1
+            ;;
+    esac
+done
+
+
+# APPLY INTELLIGENT DEFAULTS FOR UNSET OPTIONS
+
+# Treat laptop as desktop from security perspective.
+if [ "$PC_TYPE" = "laptop" ]; then
+    PC_TYPE="desktop"
+fi
+
+# 1. PC_TYPE (detected via OS release if not provided)
+if [ -z "$PC_TYPE" ]; then
+    PC_TYPE="$( . /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop )"   # subshell: no variable pollution
+
+fi
+
+# 2. REAL_USER (defaults to SUDO_USER or current user)
+REAL_USER="${REAL_USER:-${SUDO_USER:-$USER}}"
+
+# 3. TIMESTAMP (defaults to current time if not provided)
+FILENAME_TIMESTAMP="${FILENAME_TIMESTAMP:-$(date +%Y-%m-%d_%H-%M-%S)}"
+
+# Derived paths using REAL_USER and TIMESTAMP
+HOME_DIR="$(getent passwd "$REAL_USER" | cut -d: -f6)"
+NBDIR="$HOME_DIR/nb"
+SCRIPT_DATA="$NBDIR/nb_script_data"
+
+# 4. SCRIPT_BACKUPS_DIR
+SCRIPT_BACKUPS_DIR="${SCRIPT_BACKUPS_DIR:-$SCRIPT_DATA/backups}"
+CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
+
+# 5. HAS_TORRENT_CLIENT (default based on PC_TYPE if not provided)
+if [ -z "$HAS_TORRENT_CLIENT" ]; then
+    [ "$PC_TYPE" = "desktop" ] && HAS_TORRENT_CLIENT=true || HAS_TORRENT_CLIENT=false
+fi
+
+# 6. HAS_KODI (default based on PC_TYPE if not provided)
+if [ -z "$HAS_KODI" ]; then
+    [ "$PC_TYPE" = "desktop" ] && HAS_KODI=true || HAS_KODI=false
+fi
+
+if [[ ! "$FILENAME_TIMESTAMP" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]]; then
+    echo "ERROR: --timestamp must use YYYY-MM-DD_HH-MM-SS" >&2
+    exit 2
+fi
 
 #########################################################
 # Paths and Constants:
@@ -79,17 +276,6 @@ UNOFFICIAL_SIGS_OS_CONF="/etc/clamav-unofficial-sigs/os.conf"
 CLAM_USER="clamscan"
 # UPDATE_USER="clamupdate"
 
-REAL_USER="${SUDO_USER:-$USER}"
-
-FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
-# HOME_DIR=$(getent passwd $USER | cut -d: -f6)
-# Get the actual user's home when runing a script with sudo
-HOME_DIR=$(getent passwd "$REAL_USER" | cut -d: -f6)
-NBDIR="$HOME_DIR/nb"
-SCRIPT_DATA="$NBDIR/nb_script_data"
-SCRIPT_BACKUPS_DIR="$SCRIPT_DATA/backups"
-CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
-
 
 #########################################################
 # Install packages:
@@ -102,6 +288,11 @@ CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
 
 # clamav-lib and clamav-filesystem are pulled in as dependencies. policycoreutils-python-utils provides audit2allow and semanage. util-linux provides flock
 sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamdtop policycoreutils-python-utils util-linux
+
+# Warning: clamav-unofficial-sigs will download third-party signatures.
+# Review /etc/clamav-unofficial-sigs/master.conf to control which sources are enabled.
+# Some sources are maintained by volunteers; assess trust levels accordingly.
+
 
 #########################################################
 # Dynamic Hardware-Aware Optimization:
@@ -150,30 +341,59 @@ fi
 
 
 
-if   [ "$RAM_MB" -lt 8000 ];  then PROFILE=low
-elif [ "$RAM_MB" -lt 20000 ]; then PROFILE=mid
-else                               PROFILE=high
+if   [ "$RAM_MB" -lt 8000 ];  then RAM_PROFILE=low
+elif [ "$RAM_MB" -lt 20000 ]; then RAM_PROFILE=mid
+else                               RAM_PROFILE=high
 fi
 
 CONC_RELOAD=yes     # a second engine is loaded during reload = extra RAM (clamd.conf docs)
-if [ "$PROFILE" = low ]; then CONC_RELOAD=no; fi
+if [ "$RAM_PROFILE" = low ]; then CONC_RELOAD=no; fi
 
 ONACC_PREVENT=no    # prevention = every watched open() waits for clamd
-if [ "$RAM_MB" -ge 12000 ] && $SSD_PRESENT; then ONACC_PREVENT=yes; fi
+if [ "$RAM_MB" -ge 14000 ] && $SSD_PRESENT; then ONACC_PREVENT=yes; fi
 
 ONACC_THREADS=$(( RECOMMENDED_THREADS - 2 ))   # must stay below clamd MaxThreads
 if [ "$ONACC_THREADS" -gt 5 ]; then ONACC_THREADS=5; fi
-echo "profile=$PROFILE threads=$RECOMMENDED_THREADS prevention=$ONACC_PREVENT concurrent_reload=$CONC_RELOAD"
+echo "RAM profile=$RAM_PROFILE threads=$RECOMMENDED_THREADS prevention=$ONACC_PREVENT concurrent_reload=$CONC_RELOAD"
 
 
-ROLE=$(. /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop)
 
 
 #########################################################
 # Back up existing configuration files before modifying them:
 #########################################################
 
-mkdir -p "$CLAMAV_BACKUP_DIR"
+# mkdir -p "$CLAMAV_BACKUP_DIR"
+# sudo install -d -o "$CLAM_USER" -g "$CLAM_USER" -m 750 "$CLAMAV_BACKUP_DIR" 
+# sudo install -d -o "$REAL_USER" -g "$REAL_USER" -m 750 "$CLAMAV_BACKUP_DIR"
+
+# Backups are created by the invoking user. Never use root to create or copy
+# files into this user-controlled destination: that would permit symlink/path attacks.
+# umask 077
+( umask 077; mkdir -p -- "$CLAMAV_BACKUP_DIR" )   # strict only for this one directory
+mkdir -p -- "$CLAMAV_BACKUP_DIR"
+
+# if [[ ! -d "$CLAMAV_BACKUP_DIR" || -L "$CLAMAV_BACKUP_DIR" ]]; then
+#     echo "ERROR: Backup destination must be a real directory, not a symlink: $CLAMAV_BACKUP_DIR" >&2
+#     exit 1
+# fi
+
+
+# SECURITY: Prevent symlink attacks on backup directory
+if [[ -L "$CLAMAV_BACKUP_DIR" ]] || [[ -h "$CLAMAV_BACKUP_DIR" ]]; then
+    echo "ERROR: Backup path is a symlink - possible attack. Aborting." >&2
+    exit 1
+fi
+
+# Ensure it's a real directory (not a symlink to a file)
+if [[ -e "$CLAMAV_BACKUP_DIR" ]] && [[ ! -d "$CLAMAV_BACKUP_DIR" ]]; then
+    echo "ERROR: Backup path exists but is not a directory." >&2
+    exit 1
+fi
+
+# Secure permissions BEFORE using the directory
+chmod 700 -- "$CLAMAV_BACKUP_DIR"
+
 
 for config_file in "$SCAN_CONF" "$FRESH_CONF" "$UNOFFICIAL_SIGS_MASTER_CONF" "$UNOFFICIAL_SIGS_OS_CONF"; do
 
@@ -217,10 +437,16 @@ sudo touch "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
 sudo chown "$CLAM_USER:$CLAM_USER" "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
 sudo chmod 640 "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
 
-
-
-
-
+# # Creating logs with touch followed by chown/chmod leaves a brief window where unprivileged users might be able to replace or modify the log files. Use atomic file creation:
+# for logfile in "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"; do
+#     if [[ ! -f "$logfile" ]]; then
+#         sudo install -o "$CLAM_USER" -g "$CLAM_USER" -m 640 /dev/null "$logfile"
+#     else
+#         # Existing file: just fix ownership/permissions
+#         sudo chown "$CLAM_USER:$CLAM_USER" "$logfile"
+#         sudo chmod 640 "$logfile"
+#     fi
+# done
 
 ###########################
 # The following is Tested and works perfectly:
@@ -271,13 +497,11 @@ sudo find "$SIG_DB_DIR" -type f -exec chmod 640 {} +
 # sudo chmod -R 700 "$QUARANTINE_DIR"
 
 
-
 # Quarantine: clamonacc (root) does the move. Give it a label the antivirus domain may write.
 sudo install -d -o root -g root -m 700 "$QUARANTINE_DIR"
 sudo semanage fcontext -a -t antivirus_db_t "$QUARANTINE_DIR(/.*)?" 2>/dev/null \
   || sudo semanage fcontext -m -t antivirus_db_t "$QUARANTINE_DIR(/.*)?"
 sudo restorecon -R "$QUARANTINE_DIR"
-
 
 
 #########################################################
@@ -721,11 +945,14 @@ sudo sed -i '/^Example/d' "$FRESH_CONF"
 set_config_value "$FRESH_CONF" LogTime yes
 set_config_value "$FRESH_CONF" LogFileMaxSize 20M
 set_config_value "$FRESH_CONF" LogRotate yes
+set_config_value "$FRESH_CONF" LogSyslog yes # sends logs to journald, which has its own retention.
 set_config_value "$FRESH_CONF" UpdateLogFile "$FRESH_LOG"
 set_config_value "$FRESH_CONF" DatabaseOwner "$CLAM_USER"
 set_config_value "$FRESH_CONF" NotifyClamd "$SCAN_CONF"
 set_config_value "$FRESH_CONF" Checks 12
-
+# set_config_value "$FRESH_CONF" SafeBrowsing yes
+set_config_value "$FRESH_CONF" Bytecode yes
+set_config_value "$FRESH_CONF" DNSDatabaseInfo yes
 
 
 # Configuring clamav-unofficial-sigs
@@ -767,6 +994,10 @@ set_config_value "$UNOFFICIAL_SIGS_OS_CONF" reload_dbs yes
 
 sudo sed -i '/^Example/d' "$SCAN_CONF"
 
+# set_config_value / add_config_value only add or replace; they never delete directives that
+# older runs or hand edits left behind. Remove the ones this script no longer wants:
+sudo sed -i -E '/^(ScanOnAccess|OnAccessExcludePath|OnAccessMountPath)[[:space:]]/d' "$SCAN_CONF"
+
 # sudo sed -i "s|^#LogFile.*|LogFile $CLAMD_LOG|" "$SCAN_CONF"
 # sudo sed -i 's|^#LogTime.*|LogTime yes|' "$SCAN_CONF"
 # sudo sed -i 's|^#LogRotate.*|LogRotate yes|' "$SCAN_CONF"
@@ -782,7 +1013,9 @@ sudo sed -i '/^Example/d' "$SCAN_CONF"
 
 set_config_value "$SCAN_CONF" LogFile "$CLAMD_LOG"
 set_config_value "$SCAN_CONF" LogTime yes
+set_config_value "$SCAN_CONF" LogFileMaxSize 10M    # ClamAV renames the full log to clamd-<timestamp>.log
 set_config_value "$SCAN_CONF" LogRotate yes
+set_config_value "$SCAN_CONF" LogSyslog yes    # sends logs to journald, which has its own retention.
 set_config_value "$SCAN_CONF" PidFile "$CLAMD_PID"
 set_config_value "$SCAN_CONF" FixStaleSocket yes
 set_config_value "$SCAN_CONF" User "$CLAM_USER"
@@ -808,15 +1041,18 @@ set_config_value "$SCAN_CONF" LocalSocket "$CLAMD_SOCK"
 # echo "LocalSocketMode 600" | sudo tee -a "$SCAN_CONF" >/dev/null
 
 # Restrict socket access to its owner only.
-set_config_value "$SCAN_CONF" LocalSocketMode 600
+# set_config_value "$SCAN_CONF" LocalSocketMode 600
 
 # LocalSocketMode 600 allows only the socket owner (clamscan, in your setup) to access the socket. If you run clamdscan as your normal desktop user, it may no longer be able to connect.
 # If you need regular-user access, use a group-based arrangement instead, like:
-# set_config_value "$SCAN_CONF" LocalSocketGroup clamscan
+set_config_value "$SCAN_CONF" LocalSocketGroup clamscan
 # set_config_value "$SCAN_CONF" LocalSocketMode 660
+# sudo usermod -aG clamscan "$REAL_USER"
 
-
-
+# the socket is root-only, so a compromised user session can't stop clamd.
+set_config_value "$SCAN_CONF" LocalSocketMode 600
+sudo sed -i '/^LocalSocketGroup/d' "$SCAN_CONF"    # TODO - What does this do?
+sudo gpasswd -d "$REAL_USER" clamscan 2>/dev/null || true    # undo earlier membership
 
 
 
@@ -829,13 +1065,16 @@ set_config_value "$SCAN_CONF" VirusEvent /usr/local/bin/clamav-notify.sh
 
 # # TemporaryDirectory /dev/shm (RAM Optimization) - Use RAM disk for temporary scanning files if sufficient memory is available. Forces ClamAV to extract and inspect archives entirely inside your system's RAM (tmpfs).
 # # RAM-based temp directory (Independent of disk type, check RAM instead)
-# if [ "$RAM_GB" -ge 12 ]; then
+# if [ "$RAM_GB" -ge 14 ]; then
+
 #     echo "[*] Sufficient RAM ($RAM_GB GB) detected: routing ClamAV temp files to RAM (/dev/shm)..."
 #     # sudo sed -i 's|^#TemporaryDirectory.*|TemporaryDirectory /dev/shm|' "$SCAN_CONF"
-
 #     set_config_value "$SCAN_CONF" TemporaryDirectory /dev/shm
 
 # fi
+
+sudo sed -i '/^TemporaryDirectory/d' "$SCAN_CONF"   # clears machines already configured; /tmp is tmpfs on Fedora
+
 
 # # ConcurrentDatabaseReload yes (Storage Optimization) - Allows clamd to load updated virus definitions in the background using a secondary thread pool while continuing to handle scan requests uninterrupted.
 # # Why it relates to SSDs: Database files are large and frequently updated by freshclam. Reloading them concurrently causes heavy concurrent disk I/O. While it works on HDDs, it performs significantly better on fast storage (SSDs or NVMe drives) without causing I/O bottlenecks.
@@ -879,14 +1118,16 @@ set_config_value "$SCAN_CONF" ExitOnOOM yes
 # add_config_value "$SCAN_CONF" ExcludePath /path/to/another/file
 # add_config_value "$SCAN_CONF" ExcludePath /path/to/cache
 
-# ExcludePath takes regexes, and it is honored even for fd-passed scans. Avoid backslashes, because awk -v mangles them and your dedupe would break:
-# Excluding /var/lib/clamav/ matters because signature files can match each other.
+# ExcludePath takes regexes, and it is honored even for fd-passed scans. Avoid backslashes, because awk -v mangles them and your dedupe would break. it is honored by clamdscan, not by clamonacc.
+# Excluding /var/lib/clamav/ matters because signature files can match each other. 
 for p in '^/proc/' '^/sys/' '^/dev/' '^/run/' '^/var/quarantine/' '^/var/lib/clamav/' \
          '^/var/log/clamav/' '^/var/lib/docker/' '^/var/lib/containers/' \
          '^/home/[^/]+/[.]local/share/containers/'; do
     add_config_value "$SCAN_CONF" ExcludePath "$p"
 done
 
+add_config_value "$SCAN_CONF" ExcludePath '^/etc/hosts$'
+add_config_value "$SCAN_CONF" ExcludePath "^$SCRIPT_DATA/hostsplay/"
 
 # Content Scanning Options
 # sudo sed -i 's|^#ScanPE.*|ScanPE yes|' "$SCAN_CONF"
@@ -1078,23 +1319,44 @@ add_config_value "$SCAN_CONF" OnAccessExcludeUname $CLAM_USER
 sudo sed -i '/^OnAccessIncludePath/d' "$SCAN_CONF"
 
 # Watch where payloads LAND, not profile or cache dirs.
+# Initialize base directories common to all client setups
+# NEVER use OnAccessExcludePath on a directory that has subfolders: clamonacc logs
+# "ERROR: ClamInotif: can't exclude ..." and silently stops blocking the WHOLE watch.
 ONACC_DIRS=(
     "$HOME_DIR/Downloads"
     "$NBDIR/Downloads"
-    "$NBDIR/Torrents/Completed"
     "$NBDIR/nb_script_downloads"
-    "$NBDIR/Syncthing/"   # Syncthing folders that receive files from other devices
-    "$HOME_DIR/.kodi/"   # Because it uses random repos
+    "$NBDIR/Syncthing"   # Syncthing folders that receive files from other devices
 )
 
-# Basically, the following skips the onaccess path inclusions for servers
-if [ "$ROLE" = desktop ]; then
-    for d in "${ONACC_DIRS[@]}"; do
-        if [ -d "$d" ]; then add_config_value "$SCAN_CONF" OnAccessIncludePath "$d"; fi
-    done
+# Conditionally append completed Torrents path if a torrent client is present
+if [ "${HAS_TORRENT_CLIENT:-false}" = true ]; then
+    ONACC_DIRS+=("$NBDIR/Torrents/Completed")
 fi
 
+# Conditionally append Kodi path if Kodi is installed
+# Because it uses random repos
+if [ "${HAS_KODI:-false}" = true ]; then
+    ONACC_DIRS+=("$HOME_DIR/.kodi") # Because it uses random repos
+fi
 
+# Basically, the following skips the onaccess path inclusions for servers
+# Apply inclusions (skipping servers / non-desktop PCs)
+# if [ "$PC_TYPE" = desktop ]; then
+# if [ "${PC_TYPE:-desktop}" = "desktop" ]; then
+#     for d in "${ONACC_DIRS[@]}"; do
+#         if [ -d "$d" ]; then
+#             add_config_value "$SCAN_CONF" OnAccessIncludePath "$d"
+#         fi
+#     done
+# fi
+
+# Actually the dirs like downloads should be scanned even on server
+for d in "${ONACC_DIRS[@]}"; do
+    if [ -d "$d" ]; then
+        add_config_value "$SCAN_CONF" OnAccessIncludePath "$d"
+    fi
+done
 
 
 #########################################################
@@ -1543,6 +1805,15 @@ ExecStart=/usr/local/bin/clamav-usb-scan.sh /dev/%I
 Nice=19
 IOSchedulingClass=idle
 TimeoutStartSec=infinity
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=read-only
+# PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
 EOF
 
 # Manual scan: identify a mounted USB filesystem's device with lsblk, then scan it.
@@ -1568,13 +1839,24 @@ sudo udevadm control --reload-rules
 # # Allow clamonacc to scan user home directories
 # sudo setsebool -P antivirus_scan_home_dirs 1
 
-
-for b in antivirus_can_scan_system antivirus_use_jit; do
-    if getsebool "$b" >/dev/null 2>&1; then sudo setsebool -P "$b" 1
-    else echo "SELinux boolean $b not present, skipping"; fi
+# antivirus_scan_home_dirs might be absent. We are checking 
+for b in antivirus_can_scan_system antivirus_use_jit antivirus_scan_home_dirs; do
+    if getsebool "$b" >/dev/null 2>&1; then 
+        sudo setsebool -P "$b" 1
+        echo "SELinux boolean $b set to active."
+    else 
+        echo "SELinux boolean $b not present, skipping"
+    fi
 done
 
-
+# # This boolean broadens the antivirus domain's access to system paths.
+# # Keep it enabled only because this configuration intentionally scans system paths.
+# if getsebool antivirus_can_scan_system >/dev/null 2>&1; then
+#     sudo setsebool -P antivirus_can_scan_system 1
+# else
+#     echo "SELinux boolean antivirus_can_scan_system not present, skipping"
+# fi
+# # Do not enable antivirus_use_jit unless a specific ClamAV feature requires it.
 
 #########################################################
 # Create a systemd service for ClamOnAcc
@@ -1689,6 +1971,12 @@ ExecStart=/usr/sbin/clamonacc \
 
 Restart=on-failure
 RestartSec=5
+NoNewPrivileges=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
 
 [Install]
 WantedBy=multi-user.target
@@ -1880,17 +2168,26 @@ for d in /home /root /etc /opt /srv /usr/local /var/tmp /tmp; do
     if [ -d "$d" ]; then ROOTS+=("$d"); fi
 done
 
-nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes --log="$LOGFILE" \
+# nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes --log="$LOGFILE" \
+#     --exclude-dir='^/var/quarantine(/|$)' \
+#     --exclude-dir='^/var/lib/(docker|containers)(/|$)' \
+#     --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
+#     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
+#     "${ROOTS[@]}"
+
+# clamdscan --multiscan --fdpass reuses the already-loaded databases and can use multiple threads. The above (clamscan) reloads everything every time and is single-threaded by nature of clamscan.
+
+# nice -n 19 ionice -c 3 clamdscan --multiscan --fdpass \
+nice -n 19 ionice -c 3 clamdscan --wait --ping 90:2 --multiscan --fdpass \
+    --infected --log="$LOGFILE" \
     --exclude-dir='^/var/quarantine(/|$)' \
     --exclude-dir='^/var/lib/(docker|containers)(/|$)' \
     --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
+    --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
     "${ROOTS[@]}"
+
 SCAN_STATUS=$?
-
-
-
-
 
 
 # Find the first active graphical desktop user (UID >= 1000)
@@ -1906,25 +2203,79 @@ SCAN_STATUS=$?
 #         break
 #     done)
 
-ACTIVE_USER=$(
-    loginctl list-sessions --no-legend |
-        awk '{print $3}' |
-        while read -r user; do
-            [[ -n "$user" ]] || continue
+# ACTIVE_USER=$(
+#     loginctl list-sessions --no-legend |
+#         awk '{print $3}' |
+#         while read -r user; do
+#             [[ -n "$user" ]] || continue
 
-            user_uid=$(id -u "$user" 2>/dev/null) || continue
+#             user_uid=$(id -u "$user" 2>/dev/null) || continue
 
-            if (( user_uid >= 1000 && user_uid < 65534 )); then
-                printf '%s\n' "$user"
-                break
-            fi
-        done
-)
+#             if (( user_uid >= 1000 && user_uid < 65534 )); then
+#                 printf '%s\n' "$user"
+#                 break
+#             fi
+#         done
+# )
 
-# Fallback if no active session is found
-if [ -z "$ACTIVE_USER" ]; then
-    ACTIVE_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1}' /etc/passwd | head -n 1)
-fi
+# # Fallback if no active session is found
+# if [ -z "$ACTIVE_USER" ]; then
+#     ACTIVE_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1}' /etc/passwd | head -n 1)
+# fi
+
+
+find_active_graphical_user() {
+    local session_id _session_uid _session_user _rest session_info
+    local session_name session_active session_remote session_type session_class
+
+    while read -r session_id _session_uid _session_user _rest; do
+        [[ -n "$session_id" ]] || continue
+        session_info=$(loginctl show-session "$session_id" \
+            -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
+
+        session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
+        session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
+        session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
+        session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
+        session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
+
+        if [[ "$session_active" == yes && "$session_remote" == no &&
+              "$session_class" == user &&
+              ( "$session_type" == wayland || "$session_type" == x11 ) &&
+              -n "$session_name" ]]; then
+            printf '%s\n' "$session_name"
+            return 0
+        fi
+    done < <(loginctl list-sessions --no-legend 2>/dev/null)
+
+    return 1
+}
+
+notify_desktop_user() {
+    local title=$1 message=$2 icon=$3 urgency=$4 active_user user_uid runtime_dir
+
+    active_user=$(find_active_graphical_user) || active_user=""
+    [[ -n "$active_user" ]] || {
+        log "No active local graphical session; notification was not displayed: $title"
+        return 0
+    }
+
+    user_uid=$(id -u -- "$active_user") || return 0
+    runtime_dir="/run/user/$user_uid"
+    [[ -S "$runtime_dir/bus" ]] || {
+        log "No session D-Bus socket for $active_user; notification was not displayed."
+        return 0
+    }
+
+    if ! runuser -u "$active_user" -- /usr/bin/env \
+        XDG_RUNTIME_DIR="$runtime_dir" \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime_dir/bus" \
+        /usr/bin/notify-send -u "$urgency" -i "$icon" -- "$title" "$message"; then
+        log "Failed to send desktop notification to $active_user: $title"
+    fi
+}
+
+
 
 
 # # Check for infections and notify if found
@@ -1942,16 +2293,13 @@ fi
 # fi
 
 
-NOTIFICATION_TITLE=""
-NOTIFICATION_MESSAGE=""
-NOTIFICATION_ICON=""
-
 if grep -qE 'Infected files: [1-9][0-9]*' "$LOGFILE" ||
    [ "$SCAN_STATUS" -eq 1 ]; then
 
     NOTIFICATION_TITLE="⚠ ClamAV Alert"
     NOTIFICATION_MESSAGE="Infection detected during weekly scan. Exit status: $SCAN_STATUS. Check $LOGFILE"
     NOTIFICATION_ICON="dialog-warning"
+    NOTIFICATION_URGENCY="critical"
     logger -t clamav-alert "$NOTIFICATION_MESSAGE"
     # logger -p authpriv.warning -t clamav-alert "Weekly scan: INFECTED files found, see $LOGFILE" ;;
 
@@ -1960,6 +2308,7 @@ elif [ "$SCAN_STATUS" -eq 0 ]; then
     NOTIFICATION_TITLE="ClamAV Scan Complete"
     NOTIFICATION_MESSAGE="No infections found during weekly scan. Check $LOGFILE"
     NOTIFICATION_ICON="dialog-information"
+    NOTIFICATION_URGENCY="normal"
     logger -t clamav-scan "$NOTIFICATION_MESSAGE"
 
 else
@@ -1967,6 +2316,7 @@ else
     NOTIFICATION_TITLE="⚠ ClamAV Scan Error"
     NOTIFICATION_MESSAGE="Weekly scan failed or was incomplete. Exit status: $SCAN_STATUS. Check $LOGFILE"
     NOTIFICATION_ICON="dialog-error"
+    NOTIFICATION_URGENCY="critical"
     logger -t clamav-scan "$NOTIFICATION_MESSAGE"
     # logger -p authpriv.err     -t clamav-alert "Weekly scan finished with errors (SCAN_STATUS=$SCAN_STATUS), see $LOGFILE" ;;
 
@@ -1974,14 +2324,17 @@ fi
 
 
 # Display the result to the active desktop user, if available.
-if [ -n "$ACTIVE_USER" ]; then
-    USER_UID=$(id -u "$ACTIVE_USER")
-    sudo -u "$ACTIVE_USER" \
-        DISPLAY=:0 \
-        DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USER_UID/bus" \
-        notify-send -u normal -i "$NOTIFICATION_ICON" \
-        "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE"
-fi
+# if [ -n "$ACTIVE_USER" ]; then
+#     USER_UID=$(id -u "$ACTIVE_USER")
+#     sudo -u "$ACTIVE_USER" \
+#         DISPLAY=:0 \
+#         DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USER_UID/bus" \
+#         notify-send -u normal -i "$NOTIFICATION_ICON" \
+#         "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE"
+# fi
+
+notify_desktop_user "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE" \
+    "$NOTIFICATION_ICON" "$NOTIFICATION_URGENCY"
 
 echo "Weekly scan finished: $(date --iso-8601=seconds)"
 exit 0
@@ -1994,23 +2347,28 @@ sudo chmod +x /usr/local/bin/clamav-weekly-scan.sh
 sudo tee /etc/systemd/system/clamav-weekly-scan.service > /dev/null <<EOF
 [Unit]
 Description=ClamAV Weekly Full System Scan
+Wants=clamd@scan.service
+After=clamd@scan.service
 
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/clamav-weekly-scan.sh
 # User=root
+# Group=root
 Nice=19
 IOSchedulingClass=idle
 CPUSchedulingPolicy=idle
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
 # ConditionACPower=true   # laptops: skip on battery (nbXPS, nbLenovo)
 EOF
-
-
-
-
-
-
-
 
 
 
@@ -2199,23 +2557,24 @@ sudo chmod 0755 /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-ro
 
 
 
-# Narrow exception: clamscan may run only this fixed, root-owned helper as root.
-# No SETENV is granted, and notify-send itself is no longer sudo-authorized.
-sudo tee /etc/sudoers.d/clamav-notify > /dev/null <<'EOF'
-clamscan ALL=(root) NOPASSWD: NOSETENV: /usr/local/sbin/clamav-notify-root
-EOF
-sudo chown root:root /etc/sudoers.d/clamav-notify
-sudo chmod 0440 /etc/sudoers.d/clamav-notify
+# # Narrow exception: clamscan may run only this fixed, root-owned helper as root.
+# # No SETENV is granted, and notify-send itself is no longer sudo-authorized.
+# sudo tee /etc/sudoers.d/clamav-notify > /dev/null <<'EOF'
+# clamscan ALL=(root) NOPASSWD: NOSETENV: /usr/local/sbin/clamav-notify-root
+# EOF
+# sudo chown root:root /etc/sudoers.d/clamav-notify
+# sudo chmod 0440 /etc/sudoers.d/clamav-notify
 
-if ! sudo visudo -cf /etc/sudoers.d/clamav-notify; then
-    echo "ERROR: Invalid sudoers configuration for ClamAV notifications." >&2
-    exit 1
-fi
-if ! sudo visudo -c; then
-    echo "ERROR: The complete sudoers configuration is invalid." >&2
-    exit 1
-fi
+# if ! sudo visudo -cf /etc/sudoers.d/clamav-notify; then
+#     echo "ERROR: Invalid sudoers configuration for ClamAV notifications." >&2
+#     exit 1
+# fi
+# if ! sudo visudo -c; then
+#     echo "ERROR: The complete sudoers configuration is invalid." >&2
+#     exit 1
+# fi
 
+# The above /etc/sudoers.d/clamav-notify gives the exposed process a path to a root helper. Without an argument spec, any arguments are allowed. The helper then drops to your session and shows attacker-chosen popup text.
 
 #########################################################
 # SELinux: Restore expected contexts before service start
@@ -2282,9 +2641,14 @@ fi
 sudo restorecon -Rv /var/log/clamav
 sudo restorecon -Rv /var/lib/clamav
 
-sudo restorecon -v /usr/local/bin/clamav-usb-scan.sh /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root
-sudo restorecon -v /etc/udev/rules.d/99-clamav-usb.rules /etc/systemd/system/clamav-usb-scan@.service /etc/sudoers.d/clamav-notify
+# sudo restorecon -v /usr/local/bin/clamav-usb-scan.sh /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root
+# sudo restorecon -v /etc/udev/rules.d/99-clamav-usb.rules /etc/systemd/system/clamav-usb-scan@.service /etc/sudoers.d/clamav-notify
 
+for f in /usr/local/bin/clamav-usb-scan.sh /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root \
+         /usr/local/bin/clamav-weekly-scan.sh /usr/local/bin/clamav-alert-popups /etc/sudoers.d/clamav-notify \
+         /etc/udev/rules.d/99-clamav-usb.rules /etc/systemd/system/clamav-usb-scan@.service; do
+    if [ -e "$f" ]; then sudo restorecon -v "$f"; fi
+done
 
 #########################################################
 # Service Activation
@@ -2293,10 +2657,18 @@ sudo restorecon -v /etc/udev/rules.d/99-clamav-usb.rules /etc/systemd/system/cla
 # Validate ClamD Configuration Syntax
 # If a typo slips into your sed rules or configuration appends, clamd@scan.service will fail to start silently or throw obscure systemd errors. Adding a config syntax test before starting services saves troubleshooting time.
 echo "[+] Validating clamd configuration syntax..."
-if ! clamd --config-file="$SCAN_CONF" --test; then
-    echo "Error: ClamD configuration test failed. Please check syntax."
-    exit 1
+# if ! clamd --config-file="$SCAN_CONF" --test; then
+#     echo "Error: ClamD configuration test failed. Please check syntax."
+#     exit 1
+# fi
+
+CFGCHK=$(mktemp -d)
+sudo cat "$SCAN_CONF"  > "$CFGCHK/clamd.conf"
+sudo cat "$FRESH_CONF" > "$CFGCHK/freshclam.conf"
+if clamconf -c "$CFGCHK" 2>&1 | grep -E '^ERROR'; then
+    echo "Config error above. Originals: $CLAMAV_BACKUP_DIR" >&2; rm -rf "$CFGCHK"; exit 1
 fi
+rm -rf "$CFGCHK"
 
 
 # Fedora uses clamd@scan as the default instance.
@@ -2304,10 +2676,27 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now clamav-freshclam.service
 sudo systemctl enable --now clamav-unofficial-sigs.timer
 sudo systemctl enable --now clamd@scan.service
+
+# if [ "$PC_TYPE" = desktop ]; then
+#     sudo systemctl enable --now clamav-clamonacc.service
+# elif systemctl is-enabled --quiet clamav-clamonacc.service 2>/dev/null; then
+#     sudo systemctl disable --now clamav-clamonacc.service
+# fi
+
 sudo systemctl enable --now clamav-clamonacc.service
+
 # sudo systemctl enable --now fangfrisch.timer
 
+echo "Configuration validated successfully."
 
+
+
+
+# sudo systemctl daemon-reload
+# sudo systemctl restart clamav-freshclam.service
+# sudo systemctl restart clamav-unofficial-sigs.timer
+# sudo systemctl restart clamd@scan.service
+# sudo systemctl restart clamav-clamonacc.service
 
 #########################################################
 # Configure Logrotate for ClamAV
@@ -2335,26 +2724,26 @@ sudo systemctl enable --now clamav-clamonacc.service
 
 ############################
 
-# The following rotates the custom USB and weekly scan logs, retaining up to eight rotated weekly files. It intentionally does not rotate the ClamAV daemon logs, because those already have their own LogRotate configuration in the script. The --debug check validates the configuration without performing rotation.
+# # The following rotates the custom USB and weekly scan logs, retaining up to eight rotated weekly files. It intentionally does not rotate the ClamAV daemon logs, because those already have their own LogRotate configuration in the script. The --debug check validates the configuration without performing rotation.
 
-sudo tee /etc/logrotate.d/clamav-custom-scans > /dev/null <<'EOF'
-/var/log/clamav/usb_scan_*.log
-/var/log/clamav/weekly_scan_*.log {
-    weekly
-    rotate 8
-    compress
-    delaycompress
-    missingok
-    notifempty
-    dateext
-    su root root
-}
-EOF
+# sudo tee /etc/logrotate.d/clamav-custom-scans > /dev/null <<'EOF'
+# /var/log/clamav/usb_scan_*.log
+# /var/log/clamav/weekly_scan*.log {
+#     weekly
+#     rotate 8
+#     compress
+#     delaycompress
+#     missingok
+#     notifempty
+#     dateext
+#     su root root
+# }
+# EOF
 
-sudo chmod 644 /etc/logrotate.d/clamav-custom-scans
+# sudo chmod 644 /etc/logrotate.d/clamav-custom-scans
 
-# Validate the configuration before finishing setup.
-sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
+# # Validate the configuration before finishing setup.
+# sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
 
 #########################################################
 # Verification
@@ -2391,6 +2780,10 @@ sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
 #     exit 1
 # fi
 
+echo "Waiting for clamd to load signatures (can take minutes on the HDD machines)..."
+if ! sudo clamdscan --config-file="$SCAN_CONF" --ping 60:3; then
+    sudo journalctl -u clamd@scan -n 50 --no-pager; exit 1
+fi
 
 echo "Checking ClamAV services..."
 
@@ -2412,6 +2805,55 @@ do
     fi
 done
 
+# split into A and B so the script file itself never contains the contiguous test string
+EICAR_A='X5O!P%@AP[4\PZX54(P^)7CC)7}$'
+EICAR_B='EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
+EICAR="${EICAR_A}${EICAR_B}"
+T=$(mktemp /tmp/eicar.XXXXXX); printf '%s' "$EICAR" > "$T"
+rc=0; sudo clamdscan --config-file="$SCAN_CONF" --fdpass "$T" >/dev/null 2>&1 || rc=$?
+# if [ "$rc" -eq 1 ]; then echo "OK: clamd detects EICAR"; else echo "FAIL: EICAR rc=$rc"; fi
+# if [ "$rc" -eq 1 ]; then echo "OK: clamd detects EICAR"; else echo "FAIL: EICAR rc=$rc"; FAILED=1; fi
+if [ "$rc" -eq 1 ]; then 
+    echo "OK: clamd detects EICAR"; 
+else 
+    echo "FAIL: EICAR rc=$rc"; 
+    FAILED=1; 
+fi
+rm -f "$T"
+
+
+SELFTEST_DIR=""
+for d in "${ONACC_DIRS[@]}"; do
+    if [ -d "$d" ]; then SELFTEST_DIR="$d"; break; fi
+done
+if [ "$PC_TYPE" = desktop ] && [ -n "$SELFTEST_DIR" ]; then
+    T="$SELFTEST_DIR/clamav_selftest_$$.txt"
+    printf '%s' "$EICAR" > "$T"
+    OK=no
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        sleep 1
+        if [ "$ONACC_PREVENT" = yes ]; then
+            if ! cat "$T" >/dev/null 2>&1; then 
+                OK=yes; 
+                break; 
+            fi   # blocked
+        else
+            if [ ! -e "$T" ]; then 
+                OK=yes; 
+                break; 
+            fi                # quarantined
+        fi
+    done
+    if [ "$OK" = yes ]; then 
+        echo "OK: on-access reacted to EICAR in $SELFTEST_DIR"
+    else 
+        echo "FAIL: on-access did NOT react to EICAR in $SELFTEST_DIR"; 
+        FAILED=1; 
+    fi
+    rm -f "$T"; sudo find "$QUARANTINE_DIR" -name 'clamav_selftest_*' -delete
+fi
+
+
 if [ "$FAILED" -ne 0 ]; then
     echo "ClamAV setup completed with errors." >&2
     exit 1
@@ -2419,16 +2861,20 @@ fi
 
 echo "Validating generated systemd units and logrotate configuration..."
 sudo systemd-analyze verify \
+    /etc/systemd/system/clamav-usb-scan@.service \
     /etc/systemd/system/clamav-clamonacc.service \
     /etc/systemd/system/clamav-weekly-scan.service \
     /etc/systemd/system/clamav-weekly-scan.timer
-sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
+# sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
 
 echo "ClamAV services and timers are active."
 clamdscan --version
 
 # Check the custom scan-log rotation configuration without changing any logs:
-sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
+# sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
+
+# clean machines already configured with removed logrotate:
+# sudo rm -f /etc/logrotate.d/clamav-custom-scans
 
 #########################################################
 # Scanning syntax:
@@ -2641,6 +3087,9 @@ sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
 # If configured correctly, ClamOnAcc will block access with an "Operation not permitted" error.
 
 # # Test with EICAR test file (safe test virus):
-# echo 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' | sudo tee /tmp/eicar.txt
+# EICAR_A='X5O!P%@AP[4\PZX54(P^)7CC)7}$'
+# EICAR_B='EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
+# EICAR="${EICAR_A}${EICAR_B}"
+# echo $EICAR | sudo tee /tmp/eicar.txt
 # sudo clamscan /tmp/eicar.txt
 # Should detect it as "Win.Test.EICAR_HDB-1"
