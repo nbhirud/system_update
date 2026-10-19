@@ -3296,6 +3296,21 @@ if [ "$FAILED" -ne 0 ]; then
     exit 1
 fi
 
+
+# Firewall Rule Check - The LocalSocketMode 600 ensures no network exposure, but verify:
+echo "[+] Checking for unintended network exposure..."
+if grep -Eq '^[[:space:]]*TCPSocket' "$SCAN_CONF"; then
+    echo "ERROR: TCPSocket is enabled! ClamAV should use Unix socket only." >&2
+    exit 1
+fi
+if sudo ss -tlnp 2>/dev/null | grep -q ':3310'; then
+    echo "ERROR: Something listening on port 3310." >&2
+    exit 1
+fi
+echo "[+] No network exposure detected."
+
+
+
 echo "Validating generated systemd units and logrotate configuration..."
 sudo systemd-analyze verify \
     /etc/systemd/system/clamav-usb-scan@.service \
