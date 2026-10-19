@@ -205,6 +205,15 @@ if [ -z "$PC_TYPE" ]; then
 
 fi
 
+case "$PC_TYPE" in
+    desktop|server)
+        ;;
+    *)
+        echo "ERROR: PC_TYPE must be desktop, laptop, or server." >&2
+        exit 2
+        ;;
+esac
+
 # 2. REAL_USER (defaults to SUDO_USER or current user)
 REAL_USER="${REAL_USER:-${SUDO_USER:-$USER}}"
 
@@ -225,15 +234,42 @@ if [ -z "$HAS_TORRENT_CLIENT" ]; then
     [ "$PC_TYPE" = "desktop" ] && HAS_TORRENT_CLIENT=true || HAS_TORRENT_CLIENT=false
 fi
 
+case "$HAS_TORRENT_CLIENT" in
+    true|false) ;;
+    *)
+        echo "ERROR: --torrent-client must be true or false." >&2
+        exit 2
+        ;;
+esac
+
 # 6. HAS_KODI (default based on PC_TYPE if not provided)
 if [ -z "$HAS_KODI" ]; then
     [ "$PC_TYPE" = "desktop" ] && HAS_KODI=true || HAS_KODI=false
 fi
 
+case "$HAS_KODI" in
+    true|false) ;;
+    *)
+        echo "ERROR: --kodi must be true or false." >&2
+        exit 2
+        ;;
+esac
+
 if [[ ! "$FILENAME_TIMESTAMP" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]]; then
     echo "ERROR: --timestamp must use YYYY-MM-DD_HH-MM-SS" >&2
     exit 2
 fi
+
+if ! getent passwd "$REAL_USER" >/dev/null; then
+    echo "ERROR: User does not exist: $REAL_USER" >&2
+    exit 2
+fi
+
+if [[ -z "$HOME_DIR" || ! -d "$HOME_DIR" || "$HOME_DIR" == "/" ]]; then
+    echo "ERROR: Invalid home directory for $REAL_USER: $HOME_DIR" >&2
+    exit 2
+fi
+
 
 #########################################################
 # Paths and Constants:
@@ -274,7 +310,7 @@ UNOFFICIAL_SIGS_OS_CONF="/etc/clamav-unofficial-sigs/os.conf"
 
 # CLAM_USER="clamav"
 CLAM_USER="clamscan"
-# UPDATE_USER="clamupdate"
+UPDATE_USER="clamupdate" 
 
 
 #########################################################
@@ -303,7 +339,7 @@ CPU_CORES=$(nproc)
 
 # RAM_GB=$(( $(grep MemTotal /proc/meminfo | awk '{print $2}') / 1024 / 1024 ))
 RAM_MB=$(awk '/^MemTotal:/ {print int($2/1024)}' /proc/meminfo)
-RAM_GB=$(( RAM_MB / 1024 ))
+# RAM_GB=$(( RAM_MB / 1024 ))
 
 
 
@@ -332,7 +368,7 @@ ROOT_DEV=$(df / | tail -1 | awk '{print $1}')
 BACKING_DEV=$(lsblk -no pkname "$ROOT_DEV" 2>/dev/null || basename "$ROOT_DEV" | sed 's/[0-9]*$//')
 
 if [ -n "$BACKING_DEV" ] && [ -f "/sys/block/$BACKING_DEV/queue/rotational" ]; then
-    if [ "$(cat /sys/block/$BACKING_DEV/queue/rotational)" -eq 0 ]; then
+    if [ "$(cat /sys/block/"$BACKING_DEV"/queue/rotational)" -eq 0 ]; then
         SSD_PRESENT=true
     fi
 elif lsblk -d -o rota | grep -q "^0$"; then
@@ -341,7 +377,7 @@ fi
 
 
 
-if   [ "$RAM_MB" -lt 8000 ];  then RAM_PROFILE=low
+if   [ "$RAM_MB" -lt 10000 ];  then RAM_PROFILE=low
 elif [ "$RAM_MB" -lt 20000 ]; then RAM_PROFILE=mid
 else                               RAM_PROFILE=high
 fi
@@ -395,11 +431,32 @@ fi
 chmod 700 -- "$CLAMAV_BACKUP_DIR"
 
 
-for config_file in "$SCAN_CONF" "$FRESH_CONF" "$UNOFFICIAL_SIGS_MASTER_CONF" "$UNOFFICIAL_SIGS_OS_CONF"; do
+for config_file in "$SCAN_CONF" "$FRESH_CONF" "$UNOFFICIAL_SIGS_MASTER_CONF" "$UNOFFICIAL_SIGS_OS_CONF"; 
+do
 
-    if [ -f "$config_file" ]; then
-        sudo cp -a "$config_file" "$CLAMAV_BACKUP_DIR/"
+    # if [ -f "$config_file" ]; then
+    #     sudo cp -a "$config_file" "$CLAMAV_BACKUP_DIR/"
+    # fi
+
+    # The above does check whether the backup directory itself is a symlink, but that does not prevent an individual file inside the directory from being a symlink.
+    # GNU cp can follow an existing destination symlink when the symlink points to an existing regular file. Since this copy runs as root, an attacker who can prepare a symlink inside the backup directory may be able to make the root process overwrite a different file.
+    # This is an unsafe privileged-write pattern even though the script is intended for a single-user PC and the invoking user already has sudo access.
+    # sudo cat reads the source as root, but the shell redirection that creates the backup runs as your normal user. A symlink cannot make that redirection write a protected root-owned destination with root privileges.
+    # This change also ensures that the backup files are private to your account.
+
+    # Create private backups as the invoking user.
+    # Root is used only to READ the protected source configuration files.
+    if [[ -f "$config_file" ]]; then
+        backup_file="$CLAMAV_BACKUP_DIR/$(basename -- "$config_file")"
+
+        if ! sudo cat -- "$config_file" > "$backup_file"; then
+            echo "ERROR: Failed to back up $config_file" >&2
+            exit 1
+        fi
+
+        chmod 600 -- "$backup_file"
     fi
+
 done
 
 echo "Configuration backups saved in: $CLAMAV_BACKUP_DIR"
@@ -464,7 +521,11 @@ sudo chmod 640 "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
 
 
 # DB dir: ownership kept as you have it; dirs need +x, files don't (your TODO at L169)
-sudo chown -R "$CLAM_USER:$CLAM_USER" "$SIG_DB_DIR"
+# sudo chown -R "$CLAM_USER:$CLAM_USER" "$SIG_DB_DIR"
+
+# owner = updater (rw), group = clamd (read-only)
+sudo chown -R "$UPDATE_USER:$CLAM_USER" "$SIG_DB_DIR"
+
 sudo find "$SIG_DB_DIR" -type d -exec chmod 750 {} +
 sudo find "$SIG_DB_DIR" -type f -exec chmod 640 {} +
 
@@ -503,6 +564,24 @@ sudo semanage fcontext -a -t antivirus_db_t "$QUARANTINE_DIR(/.*)?" 2>/dev/null 
   || sudo semanage fcontext -m -t antivirus_db_t "$QUARANTINE_DIR(/.*)?"
 sudo restorecon -R "$QUARANTINE_DIR"
 
+# We have set root:root 700 for the quarantine directory. The clamonacc service runs as root (we have User=root in the service file), so this should work. However, if we ever change clamonacc to run as clamscan user, quarantine will fail.
+# Verify quarantine directory accessibility
+# if systemctl is-active --quiet clamav-clamonacc.service 2>/dev/null; then
+#     QUIZ_USER=$(systemctl show clamav-clamonacc.service -p User --value)
+#     QUIZ_GROUP=$(systemctl show clamav-clamonacc.service -p Group --value)
+    
+#     QUIZ_OWNERSHIP=$(stat -c '%U:%G' "$QUARANTINE_DIR")
+    
+#     if [ "$QUIZ_USER" = "root" ]; then
+#         echo "INFO: clamonacc runs as root; quarantine ownership OK"
+#     else
+#         echo "WARN: clamonacc runs as $QUIZ_USER:$QUIZ_GROUP"
+#         if [ "$QUIZ_OWNERSHIP" != "$QUIZ_USER:$QUIZ_GROUP" ]; then
+#             echo "ERROR: Quarantine ownership mismatch. clamonacc will fail to quarantine."
+#             sudo chown "$QUIZ_USER:$QUIZ_GROUP" "$QUARANTINE_DIR"
+#         fi
+#     fi
+# fi
 
 #########################################################
 # Fangfrisch - Skip this. We are using clamav-unofficial-sigs instead
@@ -947,8 +1026,13 @@ set_config_value "$FRESH_CONF" LogFileMaxSize 20M
 set_config_value "$FRESH_CONF" LogRotate yes
 set_config_value "$FRESH_CONF" LogSyslog yes # sends logs to journald, which has its own retention.
 set_config_value "$FRESH_CONF" UpdateLogFile "$FRESH_LOG"
-set_config_value "$FRESH_CONF" DatabaseOwner "$CLAM_USER"
-set_config_value "$FRESH_CONF" NotifyClamd "$SCAN_CONF"
+
+# This is Fedora's default layout: freshclam owns the DB, clamd can only read it. clamd's own SelfCheck (default every 600 s) reloads changed databases.
+set_config_value "$FRESH_CONF" DatabaseOwner "$UPDATE_USER"
+
+# clamupdate cannot (and should not) talk to the root-only socket
+# set_config_value "$FRESH_CONF" NotifyClamd "$SCAN_CONF"
+
 set_config_value "$FRESH_CONF" Checks 12
 # set_config_value "$FRESH_CONF" SafeBrowsing yes
 set_config_value "$FRESH_CONF" Bytecode yes
@@ -964,9 +1048,10 @@ set_config_value "$FRESH_CONF" DNSDatabaseInfo yes
 
 # Use set_config_value instead of directly setting using sed
 set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" user_configuration_complete yes
-set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user "$CLAM_USER"
+# set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user "$CLAM_USER"
+set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user  "$UPDATE_USER"
 set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_group "$CLAM_USER"
-
+# set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" urlhaus_enabled no   # domain list: matches blocklist hosts files by design
 
 # Enable only trusted free sources
 # sudo sed -i 's|^#enable_.*sanesecurity.*|enable_sanesecurity="yes"|' $UNOFFICIAL_SIGS_MASTER_CONF
@@ -981,13 +1066,16 @@ set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_group "$CLAM_USER"
 # sudo sed -i "s|^reload_dbs=.*|reload_dbs=\"yes\"|" "$UNOFFICIAL_SIGS_OS_CONF"
 
 
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user "$CLAM_USER"
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_group "$CLAM_USER"
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_dbs "$SIG_DB_DIR"
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_pid "$CLAMD_PID"
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_socket "$CLAMD_SOCK"
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_reload_opt "clamdscan --config-file=$SCAN_CONF --reload"
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" reload_dbs yes
+
+# set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user "$CLAM_USER"
+set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user  "$UPDATE_USER"
+set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_group "$CLAM_USER"
+
 
 
 # Daemon (clamd) Config:
@@ -1098,9 +1186,16 @@ set_config_value "$SCAN_CONF" ConcurrentDatabaseReload "$CONC_RELOAD"
 set_config_value "$SCAN_CONF" ExtendedDetectionInfo yes  # logs size + hash with each detection
 
 # ExitOnOOM makes clamd exit cleanly on an out-of-memory condition and lets systemd restart it. The cost is a full signature reload.
-set_config_value "$SCAN_CONF" ExitOnOOM yes             
+# set_config_value "$SCAN_CONF" ExitOnOOM yes
 
-
+# ExitOnOOM yes means if the system experiences memory pressure, ClamAV exits and systemd restarts it. During heavy scans on low-RAM machines, this could create a restart loop and deny service.
+if [ "$RAM_PROFILE" = "low" ]; then
+    echo "INFO: Low RAM detected. Leaving ExitOnOOM disabled to avoid restart loops."
+    set_config_value "$SCAN_CONF" ExitOnOOM no
+else
+    echo "INFO: Mid/High RAM profile. ExitOnOOM enabled."
+    set_config_value "$SCAN_CONF" ExitOnOOM yes
+fi
 
 
 # FixStaleSocket yes - explaination - If the system crashes or services are abruptly restarted, a stale clamd.sock can linger in /run/clamd.scan/, causing the daemon to refuse startup on subsequent boots. While you have FixStaleSocket yes commented out or handled via runtime directory recreation, enforcing it explicitly in the config ensures bulletproof recovery.
@@ -1367,7 +1462,12 @@ done
 
 # To differentiate a small USB thumb drive from a massive external HDD, the helper script checks mounted filesystem capacity. The default threshold is 256 GiB; larger external HDDs are skipped.
 
-echo "Configuring smart USB drive scanner"
+
+################################
+################################
+
+
+# echo "Configuring smart USB drive scanner"
 
 # sudo tee /usr/local/bin/clamav-usb-scan.sh > /dev/null <<'EOF'
 # #!/bin/bash
@@ -1544,6 +1644,254 @@ echo "Configuring smart USB drive scanner"
 # EOF
 
 
+################################
+################################
+
+
+# sudo tee /usr/local/bin/clamav-usb-scan.sh > /dev/null <<'EOF'
+# #!/usr/bin/bash
+# set -u -o pipefail
+
+# LOG_DIR="/var/log/clamav"
+# SIZE_THRESHOLD_GIB=256
+# WAIT_INTERVAL_SECONDS=2
+
+# log() {
+#     logger -t clamav-usb-scan -- "$*"
+#     printf '%s\n' "$*"
+# }
+
+# find_active_graphical_user() {
+#     local session_id _session_uid _session_user _rest session_info
+#     local session_name session_active session_remote session_type session_class
+
+#     while read -r session_id _session_uid _session_user _rest; do
+#         [[ -n "$session_id" ]] || continue
+#         session_info=$(loginctl show-session "$session_id" \
+#             -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
+
+#         session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
+#         session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
+#         session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
+#         session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
+#         session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
+
+#         if [[ "$session_active" == yes && "$session_remote" == no &&
+#               "$session_class" == user &&
+#               ( "$session_type" == wayland || "$session_type" == x11 ) &&
+#               -n "$session_name" ]]; then
+#             printf '%s\n' "$session_name"
+#             return 0
+#         fi
+#     done < <(loginctl list-sessions --no-legend 2>/dev/null)
+
+#     return 1
+# }
+
+# notify_desktop_user() {
+#     local title=$1 message=$2 icon=$3 urgency=$4 active_user user_uid runtime_dir
+
+#     active_user=$(find_active_graphical_user) || active_user=""
+#     [[ -n "$active_user" ]] || {
+#         log "No active local graphical session; notification was not displayed: $title"
+#         return 0
+#     }
+
+#     user_uid=$(id -u -- "$active_user") || return 0
+#     runtime_dir="/run/user/$user_uid"
+#     [[ -S "$runtime_dir/bus" ]] || {
+#         log "No session D-Bus socket for $active_user; notification was not displayed."
+#         return 0
+#     }
+
+#     if ! runuser -u "$active_user" -- /usr/bin/env \
+#         XDG_RUNTIME_DIR="$runtime_dir" \
+#         DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime_dir/bus" \
+#         /usr/bin/notify-send -u "$urgency" -i "$icon" -- "$title" "$message"; then
+#         log "Failed to send desktop notification to $active_user: $title"
+#     fi
+# }
+
+# find_mountpoint_for_device() {
+#     local wanted_device_id line mount_id parent_id device_id mount_root mount_target mount_options rest
+
+#     wanted_device_id=$(lsblk -dnro MAJ:MIN -- "$DEVICE_NODE" 2>/dev/null) || return 1
+#     [[ -n "$wanted_device_id" ]] || return 1
+
+#     # Prefer findmnt source matching; this also handles filesystems mounted via
+#     # FUSE, where mountinfo's major:minor may be the FUSE device, not the USB.
+#     mount_target=$(findmnt --raw --noheadings --source "$DEVICE_NODE" \
+#         --output TARGET 2>/dev/null | head -n 1) || mount_target=""
+#     if [[ -n "$mount_target" ]]; then
+#         mount_target=${mount_target//\\x20/$' '}
+#         mount_target=${mount_target//\\x09/$'\t'}
+#         mount_target=${mount_target//\\x0a/$'\n'}
+#         mount_target=${mount_target//\\x5c/$'\\'}
+#         printf '%s\n' "$mount_target"
+#         return 0
+#     fi
+
+#     # Fallback: /proc/self/mountinfo escapes spaces, tabs, newlines, and
+#     # backslashes. Match by major:minor rather than guessing /run/media paths.
+#     while IFS= read -r line; do
+#         read -r mount_id parent_id device_id mount_root mount_target mount_options rest <<< "$line"
+#         [[ "$device_id" == "$wanted_device_id" ]] || continue
+
+#         mount_target=${mount_target//\\040/$' '}
+#         mount_target=${mount_target//\\011/$'\t'}
+#         mount_target=${mount_target//\\012/$'\n'}
+#         mount_target=${mount_target//\\134/$'\\'}
+#         printf '%s\n' "$mount_target"
+#         return 0
+#     done < /proc/self/mountinfo
+
+#     return 1
+# }
+
+# if [[ $# -ne 1 ]]; then
+#     log "Usage: $0 /dev/<USB-partition-or-unpartitioned-device>"
+#     exit 2
+# fi
+
+# DEVICE_NODE=$1
+# # For automatic scanning, %I in the systemd unit is a kernel block-device name.
+# # Reject paths outside /dev and malformed device names before querying block tools.
+# if [[ ! "$DEVICE_NODE" =~ ^/dev/[[:alnum:]_-]+$ ]]; then
+#     log "Refusing invalid block-device path: $DEVICE_NODE"
+#     exit 2
+# fi
+
+# if [[ ! -b "$DEVICE_NODE" ]]; then
+#     log "Block device is not present: $DEVICE_NODE"
+#     exit 1
+# fi
+
+# DEVICE_NAME=${DEVICE_NODE##*/}
+# if [[ ! -e "/sys/class/block/$DEVICE_NAME" ]]; then
+#     log "No matching sysfs block device: $DEVICE_NODE"
+#     exit 1
+# fi
+
+# log "Waiting for $DEVICE_NODE to be mounted; this wait ends when the volume is mounted or disconnected."
+# DEVICE_MOUNT=""
+# while [[ -b "$DEVICE_NODE" ]]; do
+#     DEVICE_MOUNT=$(find_mountpoint_for_device) || DEVICE_MOUNT=""
+#     if [[ -n "$DEVICE_MOUNT" ]]; then
+#         break
+#     fi
+#     sleep "$WAIT_INTERVAL_SECONDS"
+# done
+
+# if [[ ! -b "$DEVICE_NODE" ]]; then
+#     log "Device was removed before it could be scanned: $DEVICE_NODE"
+#     exit 1
+# fi
+
+# if [[ -z "$DEVICE_MOUNT" ]]; then
+#     log "No mount detected for $DEVICE_NODE; not scanning an unmounted device."
+#     exit 1
+# fi
+
+# DEVICE_MOUNT=$(realpath -e -- "$DEVICE_MOUNT") || {
+#     log "Could not resolve mount path for $DEVICE_NODE."
+#     exit 1
+# }
+
+# mountpoint -q -- "$DEVICE_MOUNT" || {
+#     log "Resolved path is not a mount point: $DEVICE_MOUNT"
+#     exit 1
+# }
+
+# # Skip large external HDDs / backup drives. This threshold is in GiB.
+# DEV_SIZE_KIB=$(df -Pk -- "$DEVICE_MOUNT" 2>/dev/null | awk 'NR == 2 { print $2 }')
+# if [[ ! "$DEV_SIZE_KIB" =~ ^[0-9]+$ ]]; then
+#     log "Could not determine filesystem size for $DEVICE_MOUNT."
+#     exit 1
+# fi
+
+# if (( DEV_SIZE_KIB > SIZE_THRESHOLD_GIB * 1024 * 1024 )); then
+#     log "Skipping $DEVICE_NODE at $DEVICE_MOUNT: filesystem size exceeds ${SIZE_THRESHOLD_GIB} GiB."
+#     exit 0
+# fi
+
+# LOGFILE="${LOG_DIR}/usb_scan_$(date +%F).log"
+# log "Scanning $DEVICE_NODE mounted at $DEVICE_MOUNT (size <= ${SIZE_THRESHOLD_GIB} GiB). Log: $LOGFILE"
+
+# # --fdpass lets this root-run client open files that the clamscan daemon user
+# # cannot traverse on KDE's user-mounted /run/media paths. LocalSocket is configured.
+# # clamdscan exit statuses: 0 = clean, 1 = infected, 2 = scan/error condition.
+# SCAN_STATUS=0
+# if nice -n 19 ionice -c 3 /usr/bin/clamdscan --fdpass -r "$DEVICE_MOUNT" --infected --log="$LOGFILE"; then
+#     SCAN_STATUS=0
+# else
+#     SCAN_STATUS=$?
+# fi
+
+# if (( SCAN_STATUS == 1 )); then
+#     NOTIFICATION_TITLE="ClamAV USB Alert: Threat detected"
+#     NOTIFICATION_MESSAGE="A threat was detected on $DEVICE_MOUNT. Review the scan log: $LOGFILE"
+#     NOTIFICATION_ICON="dialog-warning"
+#     NOTIFICATION_URGENCY="critical"
+#     log "Threat detected on $DEVICE_MOUNT. Review $LOGFILE"
+# elif (( SCAN_STATUS == 0 )); then
+#     NOTIFICATION_TITLE="ClamAV USB scan complete"
+#     NOTIFICATION_MESSAGE="No threats reported on $DEVICE_MOUNT. Log: $LOGFILE"
+#     NOTIFICATION_ICON="dialog-information"
+#     NOTIFICATION_URGENCY="normal"
+#     log "USB scan completed with no detections: $DEVICE_MOUNT"
+# else
+#     NOTIFICATION_TITLE="ClamAV USB scan error"
+#     NOTIFICATION_MESSAGE="Scan failed or was incomplete for $DEVICE_MOUNT (exit status $SCAN_STATUS). Log: $LOGFILE"
+#     NOTIFICATION_ICON="dialog-error"
+#     NOTIFICATION_URGENCY="critical"
+#     log "USB scan failed with exit status $SCAN_STATUS for $DEVICE_MOUNT. Log: $LOGFILE"
+# fi
+
+# notify_desktop_user "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE" \
+#     "$NOTIFICATION_ICON" "$NOTIFICATION_URGENCY"
+
+# # A detection is a completed scan, not a systemd service malfunction.
+# # Return success for clean/infected completed scans; errors remain visible in systemd.
+# if (( SCAN_STATUS == 2 )); then
+#     exit 2
+# fi
+# exit 0
+# EOF
+
+# # sudo chmod +x /usr/local/bin/clamav-usb-scan.sh
+
+# sudo chown root:root /usr/local/bin/clamav-usb-scan.sh
+# sudo chmod 0755 /usr/local/bin/clamav-usb-scan.sh
+
+
+# # # Udev rule matching inserted storage partitions
+# # sudo tee /etc/udev/rules.d/99-clamav-usb.rules > /dev/null <<EOF
+
+# # ACTION=="add", SUBSYSTEMS=="usb", KERNEL=="sd[a-z][0-9]", RUN+="/bin/bash -c 'sleep 5 && /usr/local/bin/clamav-usb-scan.sh /run/media/*/%k'"
+
+# # EOF
+
+
+# # sudo udevadm control --reload
+
+
+# # To scan a USB drive manually, first mount it in KDE Dolphin,
+# # then run the following command, replacing USERNAME and VOLUME_LABEL
+# # with the actual directory names shown under /run/media:
+# #
+# # sudo /usr/local/bin/clamav-usb-scan.sh "/run/media/USERNAME/VOLUME_LABEL"
+# #
+# # Reliable automation should use a mount-aware systemd workflow
+# # that passes the actual mounted filesystem path to the scanner.
+
+
+################################
+################################
+
+
+echo "Configuring smart USB drive scanner"
+
+
 sudo tee /usr/local/bin/clamav-usb-scan.sh > /dev/null <<'EOF'
 #!/usr/bin/bash
 set -u -o pipefail
@@ -1555,57 +1903,6 @@ WAIT_INTERVAL_SECONDS=2
 log() {
     logger -t clamav-usb-scan -- "$*"
     printf '%s\n' "$*"
-}
-
-find_active_graphical_user() {
-    local session_id _session_uid _session_user _rest session_info
-    local session_name session_active session_remote session_type session_class
-
-    while read -r session_id _session_uid _session_user _rest; do
-        [[ -n "$session_id" ]] || continue
-        session_info=$(loginctl show-session "$session_id" \
-            -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
-
-        session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
-        session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
-        session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
-        session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
-        session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
-
-        if [[ "$session_active" == yes && "$session_remote" == no &&
-              "$session_class" == user &&
-              ( "$session_type" == wayland || "$session_type" == x11 ) &&
-              -n "$session_name" ]]; then
-            printf '%s\n' "$session_name"
-            return 0
-        fi
-    done < <(loginctl list-sessions --no-legend 2>/dev/null)
-
-    return 1
-}
-
-notify_desktop_user() {
-    local title=$1 message=$2 icon=$3 urgency=$4 active_user user_uid runtime_dir
-
-    active_user=$(find_active_graphical_user) || active_user=""
-    [[ -n "$active_user" ]] || {
-        log "No active local graphical session; notification was not displayed: $title"
-        return 0
-    }
-
-    user_uid=$(id -u -- "$active_user") || return 0
-    runtime_dir="/run/user/$user_uid"
-    [[ -S "$runtime_dir/bus" ]] || {
-        log "No session D-Bus socket for $active_user; notification was not displayed."
-        return 0
-    }
-
-    if ! runuser -u "$active_user" -- /usr/bin/env \
-        XDG_RUNTIME_DIR="$runtime_dir" \
-        DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime_dir/bus" \
-        /usr/bin/notify-send -u "$urgency" -i "$icon" -- "$title" "$message"; then
-        log "Failed to send desktop notification to $active_user: $title"
-    fi
 }
 
 find_mountpoint_for_device() {
@@ -1716,42 +2013,26 @@ log "Scanning $DEVICE_NODE mounted at $DEVICE_MOUNT (size <= ${SIZE_THRESHOLD_GI
 # --fdpass lets this root-run client open files that the clamscan daemon user
 # cannot traverse on KDE's user-mounted /run/media paths. LocalSocket is configured.
 # clamdscan exit statuses: 0 = clean, 1 = infected, 2 = scan/error condition.
+
+# --fdpass: this root client opens each file itself and passes the descriptor to clamd (user
+# clamscan), which could not otherwise traverse KDE's user-owned /run/media mount.
+# clamdscan always recurses, so -r was a no-op; nice/ionice on the client don't throttle clamd either.
+# No --log: output goes to the unit's journal (journalctl -u 'clamav-usb-scan@*').
 SCAN_STATUS=0
-if nice -n 19 ionice -c 3 /usr/bin/clamdscan --fdpass -r "$DEVICE_MOUNT" --infected --log="$LOGFILE"; then
-    SCAN_STATUS=0
-else
-    SCAN_STATUS=$?
-fi
+/usr/bin/clamdscan --fdpass --infected "$DEVICE_MOUNT" || SCAN_STATUS=$?   # capture the exit code safely
 
-if (( SCAN_STATUS == 1 )); then
-    NOTIFICATION_TITLE="ClamAV USB Alert: Threat detected"
-    NOTIFICATION_MESSAGE="A threat was detected on $DEVICE_MOUNT. Review the scan log: $LOGFILE"
-    NOTIFICATION_ICON="dialog-warning"
-    NOTIFICATION_URGENCY="critical"
-    log "Threat detected on $DEVICE_MOUNT. Review $LOGFILE"
-elif (( SCAN_STATUS == 0 )); then
-    NOTIFICATION_TITLE="ClamAV USB scan complete"
-    NOTIFICATION_MESSAGE="No threats reported on $DEVICE_MOUNT. Log: $LOGFILE"
-    NOTIFICATION_ICON="dialog-information"
-    NOTIFICATION_URGENCY="normal"
-    log "USB scan completed with no detections: $DEVICE_MOUNT"
-else
-    NOTIFICATION_TITLE="ClamAV USB scan error"
-    NOTIFICATION_MESSAGE="Scan failed or was incomplete for $DEVICE_MOUNT (exit status $SCAN_STATUS). Log: $LOGFILE"
-    NOTIFICATION_ICON="dialog-error"
-    NOTIFICATION_URGENCY="critical"
-    log "USB scan failed with exit status $SCAN_STATUS for $DEVICE_MOUNT. Log: $LOGFILE"
-fi
+case "$SCAN_STATUS" in
+    0) log "USB scan completed with no detections: $DEVICE_MOUNT" ;;
+    1) logger -p authpriv.warning -t clamav-alert -- "USB scan: threat found on $DEVICE_MOUNT" ;;
+    *) logger -p authpriv.err -t clamav-alert -- "USB scan failed (exit $SCAN_STATUS) on $DEVICE_MOUNT" ;;
+esac
 
-notify_desktop_user "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE" \
-    "$NOTIFICATION_ICON" "$NOTIFICATION_URGENCY"
+# A detection is a COMPLETED scan: exit 0 so systemd doesn't mark the unit failed.
+# Only a scanner error (2) should show up as a failed unit.
+if (( SCAN_STATUS == 2 )); then exit 2; fi
 
-# A detection is a completed scan, not a systemd service malfunction.
-# Return success for clean/infected completed scans; errors remain visible in systemd.
-if (( SCAN_STATUS == 2 )); then
-    exit 2
-fi
 exit 0
+
 EOF
 
 # sudo chmod +x /usr/local/bin/clamav-usb-scan.sh
@@ -1760,25 +2041,7 @@ sudo chown root:root /usr/local/bin/clamav-usb-scan.sh
 sudo chmod 0755 /usr/local/bin/clamav-usb-scan.sh
 
 
-# # Udev rule matching inserted storage partitions
-# sudo tee /etc/udev/rules.d/99-clamav-usb.rules > /dev/null <<EOF
 
-# ACTION=="add", SUBSYSTEMS=="usb", KERNEL=="sd[a-z][0-9]", RUN+="/bin/bash -c 'sleep 5 && /usr/local/bin/clamav-usb-scan.sh /run/media/*/%k'"
-
-# EOF
-
-
-# sudo udevadm control --reload
-
-
-# To scan a USB drive manually, first mount it in KDE Dolphin,
-# then run the following command, replacing USERNAME and VOLUME_LABEL
-# with the actual directory names shown under /run/media:
-#
-# sudo /usr/local/bin/clamav-usb-scan.sh "/run/media/USERNAME/VOLUME_LABEL"
-#
-# Reliable automation should use a mount-aware systemd workflow
-# that passes the actual mounted filesystem path to the scanner.
 
 
 
@@ -1804,11 +2067,15 @@ Group=root
 ExecStart=/usr/local/bin/clamav-usb-scan.sh /dev/%I
 Nice=19
 IOSchedulingClass=idle
-TimeoutStartSec=infinity
+# A USB device that remains connected but never mounts - for example, one with an unsupported filesystem - can leave a root-running service waiting indefinitely. Multiple devices could create multiple long-lived waiting services.
+# TimeoutStartSec=infinity
+# Five minutes gives a normal desktop ample time to mount a USB filesystem while preventing indefinite waiting. If you later add a bounded wait directly to the helper, keep the systemd timeout as a second layer of protection.
+TimeoutStartSec=5min
+TimeoutStopSec=10s
 NoNewPrivileges=yes
 ProtectSystem=full
 ProtectHome=read-only
-# PrivateTmp=yes
+PrivateTmp=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
@@ -1857,6 +2124,10 @@ done
 #     echo "SELinux boolean antivirus_can_scan_system not present, skipping"
 # fi
 # # Do not enable antivirus_use_jit unless a specific ClamAV feature requires it.
+
+
+
+
 
 #########################################################
 # Create a systemd service for ClamOnAcc
@@ -2017,6 +2288,23 @@ cat <<EOF | sudo tee /etc/systemd/system/clamd@scan.service.d/override.conf
 CPUWeight=50
 Restart=on-failure
 RestartSec=10
+# --- sandboxing (defense in depth; SELinux already confines clamd) ---
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX
+# MemoryDenyWriteExecute
 EOF
 
 
@@ -2109,7 +2397,13 @@ sudo systemctl daemon-reload
 # Update databases for the first time
 #########################################################
 
-sudo freshclam
+# sudo freshclam
+
+# Instead of running freshclam interactively (which risks lock errors if the service starts concurrently),
+# trigger and wait for the official freshclam systemd service to complete its run safely.
+# sudo systemctl start clamav-freshclam.service  # We are enabline --now this later
+
+# Maybe add a check here which runs "sudo freshclam" only after checking if the service isn't locking it
 
 
 #########################################################
@@ -2123,223 +2417,345 @@ echo "Configuring background weekly system scan timer..."
 
 
 
+################################
+################################
+
+
+# sudo tee /usr/local/bin/clamav-weekly-scan.sh > /dev/null <<'EOF'
+# #!/bin/bash
+# set -u
+
+# # Prevent overlapping weekly scan instances.
+# exec 9>/run/clamav-weekly-scan.lock
+# # if ! flock -n 9; then
+# #     echo "A weekly scan is already running; exiting."
+# #     exit 0
+# # fi
+# flock -n 9 || { echo "weekly scan already running"; exit 0; }
+
+# echo "Weekly scan started: $(date --iso-8601=seconds)"
+
+# LOG_DIR="/var/log/clamav"
+# # LOGFILE="${LOG_DIR}/weekly_scan_$(date +\%Y-\%m-\%d).log"
+# # LOGFILE="${LOG_DIR}/weekly_scan_$(date +%Y-%m-%d).log"
+# LOGFILE="${LOG_DIR}/weekly_scan.log"        # fixed name: logrotate handles retention
+
+# # Run with low CPU/IO priority to avoid overloading the system
+# # nice -n 19 ionice -c 3 clamdscan --multiscan -r / \
+# #     --exclude-dir="/proc|/sys|/dev|/run|/var/log|/var/spool/postfix" \
+# #     --infected --log="$LOGFILE"
+
+
+# # The above exclusion argument is a regular expression, not a list of independent path arguments. That means the expression needs to match the paths as they are presented to ClamAV. The following excludes the listed top-level directories and their descendants.
+# # nice -n 19 ionice -c 3 clamdscan --multiscan -r / \
+# #     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
+# #     --infected --log="$LOGFILE"
+# # SCAN_STATUS=$?
+
+# # The above version uses clamdscan (https://docs.clamav.net/manual/Usage/Scanning.html#clamdscan). And the below version uses clamscan (https://docs.clamav.net/manual/Usage/Scanning.html#clamscan)
+
+
+# # Scan where malware lives; /usr is rpm-verifiable (see opinions table). /srv covers nbServer's data disks.
+# ROOTS=()
+# for d in /home /root /etc /opt /srv /usr/local /var/tmp /tmp; do
+#     if [ -d "$d" ]; then ROOTS+=("$d"); fi
+# done
+
+# # nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes --log="$LOGFILE" \
+# #     --exclude-dir='^/var/quarantine(/|$)' \
+# #     --exclude-dir='^/var/lib/(docker|containers)(/|$)' \
+# #     --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
+# #     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
+# #     "${ROOTS[@]}"
+
+# # clamdscan --multiscan --fdpass reuses the already-loaded databases and can use multiple threads. The above (clamscan) reloads everything every time and is single-threaded by nature of clamscan.
+
+# # nice -n 19 ionice -c 3 clamdscan --multiscan --fdpass \
+# nice -n 19 ionice -c 3 clamdscan --wait --ping 90:2 --multiscan --fdpass \
+#     --infected --log="$LOGFILE" \
+#     --exclude-dir='^/var/quarantine(/|$)' \
+#     --exclude-dir='^/var/lib/(docker|containers)(/|$)' \
+#     --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
+#     --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
+#     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
+#     "${ROOTS[@]}"
+
+# SCAN_STATUS=$?
+
+
+# # Find the first active graphical desktop user (UID >= 1000)
+# # ACTIVE_USER=$(loginctl list-sessions --no-legend | awk '{print $2}' | while read -r user; do id -u "$user" &>/dev/null && [ "$(id -u "$user")" -ge 1000 ] && echo "$user" && break; done)
+
+# # Use awk '{print $3}' instead of $2 - gives user rather than uid
+# # ACTIVE_USER=$(loginctl list-sessions --no-legend |
+# #     awk '{print $3}' |
+# #     while read -r user; do
+# #         id -u "$user" &>/dev/null &&
+# #         [ "$(id -u "$user")" -ge 1000 ] &&
+# #         echo "$user" &&
+# #         break
+# #     done)
+
+# # ACTIVE_USER=$(
+# #     loginctl list-sessions --no-legend |
+# #         awk '{print $3}' |
+# #         while read -r user; do
+# #             [[ -n "$user" ]] || continue
+
+# #             user_uid=$(id -u "$user" 2>/dev/null) || continue
+
+# #             if (( user_uid >= 1000 && user_uid < 65534 )); then
+# #                 printf '%s\n' "$user"
+# #                 break
+# #             fi
+# #         done
+# # )
+
+# # # Fallback if no active session is found
+# # if [ -z "$ACTIVE_USER" ]; then
+# #     ACTIVE_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1}' /etc/passwd | head -n 1)
+# # fi
+
+
+# find_active_graphical_user() {
+#     local session_id _session_uid _session_user _rest session_info
+#     local session_name session_active session_remote session_type session_class
+
+#     while read -r session_id _session_uid _session_user _rest; do
+#         [[ -n "$session_id" ]] || continue
+#         session_info=$(loginctl show-session "$session_id" \
+#             -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
+
+#         session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
+#         session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
+#         session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
+#         session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
+#         session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
+
+#         if [[ "$session_active" == yes && "$session_remote" == no &&
+#               "$session_class" == user &&
+#               ( "$session_type" == wayland || "$session_type" == x11 ) &&
+#               -n "$session_name" ]]; then
+#             printf '%s\n' "$session_name"
+#             return 0
+#         fi
+#     done < <(loginctl list-sessions --no-legend 2>/dev/null)
+
+#     return 1
+# }
+
+# notify_desktop_user() {
+#     local title=$1 message=$2 icon=$3 urgency=$4 active_user user_uid runtime_dir
+
+#     active_user=$(find_active_graphical_user) || active_user=""
+#     [[ -n "$active_user" ]] || {
+#         log "No active local graphical session; notification was not displayed: $title"
+#         return 0
+#     }
+
+#     user_uid=$(id -u -- "$active_user") || return 0
+#     runtime_dir="/run/user/$user_uid"
+#     [[ -S "$runtime_dir/bus" ]] || {
+#         log "No session D-Bus socket for $active_user; notification was not displayed."
+#         return 0
+#     }
+
+#     if ! runuser -u "$active_user" -- /usr/bin/env \
+#         XDG_RUNTIME_DIR="$runtime_dir" \
+#         DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime_dir/bus" \
+#         /usr/bin/notify-send -u "$urgency" -i "$icon" -- "$title" "$message"; then
+#         log "Failed to send desktop notification to $active_user: $title"
+#     fi
+# }
 
 
 
 
+# # # Check for infections and notify if found
+# # if grep -q "Infected files: [1-9]" "$LOGFILE"; then
+# #     sudo -u "$SUDO_USER" DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u "$SUDO_USER")/bus \
+# #         notify-send "⚠ ClamAV Alert" "Infected files found during weekly scan! Check $LOGFILE" -i dialog-warning
+# # fi
+
+# # if grep -q "Infected files: [1-9]" "$LOGFILE"; then
+# #     if [ -n "$ACTIVE_USER" ]; then
+# #         USER_UID=$(id -u "$ACTIVE_USER")
+# #         sudo -u "$ACTIVE_USER" DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$USER_UID/bus \
+# #             notify-send "⚠ ClamAV Alert" "Infected files found during weekly scan! Check $LOGFILE" -i dialog-warning
+# #     fi 
+# # fi
+
+
+# if grep -qE 'Infected files: [1-9][0-9]*' "$LOGFILE" ||
+#    [ "$SCAN_STATUS" -eq 1 ]; then
+
+#     NOTIFICATION_TITLE="⚠ ClamAV Alert"
+#     NOTIFICATION_MESSAGE="Infection detected during weekly scan. Exit status: $SCAN_STATUS. Check $LOGFILE"
+#     NOTIFICATION_ICON="dialog-warning"
+#     NOTIFICATION_URGENCY="critical"
+#     logger -t clamav-alert "$NOTIFICATION_MESSAGE"
+#     # logger -p authpriv.warning -t clamav-alert "Weekly scan: INFECTED files found, see $LOGFILE" ;;
+
+# elif [ "$SCAN_STATUS" -eq 0 ]; then
+
+#     NOTIFICATION_TITLE="ClamAV Scan Complete"
+#     NOTIFICATION_MESSAGE="No infections found during weekly scan. Check $LOGFILE"
+#     NOTIFICATION_ICON="dialog-information"
+#     NOTIFICATION_URGENCY="normal"
+#     logger -t clamav-scan "$NOTIFICATION_MESSAGE"
+
+# else
+
+#     NOTIFICATION_TITLE="⚠ ClamAV Scan Error"
+#     NOTIFICATION_MESSAGE="Weekly scan failed or was incomplete. Exit status: $SCAN_STATUS. Check $LOGFILE"
+#     NOTIFICATION_ICON="dialog-error"
+#     NOTIFICATION_URGENCY="critical"
+#     logger -t clamav-scan "$NOTIFICATION_MESSAGE"
+#     # logger -p authpriv.err     -t clamav-alert "Weekly scan finished with errors (SCAN_STATUS=$SCAN_STATUS), see $LOGFILE" ;;
+
+# fi
+
+
+# # Display the result to the active desktop user, if available.
+# # if [ -n "$ACTIVE_USER" ]; then
+# #     USER_UID=$(id -u "$ACTIVE_USER")
+# #     sudo -u "$ACTIVE_USER" \
+# #         DISPLAY=:0 \
+# #         DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USER_UID/bus" \
+# #         notify-send -u normal -i "$NOTIFICATION_ICON" \
+# #         "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE"
+# # fi
+
+# notify_desktop_user "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE" \
+#     "$NOTIFICATION_ICON" "$NOTIFICATION_URGENCY"
+
+# echo "Weekly scan finished: $(date --iso-8601=seconds)"
+# exit 0
+
+# EOF
+################################
+################################
+
+# The above implementation has been replaced for security reasons. Explained below:
+
+# Problem 1: Trust boundary
+# Old design: clamd (the process most likely to be compromised) → sudo → root helper
+# New designNothing in the chain gains privilege. clamd only calls logger.
+
+# Problem 2: Fragility
+# Old design: Three copies of session-detection code that parse loginctl and build D-Bus addresses. They break silently when you’re logged out or on SSH, and NoNewPrivileges or SELinux can kill the sudo path.
+# New design: Components write events to the journal. One small program running as you shows popups.
+
+# Problem 3: Duplication
+# Old design: Weekly, USB and VirusEvent each have their own notifier
+# New design: One popup service for every source
+
+
+# What authpriv is: the syslog facility (category) number 10, meaning security and authentication messages. warning and err are priorities (4 and 3). journald stores both, so you can filter with journalctl -p warning -t clamav-alert. Any facility would work. We use authpriv because these are security events.
+
+# clamdscan vs clamscan for the weekly scan (decision notes)
+#  clamdscan --fdpass : client of the running clamd. Follows scan.conf (PUA, limits, ExcludePath = one source of
+#                       truth). No extra RAM (clamd ~1.2 GiB here), no signature-load delay. BUT: the reading and
+#                       matching happen inside clamd, so nice/ionice/Nice=/IOSchedulingClass only affect the tiny
+#                       client; only clamd's CPUWeight applies (shared with on-access). The scan uses clamd's
+#                       thread pool, so on-access requests can queue behind it. --exclude-dir is IGNORED
+#                       (warning only); ExcludePath from scan.conf is applied by the client instead. --multiscan
+#                       with --fdpass showed no speedup in my I/O-bound test (CPU-bound untested). Needs clamd up.
+#  clamscan           : standalone. Loads its own signature copy (+~1.2 GB RAM, load time every run), ignores
+#                       scan.conf (repeat --detect-pua/--alert-broken), single-threaded. BUT: every knob applies
+#                       to the scanner itself (idle I/O, nice), isolated from clamd/on-access, --exclude-dir works,
+#                       no dependency on clamd, no SELinux confinement surprises.
+#  Choice: SSD -> clamdscan; HDD -> clamscan (seek contention is what makes the desktop lag).
+#  Override: CLAMAV_WEEKLY_ENGINE=clamscan|clamdscan in the service environment.
 
 sudo tee /usr/local/bin/clamav-weekly-scan.sh > /dev/null <<'EOF'
 #!/bin/bash
 set -u
 
+# flock -n 9 || { echo "weekly scan already running"; exit 0; }
+
 # Prevent overlapping weekly scan instances.
 exec 9>/run/clamav-weekly-scan.lock
-# if ! flock -n 9; then
-#     echo "A weekly scan is already running; exiting."
-#     exit 0
-# fi
-flock -n 9 || { echo "weekly scan already running"; exit 0; }
+flock -n 9 || {
+    echo "Weekly scan already running; skipping this instance."
+    exit 0
+}
 
 echo "Weekly scan started: $(date --iso-8601=seconds)"
 
-LOG_DIR="/var/log/clamav"
-# LOGFILE="${LOG_DIR}/weekly_scan_$(date +\%Y-\%m-\%d).log"
-# LOGFILE="${LOG_DIR}/weekly_scan_$(date +%Y-%m-%d).log"
-LOGFILE="${LOG_DIR}/weekly_scan.log"        # fixed name: logrotate handles retention
+# ---- 1. WHICH SCANNER? ------------------------------------------------------
+# The installer (snippet after this heredoc) swaps @ENGINE@ for "clamdscan" (SSD machines) or
+# "clamscan" (HDD machines). Override on one machine without editing this file:
+#     sudo systemctl edit clamav-weekly-scan.service
+#     [Service]
+#     Environment=CLAMAV_WEEKLY_ENGINE=clamscan
+# ${VAR:-default} means: use $VAR if set and non-empty, otherwise the default.
+ENGINE="${CLAMAV_WEEKLY_ENGINE:-@ENGINE@}"
 
-# Run with low CPU/IO priority to avoid overloading the system
-# nice -n 19 ionice -c 3 clamdscan --multiscan -r / \
-#     --exclude-dir="/proc|/sys|/dev|/run|/var/log|/var/spool/postfix" \
-#     --infected --log="$LOGFILE"
-
-
-# The above exclusion argument is a regular expression, not a list of independent path arguments. That means the expression needs to match the paths as they are presented to ClamAV. The following excludes the listed top-level directories and their descendants.
-# nice -n 19 ionice -c 3 clamdscan --multiscan -r / \
-#     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
-#     --infected --log="$LOGFILE"
-# SCAN_STATUS=$?
-
-# The above version uses clamdscan (https://docs.clamav.net/manual/Usage/Scanning.html#clamdscan). And the below version uses clamscan (https://docs.clamav.net/manual/Usage/Scanning.html#clamscan)
-
-
-# Scan where malware lives; /usr is rpm-verifiable (see opinions table). /srv covers nbServer's data disks.
+# ---- 2. WHAT TO SCAN --------------------------------------------------------
+# Where malware lands, not the whole disk: /usr is better checked with `rpm -Va`.
+# The [ -d ] guard stops the scanner failing on machines without e.g. /srv.
 ROOTS=()
 for d in /home /root /etc /opt /srv /usr/local /var/tmp /tmp; do
     if [ -d "$d" ]; then ROOTS+=("$d"); fi
 done
 
-# nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes --log="$LOGFILE" \
-#     --exclude-dir='^/var/quarantine(/|$)' \
-#     --exclude-dir='^/var/lib/(docker|containers)(/|$)' \
-#     --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
-#     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
-#     "${ROOTS[@]}"
+# ---- 3. SCAN ----------------------------------------------------------------
+# Output goes to stdout -> systemd -> journald: no log file to rotate or to symlink-attack.
+# "|| SCAN_STATUS=$?" captures the exit code without tripping errexit.
+# Exit codes (both scanners): 0 = clean, 1 = infection found, 2+ = error.
+SCAN_STATUS=0
+case "$ENGINE" in
+    clamscan)
+        # Standalone scanner: loads its OWN copy of the signatures, ignores scan.conf, so the flags
+        # that matter are repeated here. nice/ionice really work because THIS process does the reading.
+        nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes \
+            --detect-pua=yes --alert-broken=yes \
+            --exclude='^/etc/hosts$' \
+            --exclude-dir='/nb_script_data/hostsplay(/|$)' \
+            --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
+            --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
+            "${ROOTS[@]}" || SCAN_STATUS=$?
+        ;;
+    *)
+        # Daemon client: clamd (already running, config in scan.conf) does the work.
+        # --fdpass: THIS root process opens each file and hands the descriptor to clamd (user
+        #   clamscan), which could not otherwise read your 0700 home. ExcludePath in scan.conf is
+        #   applied by clamdscan itself (it ignores --exclude-dir, tested).
+        # --wait --ping 90:2: wait up to 3 minutes for clamd to finish loading signatures.
+        clamdscan --wait --ping 90:2 --multiscan --fdpass --infected "${ROOTS[@]}" || SCAN_STATUS=$?
+        ;;
+esac
 
-# clamdscan --multiscan --fdpass reuses the already-loaded databases and can use multiple threads. The above (clamscan) reloads everything every time and is single-threaded by nature of clamscan.
+# ---- 4. REPORT --------------------------------------------------------------
+# logger writes to the journal. -t = tag (what the popup service filters on),
+# -p facility.priority, "--" = stop option parsing (nothing in the message can be read as a flag).
+case "$SCAN_STATUS" in
+    0) logger -t clamav-scan -- "Weekly scan ($ENGINE) finished: clean" ;;
+    1) logger -p authpriv.warning -t clamav-alert -- "Weekly scan ($ENGINE): INFECTED files found. See: journalctl -u clamav-weekly-scan" ;;
+    *) logger -p authpriv.err -t clamav-alert -- "Weekly scan ($ENGINE) finished with errors (exit $SCAN_STATUS). See: journalctl -u clamav-weekly-scan" ;;
+esac
 
-# nice -n 19 ionice -c 3 clamdscan --multiscan --fdpass \
-nice -n 19 ionice -c 3 clamdscan --wait --ping 90:2 --multiscan --fdpass \
-    --infected --log="$LOGFILE" \
-    --exclude-dir='^/var/quarantine(/|$)' \
-    --exclude-dir='^/var/lib/(docker|containers)(/|$)' \
-    --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
-    --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
-    --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
-    "${ROOTS[@]}"
-
-SCAN_STATUS=$?
-
-
-# Find the first active graphical desktop user (UID >= 1000)
-# ACTIVE_USER=$(loginctl list-sessions --no-legend | awk '{print $2}' | while read -r user; do id -u "$user" &>/dev/null && [ "$(id -u "$user")" -ge 1000 ] && echo "$user" && break; done)
-
-# Use awk '{print $3}' instead of $2 - gives user rather than uid
-# ACTIVE_USER=$(loginctl list-sessions --no-legend |
-#     awk '{print $3}' |
-#     while read -r user; do
-#         id -u "$user" &>/dev/null &&
-#         [ "$(id -u "$user")" -ge 1000 ] &&
-#         echo "$user" &&
-#         break
-#     done)
-
-# ACTIVE_USER=$(
-#     loginctl list-sessions --no-legend |
-#         awk '{print $3}' |
-#         while read -r user; do
-#             [[ -n "$user" ]] || continue
-
-#             user_uid=$(id -u "$user" 2>/dev/null) || continue
-
-#             if (( user_uid >= 1000 && user_uid < 65534 )); then
-#                 printf '%s\n' "$user"
-#                 break
-#             fi
-#         done
-# )
-
-# # Fallback if no active session is found
-# if [ -z "$ACTIVE_USER" ]; then
-#     ACTIVE_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1}' /etc/passwd | head -n 1)
-# fi
-
-
-find_active_graphical_user() {
-    local session_id _session_uid _session_user _rest session_info
-    local session_name session_active session_remote session_type session_class
-
-    while read -r session_id _session_uid _session_user _rest; do
-        [[ -n "$session_id" ]] || continue
-        session_info=$(loginctl show-session "$session_id" \
-            -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
-
-        session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
-        session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
-        session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
-        session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
-        session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
-
-        if [[ "$session_active" == yes && "$session_remote" == no &&
-              "$session_class" == user &&
-              ( "$session_type" == wayland || "$session_type" == x11 ) &&
-              -n "$session_name" ]]; then
-            printf '%s\n' "$session_name"
-            return 0
-        fi
-    done < <(loginctl list-sessions --no-legend 2>/dev/null)
-
-    return 1
-}
-
-notify_desktop_user() {
-    local title=$1 message=$2 icon=$3 urgency=$4 active_user user_uid runtime_dir
-
-    active_user=$(find_active_graphical_user) || active_user=""
-    [[ -n "$active_user" ]] || {
-        log "No active local graphical session; notification was not displayed: $title"
-        return 0
-    }
-
-    user_uid=$(id -u -- "$active_user") || return 0
-    runtime_dir="/run/user/$user_uid"
-    [[ -S "$runtime_dir/bus" ]] || {
-        log "No session D-Bus socket for $active_user; notification was not displayed."
-        return 0
-    }
-
-    if ! runuser -u "$active_user" -- /usr/bin/env \
-        XDG_RUNTIME_DIR="$runtime_dir" \
-        DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime_dir/bus" \
-        /usr/bin/notify-send -u "$urgency" -i "$icon" -- "$title" "$message"; then
-        log "Failed to send desktop notification to $active_user: $title"
-    fi
-}
-
-
-
-
-# # Check for infections and notify if found
-# if grep -q "Infected files: [1-9]" "$LOGFILE"; then
-#     sudo -u "$SUDO_USER" DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u "$SUDO_USER")/bus \
-#         notify-send "⚠ ClamAV Alert" "Infected files found during weekly scan! Check $LOGFILE" -i dialog-warning
-# fi
-
-# if grep -q "Infected files: [1-9]" "$LOGFILE"; then
-#     if [ -n "$ACTIVE_USER" ]; then
-#         USER_UID=$(id -u "$ACTIVE_USER")
-#         sudo -u "$ACTIVE_USER" DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$USER_UID/bus \
-#             notify-send "⚠ ClamAV Alert" "Infected files found during weekly scan! Check $LOGFILE" -i dialog-warning
-#     fi 
-# fi
-
-
-if grep -qE 'Infected files: [1-9][0-9]*' "$LOGFILE" ||
-   [ "$SCAN_STATUS" -eq 1 ]; then
-
-    NOTIFICATION_TITLE="⚠ ClamAV Alert"
-    NOTIFICATION_MESSAGE="Infection detected during weekly scan. Exit status: $SCAN_STATUS. Check $LOGFILE"
-    NOTIFICATION_ICON="dialog-warning"
-    NOTIFICATION_URGENCY="critical"
-    logger -t clamav-alert "$NOTIFICATION_MESSAGE"
-    # logger -p authpriv.warning -t clamav-alert "Weekly scan: INFECTED files found, see $LOGFILE" ;;
-
-elif [ "$SCAN_STATUS" -eq 0 ]; then
-
-    NOTIFICATION_TITLE="ClamAV Scan Complete"
-    NOTIFICATION_MESSAGE="No infections found during weekly scan. Check $LOGFILE"
-    NOTIFICATION_ICON="dialog-information"
-    NOTIFICATION_URGENCY="normal"
-    logger -t clamav-scan "$NOTIFICATION_MESSAGE"
-
-else
-
-    NOTIFICATION_TITLE="⚠ ClamAV Scan Error"
-    NOTIFICATION_MESSAGE="Weekly scan failed or was incomplete. Exit status: $SCAN_STATUS. Check $LOGFILE"
-    NOTIFICATION_ICON="dialog-error"
-    NOTIFICATION_URGENCY="critical"
-    logger -t clamav-scan "$NOTIFICATION_MESSAGE"
-    # logger -p authpriv.err     -t clamav-alert "Weekly scan finished with errors (SCAN_STATUS=$SCAN_STATUS), see $LOGFILE" ;;
-
-fi
-
-
-# Display the result to the active desktop user, if available.
-# if [ -n "$ACTIVE_USER" ]; then
-#     USER_UID=$(id -u "$ACTIVE_USER")
-#     sudo -u "$ACTIVE_USER" \
-#         DISPLAY=:0 \
-#         DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USER_UID/bus" \
-#         notify-send -u normal -i "$NOTIFICATION_ICON" \
-#         "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE"
-# fi
-
-notify_desktop_user "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE" \
-    "$NOTIFICATION_ICON" "$NOTIFICATION_URGENCY"
-
-echo "Weekly scan finished: $(date --iso-8601=seconds)"
 exit 0
 
 EOF
+
+
+# bake the machine-specific choice in using existing SSD detection:
+WEEKLY_ENGINE=clamdscan
+if ! $SSD_PRESENT; then WEEKLY_ENGINE=clamscan; fi   # HDD: reads must run at idle I/O priority
+sudo sed -i "s/@ENGINE@/$WEEKLY_ENGINE/" /usr/local/bin/clamav-weekly-scan.sh
+
+# To override without re-running setup
+# Override scan engine (uncomment and change for HDD-only machines):
+# sudo systemctl edit clamav-weekly-scan.service"
+# [Service]
+# Environment=CLAMAV_WEEKLY_ENGINE=clamscan
+
+
+grep -q "CLAMAV_WEEKLY_ENGINE=@ENGINE@" /usr/local/bin/clamav-weekly-scan.sh && \
+    echo "ERROR: Engine substitution failed" >&2 && exit 1
+echo "Scan engine set to: $WEEKLY_ENGINE"
 
 
 sudo chmod +x /usr/local/bin/clamav-weekly-scan.sh
@@ -2361,7 +2777,7 @@ CPUSchedulingPolicy=idle
 NoNewPrivileges=yes
 ProtectSystem=full
 ProtectHome=read-only
-PrivateTmp=yes
+# PrivateTmp=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
@@ -2395,6 +2811,10 @@ sudo systemctl enable --now clamav-weekly-scan.timer
 #########################################################
 
 # enables an instant desktop popup at the exact moment the daemon intercepts a threat. Because clamd runs as an unprivileged background user (clamscan), it cannot trigger GUI notifications directly without a helper hook and a sudoers exception.
+
+
+################################
+################################
 
 # echo "[+] Configuring real-time VirusEvent notification hook..."
 
@@ -2444,137 +2864,208 @@ sudo systemctl enable --now clamav-weekly-scan.timer
 # sudo chmod +x /usr/local/bin/clamav-notify.sh
 
 
+################################
+################################
 
-echo "[+] Configuring real-time VirusEvent notification hook..."
 
-# clamd runs VirusEvent as the clamd service user (clamscan in this setup).
-# This unprivileged wrapper passes the two documented ClamAV event variables
-# as quoted argv entries to one fixed, root-owned helper.
+# echo "[+] Configuring real-time VirusEvent notification hook..."
+
+# # clamd runs VirusEvent as the clamd service user (clamscan in this setup).
+# # This unprivileged wrapper passes the two documented ClamAV event variables
+# # as quoted argv entries to one fixed, root-owned helper.
+# sudo tee /usr/local/bin/clamav-notify.sh > /dev/null <<'EOF'
+# #!/usr/bin/bash
+# set -u
+
+# VIRUS_NAME="${CLAM_VIRUSEVENT_VIRUSNAME:-Unknown threat}"
+# FILE_PATH="${CLAM_VIRUSEVENT_FILENAME:-Unknown file}"
+
+# exec /usr/bin/sudo -n -- /usr/local/sbin/clamav-notify-root "$VIRUS_NAME" "$FILE_PATH"
+# EOF
+
+# # Privileged helper: it can only log a ClamAV alert and notify the active
+# # local graphical session. No shell is constructed from event data.
+# sudo install -d -o root -g root -m 0755 /usr/local/sbin
+# sudo tee /usr/local/sbin/clamav-notify-root > /dev/null <<'EOF'
+# #!/usr/bin/bash
+# set -Eeuo pipefail
+
+# if (( EUID != 0 )); then
+#     echo "clamav-notify-root must be run as root." >&2
+#     exit 1
+# fi
+# if (( $# != 2 )); then
+#     echo "Usage: clamav-notify-root VIRUS_NAME FILE_PATH" >&2
+#     exit 2
+# fi
+
+# # Keep untrusted filenames/labels as data; avoid notification/log spoofing by
+# # collapsing line breaks and limiting the amount of displayed text.
+# VIRUS_NAME=${1//$'\n'/ }
+# VIRUS_NAME=${VIRUS_NAME//$'\r'/ }
+# FILE_PATH=${2//$'\n'/ }
+# FILE_PATH=${FILE_PATH//$'\r'/ }
+# VIRUS_NAME=${VIRUS_NAME:0:240}
+# FILE_PATH=${FILE_PATH:0:800}
+
+# logger -p authpriv.warning -t clamav-alert -- "ALERT: Threat ${VIRUS_NAME} detected in ${FILE_PATH}"
+
+# find_active_graphical_user() {
+#     local session_id _session_uid _session_user _rest session_info
+#     local session_name session_active session_remote session_type session_class
+
+#     while read -r session_id _session_uid _session_user _rest; do
+#         [[ -n "$session_id" ]] || continue
+#         session_info=$(loginctl show-session "$session_id" \
+#             -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
+
+#         session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
+#         session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
+#         session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
+#         session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
+#         session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
+
+#         if [[ "$session_active" == yes && "$session_remote" == no &&
+#               "$session_class" == user &&
+#               ( "$session_type" == wayland || "$session_type" == x11 ) &&
+#               -n "$session_name" ]]; then
+#             printf '%s\n' "$session_name"
+#             return 0
+#         fi
+#     done < <(loginctl list-sessions --no-legend 2>/dev/null)
+
+#     return 1
+# }
+
+# ACTIVE_USER=$(find_active_graphical_user) || ACTIVE_USER=""
+# if [[ -z "$ACTIVE_USER" ]]; then
+#     logger -t clamav-alert -- "No active local graphical session; real-time notification not displayed."
+#     exit 0
+# fi
+
+# USER_UID=$(id -u -- "$ACTIVE_USER") || exit 0
+# RUNTIME_DIR="/run/user/$USER_UID"
+# if [[ ! -S "$RUNTIME_DIR/bus" ]]; then
+#     logger -t clamav-alert -- "No session D-Bus socket for $ACTIVE_USER; real-time notification not displayed."
+#     exit 0
+# fi
+
+# MESSAGE="Threat: ${VIRUS_NAME}"$'\n'"File: ${FILE_PATH}"
+# if ! runuser -u "$ACTIVE_USER" -- /usr/bin/env \
+#     XDG_RUNTIME_DIR="$RUNTIME_DIR" \
+#     DBUS_SESSION_BUS_ADDRESS="unix:path=$RUNTIME_DIR/bus" \
+#     /usr/bin/notify-send -u critical -i dialog-warning -- \
+#     "ClamAV Real-Time Alert" "$MESSAGE"; then
+#     logger -t clamav-alert -- "notify-send failed for active user $ACTIVE_USER."
+# fi
+# EOF
+
+# sudo chown root:root /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root
+# sudo chmod 0755 /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root
+
+
+# # # Grant the clamscan user permission to invoke notify-send via sudo
+# # sudo tee /etc/sudoers.d/clamav-notify > /dev/null <<'EOF'
+# # clamscan ALL=(ALL) NOPASSWD: SETENV: /usr/bin/notify-send
+# # EOF
+# # sudo chmod 440 /etc/sudoers.d/clamav-notify
+
+# # if ! sudo visudo -cf /etc/sudoers.d/clamav-notify; then
+# #     echo "ERROR: Invalid sudoers configuration for ClamAV notifications." >&2
+# #     exit 1
+# # fi
+
+# # # a root-owned file should have permissions 440
+# # sudo stat -c '%U:%G %a %n' /etc/sudoers.d/clamav-notify
+
+
+
+# # # Narrow exception: clamscan may run only this fixed, root-owned helper as root.
+# # # No SETENV is granted, and notify-send itself is no longer sudo-authorized.
+# # sudo tee /etc/sudoers.d/clamav-notify > /dev/null <<'EOF'
+# # clamscan ALL=(root) NOPASSWD: NOSETENV: /usr/local/sbin/clamav-notify-root
+# # EOF
+# # sudo chown root:root /etc/sudoers.d/clamav-notify
+# # sudo chmod 0440 /etc/sudoers.d/clamav-notify
+
+# # if ! sudo visudo -cf /etc/sudoers.d/clamav-notify; then
+# #     echo "ERROR: Invalid sudoers configuration for ClamAV notifications." >&2
+# #     exit 1
+# # fi
+# # if ! sudo visudo -c; then
+# #     echo "ERROR: The complete sudoers configuration is invalid." >&2
+# #     exit 1
+# # fi
+
+# # The above /etc/sudoers.d/clamav-notify gives the exposed process a path to a root helper. Without an argument spec, any arguments are allowed. The helper then drops to your session and shows attacker-chosen popup text.
+
+################################
+################################
+
+
+# DESIGN: every component only WRITES an event to the journal; one small program running as YOU
+# reads the journal and shows the popup. Nothing needs privileges to talk to your desktop.
+#
+#   clamd (user clamscan) --VirusEvent--> clamav-notify.sh --logger--+
+#   weekly scan (root)    ---------------------- logger ---------------+--> journald
+#   USB scan (root)       ---------------------- logger ---------------+      |
+#                                    journalctl -f <-- clamav-alert-popups (YOU) --> notify-send
+
+# 1) The hook clamd runs on each detection. clamd sets two environment variables for it.
+#    ${VAR:-unknown} = fall back to "unknown" if unset.
 sudo tee /usr/local/bin/clamav-notify.sh > /dev/null <<'EOF'
 #!/usr/bin/bash
-set -u
-
-VIRUS_NAME="${CLAM_VIRUSEVENT_VIRUSNAME:-Unknown threat}"
-FILE_PATH="${CLAM_VIRUSEVENT_FILENAME:-Unknown file}"
-
-exec /usr/bin/sudo -n -- /usr/local/sbin/clamav-notify-root "$VIRUS_NAME" "$FILE_PATH"
+logger -p authpriv.warning -t clamav-alert -- "Threat ${CLAM_VIRUSEVENT_VIRUSNAME:-unknown} in ${CLAM_VIRUSEVENT_FILENAME:-unknown}"
 EOF
+# clamd runs this as user "clamscan", so it must be readable and executable by everyone:
+sudo chown root:root /usr/local/bin/clamav-notify.sh
+sudo chmod 0755 /usr/local/bin/clamav-notify.sh
 
-# Privileged helper: it can only log a ClamAV alert and notify the active
-# local graphical session. No shell is constructed from event data.
-sudo install -d -o root -g root -m 0755 /usr/local/sbin
-sudo tee /usr/local/sbin/clamav-notify-root > /dev/null <<'EOF'
+# 2) Remove the old privilege path if an earlier run created it (-f = no error if absent).
+sudo rm -f /etc/sudoers.d/clamav-notify /usr/local/sbin/clamav-notify-root
+
+# 3) Popup service, desktop only. It runs as YOU, so it needs no sudo and no D-Bus address tricks.
+if [ "$PC_TYPE" = desktop ]; then
+    sudo tee /usr/local/bin/clamav-alert-popups > /dev/null <<'EOF'
 #!/usr/bin/bash
-set -Eeuo pipefail
-
-if (( EUID != 0 )); then
-    echo "clamav-notify-root must be run as root." >&2
-    exit 1
-fi
-if (( $# != 2 )); then
-    echo "Usage: clamav-notify-root VIRUS_NAME FILE_PATH" >&2
-    exit 2
-fi
-
-# Keep untrusted filenames/labels as data; avoid notification/log spoofing by
-# collapsing line breaks and limiting the amount of displayed text.
-VIRUS_NAME=${1//$'\n'/ }
-VIRUS_NAME=${VIRUS_NAME//$'\r'/ }
-FILE_PATH=${2//$'\n'/ }
-FILE_PATH=${FILE_PATH//$'\r'/ }
-VIRUS_NAME=${VIRUS_NAME:0:240}
-FILE_PATH=${FILE_PATH:0:800}
-
-logger -p authpriv.warning -t clamav-alert -- "ALERT: Threat ${VIRUS_NAME} detected in ${FILE_PATH}"
-
-find_active_graphical_user() {
-    local session_id _session_uid _session_user _rest session_info
-    local session_name session_active session_remote session_type session_class
-
-    while read -r session_id _session_uid _session_user _rest; do
-        [[ -n "$session_id" ]] || continue
-        session_info=$(loginctl show-session "$session_id" \
-            -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
-
-        session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
-        session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
-        session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
-        session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
-        session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
-
-        if [[ "$session_active" == yes && "$session_remote" == no &&
-              "$session_class" == user &&
-              ( "$session_type" == wayland || "$session_type" == x11 ) &&
-              -n "$session_name" ]]; then
-            printf '%s\n' "$session_name"
-            return 0
-        fi
-    done < <(loginctl list-sessions --no-legend 2>/dev/null)
-
-    return 1
-}
-
-ACTIVE_USER=$(find_active_graphical_user) || ACTIVE_USER=""
-if [[ -z "$ACTIVE_USER" ]]; then
-    logger -t clamav-alert -- "No active local graphical session; real-time notification not displayed."
-    exit 0
-fi
-
-USER_UID=$(id -u -- "$ACTIVE_USER") || exit 0
-RUNTIME_DIR="/run/user/$USER_UID"
-if [[ ! -S "$RUNTIME_DIR/bus" ]]; then
-    logger -t clamav-alert -- "No session D-Bus socket for $ACTIVE_USER; real-time notification not displayed."
-    exit 0
-fi
-
-MESSAGE="Threat: ${VIRUS_NAME}"$'\n'"File: ${FILE_PATH}"
-if ! runuser -u "$ACTIVE_USER" -- /usr/bin/env \
-    XDG_RUNTIME_DIR="$RUNTIME_DIR" \
-    DBUS_SESSION_BUS_ADDRESS="unix:path=$RUNTIME_DIR/bus" \
-    /usr/bin/notify-send -u critical -i dialog-warning -- \
-    "ClamAV Real-Time Alert" "$MESSAGE"; then
-    logger -t clamav-alert -- "notify-send failed for active user $ACTIVE_USER."
-fi
+# Follow the journal (-f), skip old entries (-n0), only our tag, message text only (-o cat).
+journalctl -f -n0 -t clamav-alert -o cat | while IFS= read -r line; do
+    # Notification bodies accept HTML-like markup, and file names are attacker-controlled:
+    # without escaping, a file named <a href="https://evil">…</a> becomes a clickable link.
+    # line=${line//&/&amp;}; line=${line//</&lt;}
+    line=$(printf '%s' "$line" | sed \
+        -e 's/&/\&amp;/g' \
+        -e 's/</\&lt;/g')
+    notify-send -u critical -i dialog-warning -- "ClamAV" "$line"
+done
 EOF
+    sudo chmod 0755 /usr/local/bin/clamav-alert-popups
 
-sudo chown root:root /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root
-sudo chmod 0755 /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root
+    mkdir -p "$HOME_DIR/.config/systemd/user"
+    cat > "$HOME_DIR/.config/systemd/user/clamav-alerts.service" <<'EOF'
+[Unit]
+Description=Desktop popups for ClamAV alerts (journal reader, no privileges)
+
+[Service]
+ExecStart=/usr/local/bin/clamav-alert-popups
+Restart=always
+
+[Install]
+WantedBy=default.target
+EOF
+    # A *user* service runs only while you are logged in. Alerts raised earlier stay in the journal:
+    #   journalctl -p warning -t clamav-alert --since yesterday
+    if systemctl --user daemon-reload 2>/dev/null; then
+        systemctl --user enable --now clamav-alerts.service
+    else
+        echo "No user systemd session here; after logging in run: systemctl --user enable --now clamav-alerts.service"
+    fi
+fi
 
 
-# # Grant the clamscan user permission to invoke notify-send via sudo
-# sudo tee /etc/sudoers.d/clamav-notify > /dev/null <<'EOF'
-# clamscan ALL=(ALL) NOPASSWD: SETENV: /usr/bin/notify-send
-# EOF
-# sudo chmod 440 /etc/sudoers.d/clamav-notify
-
-# if ! sudo visudo -cf /etc/sudoers.d/clamav-notify; then
-#     echo "ERROR: Invalid sudoers configuration for ClamAV notifications." >&2
-#     exit 1
-# fi
-
-# # a root-owned file should have permissions 440
-# sudo stat -c '%U:%G %a %n' /etc/sudoers.d/clamav-notify
 
 
 
-# # Narrow exception: clamscan may run only this fixed, root-owned helper as root.
-# # No SETENV is granted, and notify-send itself is no longer sudo-authorized.
-# sudo tee /etc/sudoers.d/clamav-notify > /dev/null <<'EOF'
-# clamscan ALL=(root) NOPASSWD: NOSETENV: /usr/local/sbin/clamav-notify-root
-# EOF
-# sudo chown root:root /etc/sudoers.d/clamav-notify
-# sudo chmod 0440 /etc/sudoers.d/clamav-notify
-
-# if ! sudo visudo -cf /etc/sudoers.d/clamav-notify; then
-#     echo "ERROR: Invalid sudoers configuration for ClamAV notifications." >&2
-#     exit 1
-# fi
-# if ! sudo visudo -c; then
-#     echo "ERROR: The complete sudoers configuration is invalid." >&2
-#     exit 1
-# fi
-
-# The above /etc/sudoers.d/clamav-notify gives the exposed process a path to a root helper. Without an argument spec, any arguments are allowed. The helper then drops to your session and shows attacker-chosen popup text.
 
 #########################################################
 # SELinux: Restore expected contexts before service start
@@ -2780,10 +3271,26 @@ echo "Configuration validated successfully."
 #     exit 1
 # fi
 
-echo "Waiting for clamd to load signatures (can take minutes on the HDD machines)..."
+# echo "Waiting for clamd to load signatures (can take minutes on the HDD machines)..."
+# if ! sudo clamdscan --config-file="$SCAN_CONF" --ping 60:3; then
+#     sudo journalctl -u clamd@scan -n 50 --no-pager; exit 1
+# fi
+
+echo "Waiting for clamd to load signatures (can take minutes on the HDD machines) and open socket"
+for i in {1..100}; do
+    if sudo clamdscan --config-file="$SCAN_CONF" --ping 1 2>/dev/null; then
+        break
+    fi
+    echo "Waiting"
+    sleep 2
+done
+
 if ! sudo clamdscan --config-file="$SCAN_CONF" --ping 60:3; then
-    sudo journalctl -u clamd@scan -n 50 --no-pager; exit 1
+    echo "ERROR: clamd failed to respond on socket." >&2
+    sudo journalctl -u clamd@scan -n 50 --no-pager
+    exit 1
 fi
+
 
 echo "Checking ClamAV services..."
 
@@ -2830,7 +3337,8 @@ if [ "$PC_TYPE" = desktop ] && [ -n "$SELFTEST_DIR" ]; then
     T="$SELFTEST_DIR/clamav_selftest_$$.txt"
     printf '%s' "$EICAR" > "$T"
     OK=no
-    for _ in 1 2 3 4 5 6 7 8 9 10; do
+    # for _ in 1 2 3 4 5 6 7 8 9 10; do
+    for _ in $(seq 1 20); do
         sleep 1
         if [ "$ONACC_PREVENT" = yes ]; then
             if ! cat "$T" >/dev/null 2>&1; then 
@@ -2858,6 +3366,21 @@ if [ "$FAILED" -ne 0 ]; then
     echo "ClamAV setup completed with errors." >&2
     exit 1
 fi
+
+
+# Firewall Rule Check - The LocalSocketMode 600 ensures no network exposure, but verify:
+echo "[+] Checking for unintended network exposure..."
+if grep -Eq '^[[:space:]]*TCPSocket' "$SCAN_CONF"; then
+    echo "ERROR: TCPSocket is enabled! ClamAV should use Unix socket only." >&2
+    exit 1
+fi
+if sudo ss -tlnp 2>/dev/null | grep -q ':3310'; then
+    echo "ERROR: Something listening on port 3310." >&2
+    exit 1
+fi
+echo "[+] No network exposure detected."
+
+
 
 echo "Validating generated systemd units and logrotate configuration..."
 sudo systemd-analyze verify \
@@ -2910,9 +3433,17 @@ clamdscan --version
 # Debugging / Testing / Troubleshooting:
 #########################################################
 
+# read the logs from journalctl when "LogSyslog yes" is set
+# journalctl -u clamd@scan -u clamav-freshclam -u clamav-clamonacc -b
+# journalctl -t clamav-alert -t clamav-scan
+# journalctl -u clamav-weekly-scan
+# journalctl -u 'clamav-usb-scan@*'
+# journalctl --list-boots  # Check the journal is persistent - more than one boot listed means yes
+# journalctl -u 'clamav-usb-scan@*' -n 20 # Verify on the first USB insert that the hardened unit sees the mount
+
 # Check if the script is syntactically correct:
 # bash -n clamav.sh
-# shellcheck clamav.sh
+# # shellcheck clamav.sh
 
 # run your setup script and inspect the resulting services:
 # systemctl --failed
@@ -3093,3 +3624,8 @@ clamdscan --version
 # echo $EICAR | sudo tee /tmp/eicar.txt
 # sudo clamscan /tmp/eicar.txt
 # Should detect it as "Win.Test.EICAR_HDB-1"
+
+# JIT boolean
+# sudo setsebool -P antivirus_use_jit 0 && sudo systemctl restart clamd@scan
+# scan EICAR and a zip file, then: sudo ausearch -m avc -ts recent | grep -i execmem
+# if you see execmem denials: sudo setsebool -P antivirus_use_jit 1
