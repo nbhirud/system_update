@@ -341,7 +341,7 @@ fi
 
 
 
-if   [ "$RAM_MB" -lt 8000 ];  then RAM_PROFILE=low
+if   [ "$RAM_MB" -lt 10000 ];  then RAM_PROFILE=low
 elif [ "$RAM_MB" -lt 20000 ]; then RAM_PROFILE=mid
 else                               RAM_PROFILE=high
 fi
