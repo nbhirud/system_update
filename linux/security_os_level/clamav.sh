@@ -3200,9 +3200,24 @@ echo "Configuration validated successfully."
 #     exit 1
 # fi
 
-echo "Waiting for clamd to load signatures (can take minutes on the HDD machines)..."
+# echo "Waiting for clamd to load signatures (can take minutes on the HDD machines)..."
+# if ! sudo clamdscan --config-file="$SCAN_CONF" --ping 60:3; then
+#     sudo journalctl -u clamd@scan -n 50 --no-pager; exit 1
+# fi
+
+echo "Waiting for clamd to load signatures (can take minutes on the HDD machines) and open socket"
+for i in {1..100}; do
+    if sudo clamdscan --config-file="$SCAN_CONF" --ping 1 2>/dev/null; then
+        break
+    fi
+    echo "Waiting"
+    sleep 2
+done
+
 if ! sudo clamdscan --config-file="$SCAN_CONF" --ping 60:3; then
-    sudo journalctl -u clamd@scan -n 50 --no-pager; exit 1
+    echo "ERROR: clamd failed to respond on socket." >&2
+    sudo journalctl -u clamd@scan -n 50 --no-pager
+    exit 1
 fi
 
 echo "Checking ClamAV services..."
