@@ -339,7 +339,7 @@ CPU_CORES=$(nproc)
 
 # RAM_GB=$(( $(grep MemTotal /proc/meminfo | awk '{print $2}') / 1024 / 1024 ))
 RAM_MB=$(awk '/^MemTotal:/ {print int($2/1024)}' /proc/meminfo)
-RAM_GB=$(( RAM_MB / 1024 ))
+# RAM_GB=$(( RAM_MB / 1024 ))
 
 
 
@@ -368,7 +368,7 @@ ROOT_DEV=$(df / | tail -1 | awk '{print $1}')
 BACKING_DEV=$(lsblk -no pkname "$ROOT_DEV" 2>/dev/null || basename "$ROOT_DEV" | sed 's/[0-9]*$//')
 
 if [ -n "$BACKING_DEV" ] && [ -f "/sys/block/$BACKING_DEV/queue/rotational" ]; then
-    if [ "$(cat /sys/block/$BACKING_DEV/queue/rotational)" -eq 0 ]; then
+    if [ "$(cat /sys/block/"$BACKING_DEV"/queue/rotational)" -eq 0 ]; then
         SSD_PRESENT=true
     fi
 elif lsblk -d -o rota | grep -q "^0$"; then
@@ -3408,7 +3408,7 @@ clamdscan --version
 
 # Check if the script is syntactically correct:
 # bash -n clamav.sh
-# shellcheck clamav.sh
+# # shellcheck clamav.sh
 
 # run your setup script and inspect the resulting services:
 # systemctl --failed
