@@ -48,6 +48,194 @@ fi
 
 
 #########################################################
+# Inputs:
+#########################################################
+
+# # TODO: Take following as inputs as named options. If not provided, use the defaults below
+# # HAS_TORRENT_CLIENT
+# # HAS_KODI
+# # REAL_USER
+# # FILENAME_TIMESTAMP
+# # SCRIPT_BACKUPS_DIR
+# # PC_TYPE
+
+# REAL_USER="${SUDO_USER:-$USER}"
+
+# FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
+# # HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+# # Get the actual user's home when runing a script with sudo
+# HOME_DIR=$(getent passwd "$REAL_USER" | cut -d: -f6)
+# NBDIR="$HOME_DIR/nb"
+# SCRIPT_DATA="$NBDIR/nb_script_data"
+# SCRIPT_BACKUPS_DIR="$SCRIPT_DATA/backups"
+# CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
+
+# PC_TYPE=$(. /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop)
+
+# HAS_TORRENT_CLIENT=true # default true for PC_TYPE desktop and false for server
+# HAS_KODI=true # default true for PC_TYPE desktop and false for server
+
+
+##############################
+# # INPUTS & CONFIGURATION DEFAULTS - using positional arguments
+
+# # 1. PC_TYPE (default detected via OS release if not provided)
+# : "${PC_TYPE:=$( [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop )}"
+
+# # 2. REAL_USER (defaults to SUDO_USER or current user)
+# : "${REAL_USER:=${SUDO_USER:-$USER}}"
+
+# # 3. FILENAME_TIMESTAMP (defaults to current timestamp)
+# : "${FILENAME_TIMESTAMP:=$(date +%Y-%m-%d_%H-%M-%S)}"
+
+# # Derived paths using REAL_USER and TIMESTAMP
+# HOME_DIR="$(getent passwd "$REAL_USER" | cut -d: -f6)"
+# NBDIR="$HOME_DIR/nb"
+# SCRIPT_DATA="$NBDIR/nb_script_data"
+
+# # 4. SCRIPT_BACKUPS_DIR (defaults to standard path under nb_script_data)
+# : "${SCRIPT_BACKUPS_DIR:="$SCRIPT_DATA/backups"}"
+# CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
+
+# # 5. HAS_TORRENT_CLIENT (default: true for desktop, false for server)
+# if [ -z "${HAS_TORRENT_CLIENT:-}" ]; then
+#     [ "$PC_TYPE" = "desktop" ] && HAS_TORRENT_CLIENT=true || HAS_TORRENT_CLIENT=false
+# fi
+
+# # 6. HAS_KODI (default: true for desktop, false for server)
+# if [ -z "${HAS_KODI:-}" ]; then
+#     [ "$PC_TYPE" = "desktop" ] && HAS_KODI=true || HAS_KODI=false
+# fi
+
+
+##############################
+# INPUTS & CONFIGURATION DEFAULTS - using named options
+
+
+# DEFAULT VALUES (Fallback if not provided)
+
+PC_TYPE=""
+REAL_USER=""
+FILENAME_TIMESTAMP=""
+SCRIPT_BACKUPS_DIR=""
+HAS_TORRENT_CLIENT=""
+HAS_KODI=""
+
+
+# PARSE NAMED OPTIONS
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --pc-type=*)
+            PC_TYPE="${1#*=}"
+            shift
+            ;;
+        --pc-type)
+            PC_TYPE="$2"
+            shift 2
+            ;;
+        --real-user=*)
+            REAL_USER="${1#*=}"
+            shift
+            ;;
+        --real-user)
+            REAL_USER="$2"
+            shift 2
+            ;;
+        --torrent-client=*)
+            HAS_TORRENT_CLIENT="${1#*=}"
+            shift
+            ;;
+        --torrent-client)
+            HAS_TORRENT_CLIENT="$2"
+            shift 2
+            ;;
+        --kodi=*)
+            HAS_KODI="${1#*=}"
+            shift
+            ;;
+        --kodi)
+            HAS_KODI="$2"
+            shift 2
+            ;;
+        --backup-dir=*)
+            SCRIPT_BACKUPS_DIR="${1#*=}"
+            shift
+            ;;
+        --backup-dir)
+            SCRIPT_BACKUPS_DIR="$2"
+            shift 2
+            ;;
+        --timestamp=*)
+            FILENAME_TIMESTAMP="${1#*=}"
+            shift
+            ;;
+        --timestamp)
+            FILENAME_TIMESTAMP="$2"
+            shift 2
+            ;;
+        -h|--help)
+            echo "Usage: $0 [OPTIONS]"
+            echo "  --pc-type <desktop|laptop|server>"
+            echo "  --real-user <username>"
+            echo "  --torrent-client <true|false>"
+            echo "  --kodi <true|false>"
+            echo "  --backup-dir <path>"
+            echo "  --timestamp <YYYY-MM-DD_HH-MM-SS>"
+            exit 0
+            ;;
+        *)
+            echo "ERROR: Unknown option: $1" >&2
+            exit 1
+            ;;
+    esac
+done
+
+
+# APPLY INTELLIGENT DEFAULTS FOR UNSET OPTIONS
+
+# Treat laptop as desktop from security perspective.
+if [ "$PC_TYPE" = "laptop" ]; then
+    PC_TYPE="desktop"
+fi
+
+# 1. PC_TYPE (detected via OS release if not provided)
+if [ -z "$PC_TYPE" ]; then
+    PC_TYPE="$( . /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop )"   # subshell: no variable pollution
+
+fi
+
+# 2. REAL_USER (defaults to SUDO_USER or current user)
+REAL_USER="${REAL_USER:-${SUDO_USER:-$USER}}"
+
+# 3. TIMESTAMP (defaults to current time if not provided)
+FILENAME_TIMESTAMP="${FILENAME_TIMESTAMP:-$(date +%Y-%m-%d_%H-%M-%S)}"
+
+# Derived paths using REAL_USER and TIMESTAMP
+HOME_DIR="$(getent passwd "$REAL_USER" | cut -d: -f6)"
+NBDIR="$HOME_DIR/nb"
+SCRIPT_DATA="$NBDIR/nb_script_data"
+
+# 4. SCRIPT_BACKUPS_DIR
+SCRIPT_BACKUPS_DIR="${SCRIPT_BACKUPS_DIR:-$SCRIPT_DATA/backups}"
+CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
+
+# 5. HAS_TORRENT_CLIENT (default based on PC_TYPE if not provided)
+if [ -z "$HAS_TORRENT_CLIENT" ]; then
+    [ "$PC_TYPE" = "desktop" ] && HAS_TORRENT_CLIENT=true || HAS_TORRENT_CLIENT=false
+fi
+
+# 6. HAS_KODI (default based on PC_TYPE if not provided)
+if [ -z "$HAS_KODI" ]; then
+    [ "$PC_TYPE" = "desktop" ] && HAS_KODI=true || HAS_KODI=false
+fi
+
+if [[ ! "$FILENAME_TIMESTAMP" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]]; then
+    echo "ERROR: --timestamp must use YYYY-MM-DD_HH-MM-SS" >&2
+    exit 2
+fi
+
+#########################################################
 # Paths and Constants:
 #########################################################
 
@@ -87,17 +275,6 @@ UNOFFICIAL_SIGS_OS_CONF="/etc/clamav-unofficial-sigs/os.conf"
 # CLAM_USER="clamav"
 CLAM_USER="clamscan"
 # UPDATE_USER="clamupdate"
-
-REAL_USER="${SUDO_USER:-$USER}"
-
-FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
-# HOME_DIR=$(getent passwd $USER | cut -d: -f6)
-# Get the actual user's home when runing a script with sudo
-HOME_DIR=$(getent passwd "$REAL_USER" | cut -d: -f6)
-NBDIR="$HOME_DIR/nb"
-SCRIPT_DATA="$NBDIR/nb_script_data"
-SCRIPT_BACKUPS_DIR="$SCRIPT_DATA/backups"
-CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
 
 
 #########################################################
