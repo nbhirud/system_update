@@ -431,11 +431,32 @@ fi
 chmod 700 -- "$CLAMAV_BACKUP_DIR"
 
 
-for config_file in "$SCAN_CONF" "$FRESH_CONF" "$UNOFFICIAL_SIGS_MASTER_CONF" "$UNOFFICIAL_SIGS_OS_CONF"; do
+for config_file in "$SCAN_CONF" "$FRESH_CONF" "$UNOFFICIAL_SIGS_MASTER_CONF" "$UNOFFICIAL_SIGS_OS_CONF"; 
+do
 
-    if [ -f "$config_file" ]; then
-        sudo cp -a "$config_file" "$CLAMAV_BACKUP_DIR/"
+    # if [ -f "$config_file" ]; then
+    #     sudo cp -a "$config_file" "$CLAMAV_BACKUP_DIR/"
+    # fi
+
+    # The above does check whether the backup directory itself is a symlink, but that does not prevent an individual file inside the directory from being a symlink.
+    # GNU cp can follow an existing destination symlink when the symlink points to an existing regular file. Since this copy runs as root, an attacker who can prepare a symlink inside the backup directory may be able to make the root process overwrite a different file.
+    # This is an unsafe privileged-write pattern even though the script is intended for a single-user PC and the invoking user already has sudo access.
+    # sudo cat reads the source as root, but the shell redirection that creates the backup runs as your normal user. A symlink cannot make that redirection write a protected root-owned destination with root privileges.
+    # This change also ensures that the backup files are private to your account.
+
+    # Create private backups as the invoking user.
+    # Root is used only to READ the protected source configuration files.
+    if [[ -f "$config_file" ]]; then
+        backup_file="$CLAMAV_BACKUP_DIR/$(basename -- "$config_file")"
+
+        if ! sudo cat -- "$config_file" > "$backup_file"; then
+            echo "ERROR: Failed to back up $config_file" >&2
+            exit 1
+        fi
+
+        chmod 600 -- "$backup_file"
     fi
+
 done
 
 echo "Configuration backups saved in: $CLAMAV_BACKUP_DIR"
@@ -545,22 +566,22 @@ sudo restorecon -R "$QUARANTINE_DIR"
 
 # We have set root:root 700 for the quarantine directory. The clamonacc service runs as root (we have User=root in the service file), so this should work. However, if we ever change clamonacc to run as clamscan user, quarantine will fail.
 # Verify quarantine directory accessibility
-if systemctl is-active --quiet clamav-clamonacc.service 2>/dev/null; then
-    QUIZ_USER=$(systemctl show clamav-clamonacc.service -p User --value)
-    QUIZ_GROUP=$(systemctl show clamav-clamonacc.service -p Group --value)
+# if systemctl is-active --quiet clamav-clamonacc.service 2>/dev/null; then
+#     QUIZ_USER=$(systemctl show clamav-clamonacc.service -p User --value)
+#     QUIZ_GROUP=$(systemctl show clamav-clamonacc.service -p Group --value)
     
-    QUIZ_OWNERSHIP=$(stat -c '%U:%G' "$QUARANTINE_DIR")
+#     QUIZ_OWNERSHIP=$(stat -c '%U:%G' "$QUARANTINE_DIR")
     
-    if [ "$QUIZ_USER" = "root" ]; then
-        echo "INFO: clamonacc runs as root; quarantine ownership OK"
-    else
-        echo "WARN: clamonacc runs as $QUIZ_USER:$QUIZ_GROUP"
-        if [ "$QUIZ_OWNERSHIP" != "$QUIZ_USER:$QUIZ_GROUP" ]; then
-            echo "ERROR: Quarantine ownership mismatch. clamonacc will fail to quarantine."
-            sudo chown "$QUIZ_USER:$QUIZ_GROUP" "$QUARANTINE_DIR"
-        fi
-    fi
-fi
+#     if [ "$QUIZ_USER" = "root" ]; then
+#         echo "INFO: clamonacc runs as root; quarantine ownership OK"
+#     else
+#         echo "WARN: clamonacc runs as $QUIZ_USER:$QUIZ_GROUP"
+#         if [ "$QUIZ_OWNERSHIP" != "$QUIZ_USER:$QUIZ_GROUP" ]; then
+#             echo "ERROR: Quarantine ownership mismatch. clamonacc will fail to quarantine."
+#             sudo chown "$QUIZ_USER:$QUIZ_GROUP" "$QUARANTINE_DIR"
+#         fi
+#     fi
+# fi
 
 #########################################################
 # Fangfrisch - Skip this. We are using clamav-unofficial-sigs instead
@@ -2046,7 +2067,11 @@ Group=root
 ExecStart=/usr/local/bin/clamav-usb-scan.sh /dev/%I
 Nice=19
 IOSchedulingClass=idle
-TimeoutStartSec=infinity
+# A USB device that remains connected but never mounts - for example, one with an unsupported filesystem - can leave a root-running service waiting indefinitely. Multiple devices could create multiple long-lived waiting services.
+# TimeoutStartSec=infinity
+# Five minutes gives a normal desktop ample time to mount a USB filesystem while preventing indefinite waiting. If you later add a bounded wait directly to the helper, keep the systemd timeout as a second layer of protection.
+TimeoutStartSec=5min
+TimeoutStopSec=10s
 NoNewPrivileges=yes
 ProtectSystem=full
 ProtectHome=read-only
@@ -2647,7 +2672,14 @@ sudo tee /usr/local/bin/clamav-weekly-scan.sh > /dev/null <<'EOF'
 #!/bin/bash
 set -u
 
-flock -n 9 || { echo "weekly scan already running"; exit 0; }
+# flock -n 9 || { echo "weekly scan already running"; exit 0; }
+
+# Prevent overlapping weekly scan instances.
+exec 9>/run/clamav-weekly-scan.lock
+flock -n 9 || {
+    echo "Weekly scan already running; skipping this instance."
+    exit 0
+}
 
 echo "Weekly scan started: $(date --iso-8601=seconds)"
 
@@ -3000,7 +3032,10 @@ if [ "$PC_TYPE" = desktop ]; then
 journalctl -f -n0 -t clamav-alert -o cat | while IFS= read -r line; do
     # Notification bodies accept HTML-like markup, and file names are attacker-controlled:
     # without escaping, a file named <a href="https://evil">…</a> becomes a clickable link.
-    line=${line//&/&amp;}; line=${line//</&lt;}
+    # line=${line//&/&amp;}; line=${line//</&lt;}
+    line=$(printf '%s' "$line" | sed \
+        -e 's/&/\&amp;/g' \
+        -e 's/</\&lt;/g')
     notify-send -u critical -i dialog-warning -- "ClamAV" "$line"
 done
 EOF
