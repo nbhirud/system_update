@@ -1380,7 +1380,12 @@ done
 
 # To differentiate a small USB thumb drive from a massive external HDD, the helper script checks mounted filesystem capacity. The default threshold is 256 GiB; larger external HDDs are skipped.
 
-echo "Configuring smart USB drive scanner"
+
+################################
+################################
+
+
+# echo "Configuring smart USB drive scanner"
 
 # sudo tee /usr/local/bin/clamav-usb-scan.sh > /dev/null <<'EOF'
 # #!/bin/bash
@@ -1557,6 +1562,254 @@ echo "Configuring smart USB drive scanner"
 # EOF
 
 
+################################
+################################
+
+
+# sudo tee /usr/local/bin/clamav-usb-scan.sh > /dev/null <<'EOF'
+# #!/usr/bin/bash
+# set -u -o pipefail
+
+# LOG_DIR="/var/log/clamav"
+# SIZE_THRESHOLD_GIB=256
+# WAIT_INTERVAL_SECONDS=2
+
+# log() {
+#     logger -t clamav-usb-scan -- "$*"
+#     printf '%s\n' "$*"
+# }
+
+# find_active_graphical_user() {
+#     local session_id _session_uid _session_user _rest session_info
+#     local session_name session_active session_remote session_type session_class
+
+#     while read -r session_id _session_uid _session_user _rest; do
+#         [[ -n "$session_id" ]] || continue
+#         session_info=$(loginctl show-session "$session_id" \
+#             -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
+
+#         session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
+#         session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
+#         session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
+#         session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
+#         session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
+
+#         if [[ "$session_active" == yes && "$session_remote" == no &&
+#               "$session_class" == user &&
+#               ( "$session_type" == wayland || "$session_type" == x11 ) &&
+#               -n "$session_name" ]]; then
+#             printf '%s\n' "$session_name"
+#             return 0
+#         fi
+#     done < <(loginctl list-sessions --no-legend 2>/dev/null)
+
+#     return 1
+# }
+
+# notify_desktop_user() {
+#     local title=$1 message=$2 icon=$3 urgency=$4 active_user user_uid runtime_dir
+
+#     active_user=$(find_active_graphical_user) || active_user=""
+#     [[ -n "$active_user" ]] || {
+#         log "No active local graphical session; notification was not displayed: $title"
+#         return 0
+#     }
+
+#     user_uid=$(id -u -- "$active_user") || return 0
+#     runtime_dir="/run/user/$user_uid"
+#     [[ -S "$runtime_dir/bus" ]] || {
+#         log "No session D-Bus socket for $active_user; notification was not displayed."
+#         return 0
+#     }
+
+#     if ! runuser -u "$active_user" -- /usr/bin/env \
+#         XDG_RUNTIME_DIR="$runtime_dir" \
+#         DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime_dir/bus" \
+#         /usr/bin/notify-send -u "$urgency" -i "$icon" -- "$title" "$message"; then
+#         log "Failed to send desktop notification to $active_user: $title"
+#     fi
+# }
+
+# find_mountpoint_for_device() {
+#     local wanted_device_id line mount_id parent_id device_id mount_root mount_target mount_options rest
+
+#     wanted_device_id=$(lsblk -dnro MAJ:MIN -- "$DEVICE_NODE" 2>/dev/null) || return 1
+#     [[ -n "$wanted_device_id" ]] || return 1
+
+#     # Prefer findmnt source matching; this also handles filesystems mounted via
+#     # FUSE, where mountinfo's major:minor may be the FUSE device, not the USB.
+#     mount_target=$(findmnt --raw --noheadings --source "$DEVICE_NODE" \
+#         --output TARGET 2>/dev/null | head -n 1) || mount_target=""
+#     if [[ -n "$mount_target" ]]; then
+#         mount_target=${mount_target//\\x20/$' '}
+#         mount_target=${mount_target//\\x09/$'\t'}
+#         mount_target=${mount_target//\\x0a/$'\n'}
+#         mount_target=${mount_target//\\x5c/$'\\'}
+#         printf '%s\n' "$mount_target"
+#         return 0
+#     fi
+
+#     # Fallback: /proc/self/mountinfo escapes spaces, tabs, newlines, and
+#     # backslashes. Match by major:minor rather than guessing /run/media paths.
+#     while IFS= read -r line; do
+#         read -r mount_id parent_id device_id mount_root mount_target mount_options rest <<< "$line"
+#         [[ "$device_id" == "$wanted_device_id" ]] || continue
+
+#         mount_target=${mount_target//\\040/$' '}
+#         mount_target=${mount_target//\\011/$'\t'}
+#         mount_target=${mount_target//\\012/$'\n'}
+#         mount_target=${mount_target//\\134/$'\\'}
+#         printf '%s\n' "$mount_target"
+#         return 0
+#     done < /proc/self/mountinfo
+
+#     return 1
+# }
+
+# if [[ $# -ne 1 ]]; then
+#     log "Usage: $0 /dev/<USB-partition-or-unpartitioned-device>"
+#     exit 2
+# fi
+
+# DEVICE_NODE=$1
+# # For automatic scanning, %I in the systemd unit is a kernel block-device name.
+# # Reject paths outside /dev and malformed device names before querying block tools.
+# if [[ ! "$DEVICE_NODE" =~ ^/dev/[[:alnum:]_-]+$ ]]; then
+#     log "Refusing invalid block-device path: $DEVICE_NODE"
+#     exit 2
+# fi
+
+# if [[ ! -b "$DEVICE_NODE" ]]; then
+#     log "Block device is not present: $DEVICE_NODE"
+#     exit 1
+# fi
+
+# DEVICE_NAME=${DEVICE_NODE##*/}
+# if [[ ! -e "/sys/class/block/$DEVICE_NAME" ]]; then
+#     log "No matching sysfs block device: $DEVICE_NODE"
+#     exit 1
+# fi
+
+# log "Waiting for $DEVICE_NODE to be mounted; this wait ends when the volume is mounted or disconnected."
+# DEVICE_MOUNT=""
+# while [[ -b "$DEVICE_NODE" ]]; do
+#     DEVICE_MOUNT=$(find_mountpoint_for_device) || DEVICE_MOUNT=""
+#     if [[ -n "$DEVICE_MOUNT" ]]; then
+#         break
+#     fi
+#     sleep "$WAIT_INTERVAL_SECONDS"
+# done
+
+# if [[ ! -b "$DEVICE_NODE" ]]; then
+#     log "Device was removed before it could be scanned: $DEVICE_NODE"
+#     exit 1
+# fi
+
+# if [[ -z "$DEVICE_MOUNT" ]]; then
+#     log "No mount detected for $DEVICE_NODE; not scanning an unmounted device."
+#     exit 1
+# fi
+
+# DEVICE_MOUNT=$(realpath -e -- "$DEVICE_MOUNT") || {
+#     log "Could not resolve mount path for $DEVICE_NODE."
+#     exit 1
+# }
+
+# mountpoint -q -- "$DEVICE_MOUNT" || {
+#     log "Resolved path is not a mount point: $DEVICE_MOUNT"
+#     exit 1
+# }
+
+# # Skip large external HDDs / backup drives. This threshold is in GiB.
+# DEV_SIZE_KIB=$(df -Pk -- "$DEVICE_MOUNT" 2>/dev/null | awk 'NR == 2 { print $2 }')
+# if [[ ! "$DEV_SIZE_KIB" =~ ^[0-9]+$ ]]; then
+#     log "Could not determine filesystem size for $DEVICE_MOUNT."
+#     exit 1
+# fi
+
+# if (( DEV_SIZE_KIB > SIZE_THRESHOLD_GIB * 1024 * 1024 )); then
+#     log "Skipping $DEVICE_NODE at $DEVICE_MOUNT: filesystem size exceeds ${SIZE_THRESHOLD_GIB} GiB."
+#     exit 0
+# fi
+
+# LOGFILE="${LOG_DIR}/usb_scan_$(date +%F).log"
+# log "Scanning $DEVICE_NODE mounted at $DEVICE_MOUNT (size <= ${SIZE_THRESHOLD_GIB} GiB). Log: $LOGFILE"
+
+# # --fdpass lets this root-run client open files that the clamscan daemon user
+# # cannot traverse on KDE's user-mounted /run/media paths. LocalSocket is configured.
+# # clamdscan exit statuses: 0 = clean, 1 = infected, 2 = scan/error condition.
+# SCAN_STATUS=0
+# if nice -n 19 ionice -c 3 /usr/bin/clamdscan --fdpass -r "$DEVICE_MOUNT" --infected --log="$LOGFILE"; then
+#     SCAN_STATUS=0
+# else
+#     SCAN_STATUS=$?
+# fi
+
+# if (( SCAN_STATUS == 1 )); then
+#     NOTIFICATION_TITLE="ClamAV USB Alert: Threat detected"
+#     NOTIFICATION_MESSAGE="A threat was detected on $DEVICE_MOUNT. Review the scan log: $LOGFILE"
+#     NOTIFICATION_ICON="dialog-warning"
+#     NOTIFICATION_URGENCY="critical"
+#     log "Threat detected on $DEVICE_MOUNT. Review $LOGFILE"
+# elif (( SCAN_STATUS == 0 )); then
+#     NOTIFICATION_TITLE="ClamAV USB scan complete"
+#     NOTIFICATION_MESSAGE="No threats reported on $DEVICE_MOUNT. Log: $LOGFILE"
+#     NOTIFICATION_ICON="dialog-information"
+#     NOTIFICATION_URGENCY="normal"
+#     log "USB scan completed with no detections: $DEVICE_MOUNT"
+# else
+#     NOTIFICATION_TITLE="ClamAV USB scan error"
+#     NOTIFICATION_MESSAGE="Scan failed or was incomplete for $DEVICE_MOUNT (exit status $SCAN_STATUS). Log: $LOGFILE"
+#     NOTIFICATION_ICON="dialog-error"
+#     NOTIFICATION_URGENCY="critical"
+#     log "USB scan failed with exit status $SCAN_STATUS for $DEVICE_MOUNT. Log: $LOGFILE"
+# fi
+
+# notify_desktop_user "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE" \
+#     "$NOTIFICATION_ICON" "$NOTIFICATION_URGENCY"
+
+# # A detection is a completed scan, not a systemd service malfunction.
+# # Return success for clean/infected completed scans; errors remain visible in systemd.
+# if (( SCAN_STATUS == 2 )); then
+#     exit 2
+# fi
+# exit 0
+# EOF
+
+# # sudo chmod +x /usr/local/bin/clamav-usb-scan.sh
+
+# sudo chown root:root /usr/local/bin/clamav-usb-scan.sh
+# sudo chmod 0755 /usr/local/bin/clamav-usb-scan.sh
+
+
+# # # Udev rule matching inserted storage partitions
+# # sudo tee /etc/udev/rules.d/99-clamav-usb.rules > /dev/null <<EOF
+
+# # ACTION=="add", SUBSYSTEMS=="usb", KERNEL=="sd[a-z][0-9]", RUN+="/bin/bash -c 'sleep 5 && /usr/local/bin/clamav-usb-scan.sh /run/media/*/%k'"
+
+# # EOF
+
+
+# # sudo udevadm control --reload
+
+
+# # To scan a USB drive manually, first mount it in KDE Dolphin,
+# # then run the following command, replacing USERNAME and VOLUME_LABEL
+# # with the actual directory names shown under /run/media:
+# #
+# # sudo /usr/local/bin/clamav-usb-scan.sh "/run/media/USERNAME/VOLUME_LABEL"
+# #
+# # Reliable automation should use a mount-aware systemd workflow
+# # that passes the actual mounted filesystem path to the scanner.
+
+
+################################
+################################
+
+
+echo "Configuring smart USB drive scanner"
+
+
 sudo tee /usr/local/bin/clamav-usb-scan.sh > /dev/null <<'EOF'
 #!/usr/bin/bash
 set -u -o pipefail
@@ -1568,57 +1821,6 @@ WAIT_INTERVAL_SECONDS=2
 log() {
     logger -t clamav-usb-scan -- "$*"
     printf '%s\n' "$*"
-}
-
-find_active_graphical_user() {
-    local session_id _session_uid _session_user _rest session_info
-    local session_name session_active session_remote session_type session_class
-
-    while read -r session_id _session_uid _session_user _rest; do
-        [[ -n "$session_id" ]] || continue
-        session_info=$(loginctl show-session "$session_id" \
-            -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
-
-        session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
-        session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
-        session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
-        session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
-        session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
-
-        if [[ "$session_active" == yes && "$session_remote" == no &&
-              "$session_class" == user &&
-              ( "$session_type" == wayland || "$session_type" == x11 ) &&
-              -n "$session_name" ]]; then
-            printf '%s\n' "$session_name"
-            return 0
-        fi
-    done < <(loginctl list-sessions --no-legend 2>/dev/null)
-
-    return 1
-}
-
-notify_desktop_user() {
-    local title=$1 message=$2 icon=$3 urgency=$4 active_user user_uid runtime_dir
-
-    active_user=$(find_active_graphical_user) || active_user=""
-    [[ -n "$active_user" ]] || {
-        log "No active local graphical session; notification was not displayed: $title"
-        return 0
-    }
-
-    user_uid=$(id -u -- "$active_user") || return 0
-    runtime_dir="/run/user/$user_uid"
-    [[ -S "$runtime_dir/bus" ]] || {
-        log "No session D-Bus socket for $active_user; notification was not displayed."
-        return 0
-    }
-
-    if ! runuser -u "$active_user" -- /usr/bin/env \
-        XDG_RUNTIME_DIR="$runtime_dir" \
-        DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime_dir/bus" \
-        /usr/bin/notify-send -u "$urgency" -i "$icon" -- "$title" "$message"; then
-        log "Failed to send desktop notification to $active_user: $title"
-    fi
 }
 
 find_mountpoint_for_device() {
@@ -1729,42 +1931,26 @@ log "Scanning $DEVICE_NODE mounted at $DEVICE_MOUNT (size <= ${SIZE_THRESHOLD_GI
 # --fdpass lets this root-run client open files that the clamscan daemon user
 # cannot traverse on KDE's user-mounted /run/media paths. LocalSocket is configured.
 # clamdscan exit statuses: 0 = clean, 1 = infected, 2 = scan/error condition.
+
+# --fdpass: this root client opens each file itself and passes the descriptor to clamd (user
+# clamscan), which could not otherwise traverse KDE's user-owned /run/media mount.
+# clamdscan always recurses, so -r was a no-op; nice/ionice on the client don't throttle clamd either.
+# No --log: output goes to the unit's journal (journalctl -u 'clamav-usb-scan@*').
 SCAN_STATUS=0
-if nice -n 19 ionice -c 3 /usr/bin/clamdscan --fdpass -r "$DEVICE_MOUNT" --infected --log="$LOGFILE"; then
-    SCAN_STATUS=0
-else
-    SCAN_STATUS=$?
-fi
+/usr/bin/clamdscan --fdpass --infected "$DEVICE_MOUNT" || SCAN_STATUS=$?   # capture the exit code safely
 
-if (( SCAN_STATUS == 1 )); then
-    NOTIFICATION_TITLE="ClamAV USB Alert: Threat detected"
-    NOTIFICATION_MESSAGE="A threat was detected on $DEVICE_MOUNT. Review the scan log: $LOGFILE"
-    NOTIFICATION_ICON="dialog-warning"
-    NOTIFICATION_URGENCY="critical"
-    log "Threat detected on $DEVICE_MOUNT. Review $LOGFILE"
-elif (( SCAN_STATUS == 0 )); then
-    NOTIFICATION_TITLE="ClamAV USB scan complete"
-    NOTIFICATION_MESSAGE="No threats reported on $DEVICE_MOUNT. Log: $LOGFILE"
-    NOTIFICATION_ICON="dialog-information"
-    NOTIFICATION_URGENCY="normal"
-    log "USB scan completed with no detections: $DEVICE_MOUNT"
-else
-    NOTIFICATION_TITLE="ClamAV USB scan error"
-    NOTIFICATION_MESSAGE="Scan failed or was incomplete for $DEVICE_MOUNT (exit status $SCAN_STATUS). Log: $LOGFILE"
-    NOTIFICATION_ICON="dialog-error"
-    NOTIFICATION_URGENCY="critical"
-    log "USB scan failed with exit status $SCAN_STATUS for $DEVICE_MOUNT. Log: $LOGFILE"
-fi
+case "$SCAN_STATUS" in
+    0) log "USB scan completed with no detections: $DEVICE_MOUNT" ;;
+    1) logger -p authpriv.warning -t clamav-alert -- "USB scan: threat found on $DEVICE_MOUNT" ;;
+    *) logger -p authpriv.err -t clamav-alert -- "USB scan failed (exit $SCAN_STATUS) on $DEVICE_MOUNT" ;;
+esac
 
-notify_desktop_user "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE" \
-    "$NOTIFICATION_ICON" "$NOTIFICATION_URGENCY"
+# A detection is a COMPLETED scan: exit 0 so systemd doesn't mark the unit failed.
+# Only a scanner error (2) should show up as a failed unit.
+if (( SCAN_STATUS == 2 )); then exit 2; fi
 
-# A detection is a completed scan, not a systemd service malfunction.
-# Return success for clean/infected completed scans; errors remain visible in systemd.
-if (( SCAN_STATUS == 2 )); then
-    exit 2
-fi
 exit 0
+
 EOF
 
 # sudo chmod +x /usr/local/bin/clamav-usb-scan.sh
@@ -1773,25 +1959,7 @@ sudo chown root:root /usr/local/bin/clamav-usb-scan.sh
 sudo chmod 0755 /usr/local/bin/clamav-usb-scan.sh
 
 
-# # Udev rule matching inserted storage partitions
-# sudo tee /etc/udev/rules.d/99-clamav-usb.rules > /dev/null <<EOF
 
-# ACTION=="add", SUBSYSTEMS=="usb", KERNEL=="sd[a-z][0-9]", RUN+="/bin/bash -c 'sleep 5 && /usr/local/bin/clamav-usb-scan.sh /run/media/*/%k'"
-
-# EOF
-
-
-# sudo udevadm control --reload
-
-
-# To scan a USB drive manually, first mount it in KDE Dolphin,
-# then run the following command, replacing USERNAME and VOLUME_LABEL
-# with the actual directory names shown under /run/media:
-#
-# sudo /usr/local/bin/clamav-usb-scan.sh "/run/media/USERNAME/VOLUME_LABEL"
-#
-# Reliable automation should use a mount-aware systemd workflow
-# that passes the actual mounted filesystem path to the scanner.
 
 
 
@@ -1821,7 +1989,7 @@ TimeoutStartSec=infinity
 NoNewPrivileges=yes
 ProtectSystem=full
 ProtectHome=read-only
-# PrivateTmp=yes
+PrivateTmp=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
@@ -3111,6 +3279,7 @@ clamdscan --version
 # journalctl -u clamav-weekly-scan
 # journalctl -u 'clamav-usb-scan@*'
 # journalctl --list-boots  # Check the journal is persistent - more than one boot listed means yes
+# journalctl -u 'clamav-usb-scan@*' -n 20 # Verify on the first USB insert that the hardened unit sees the mount
 
 # Check if the script is syntactically correct:
 # bash -n clamav.sh
