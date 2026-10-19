@@ -289,6 +289,11 @@ CLAM_USER="clamscan"
 # clamav-lib and clamav-filesystem are pulled in as dependencies. policycoreutils-python-utils provides audit2allow and semanage. util-linux provides flock
 sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamdtop policycoreutils-python-utils util-linux
 
+# Warning: clamav-unofficial-sigs will download third-party signatures.
+# Review /etc/clamav-unofficial-sigs/master.conf to control which sources are enabled.
+# Some sources are maintained by volunteers; assess trust levels accordingly.
+
+
 #########################################################
 # Dynamic Hardware-Aware Optimization:
 #########################################################
@@ -403,10 +408,16 @@ sudo touch "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
 sudo chown "$CLAM_USER:$CLAM_USER" "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
 sudo chmod 640 "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
 
-
-
-
-
+# # Creating logs with touch followed by chown/chmod leaves a brief window where unprivileged users might be able to replace or modify the log files. Use atomic file creation:
+# for logfile in "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"; do
+#     if [[ ! -f "$logfile" ]]; then
+#         sudo install -o "$CLAM_USER" -g "$CLAM_USER" -m 640 /dev/null "$logfile"
+#     else
+#         # Existing file: just fix ownership/permissions
+#         sudo chown "$CLAM_USER:$CLAM_USER" "$logfile"
+#         sudo chmod 640 "$logfile"
+#     fi
+# done
 
 ###########################
 # The following is Tested and works perfectly:
@@ -457,13 +468,11 @@ sudo find "$SIG_DB_DIR" -type f -exec chmod 640 {} +
 # sudo chmod -R 700 "$QUARANTINE_DIR"
 
 
-
 # Quarantine: clamonacc (root) does the move. Give it a label the antivirus domain may write.
 sudo install -d -o root -g root -m 700 "$QUARANTINE_DIR"
 sudo semanage fcontext -a -t antivirus_db_t "$QUARANTINE_DIR(/.*)?" 2>/dev/null \
   || sudo semanage fcontext -m -t antivirus_db_t "$QUARANTINE_DIR(/.*)?"
 sudo restorecon -R "$QUARANTINE_DIR"
-
 
 
 #########################################################
@@ -1015,10 +1024,10 @@ set_config_value "$SCAN_CONF" VirusEvent /usr/local/bin/clamav-notify.sh
 
 # # TemporaryDirectory /dev/shm (RAM Optimization) - Use RAM disk for temporary scanning files if sufficient memory is available. Forces ClamAV to extract and inspect archives entirely inside your system's RAM (tmpfs).
 # # RAM-based temp directory (Independent of disk type, check RAM instead)
-# if [ "$RAM_GB" -ge 12 ]; then
+# if [ "$RAM_GB" -ge 14 ]; then
+
 #     echo "[*] Sufficient RAM ($RAM_GB GB) detected: routing ClamAV temp files to RAM (/dev/shm)..."
 #     # sudo sed -i 's|^#TemporaryDirectory.*|TemporaryDirectory /dev/shm|' "$SCAN_CONF"
-
 #     set_config_value "$SCAN_CONF" TemporaryDirectory /dev/shm
 
 # fi
@@ -1264,6 +1273,9 @@ add_config_value "$SCAN_CONF" OnAccessExcludeUname $CLAM_USER
 sudo sed -i '/^OnAccessIncludePath/d' "$SCAN_CONF"
 
 # Watch where payloads LAND, not profile or cache dirs.
+# Initialize base directories common to all client setups
+# NEVER use OnAccessExcludePath on a directory that has subfolders: clamonacc logs
+# "ERROR: ClamInotif: can't exclude ..." and silently stops blocking the WHOLE watch.
 ONACC_DIRS=(
     "$HOME_DIR/Downloads"
     "$NBDIR/Downloads"
@@ -2075,10 +2087,6 @@ nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes --log="$LOGFILE" \
 SCAN_STATUS=$?
 
 
-
-
-
-
 # Find the first active graphical desktop user (UID >= 1000)
 # ACTIVE_USER=$(loginctl list-sessions --no-legend | awk '{print $2}' | while read -r user; do id -u "$user" &>/dev/null && [ "$(id -u "$user")" -ge 1000 ] && echo "$user" && break; done)
 
@@ -2127,10 +2135,6 @@ fi
 #     fi 
 # fi
 
-
-NOTIFICATION_TITLE=""
-NOTIFICATION_MESSAGE=""
-NOTIFICATION_ICON=""
 
 if grep -qE 'Infected files: [1-9][0-9]*' "$LOGFILE" ||
    [ "$SCAN_STATUS" -eq 1 ]; then
@@ -2190,13 +2194,6 @@ IOSchedulingClass=idle
 CPUSchedulingPolicy=idle
 # ConditionACPower=true   # laptops: skip on battery (nbXPS, nbLenovo)
 EOF
-
-
-
-
-
-
-
 
 
 
@@ -2494,6 +2491,13 @@ sudo systemctl enable --now clamav-clamonacc.service
 # sudo systemctl enable --now fangfrisch.timer
 
 
+
+
+# sudo systemctl daemon-reload
+# sudo systemctl restart clamav-freshclam.service
+# sudo systemctl restart clamav-unofficial-sigs.timer
+# sudo systemctl restart clamd@scan.service
+# sudo systemctl restart clamav-clamonacc.service
 
 #########################################################
 # Configure Logrotate for ClamAV
