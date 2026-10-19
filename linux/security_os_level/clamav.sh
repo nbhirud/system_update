@@ -205,6 +205,15 @@ if [ -z "$PC_TYPE" ]; then
 
 fi
 
+case "$PC_TYPE" in
+    desktop|server)
+        ;;
+    *)
+        echo "ERROR: PC_TYPE must be desktop, laptop, or server." >&2
+        exit 2
+        ;;
+esac
+
 # 2. REAL_USER (defaults to SUDO_USER or current user)
 REAL_USER="${REAL_USER:-${SUDO_USER:-$USER}}"
 
@@ -225,15 +234,42 @@ if [ -z "$HAS_TORRENT_CLIENT" ]; then
     [ "$PC_TYPE" = "desktop" ] && HAS_TORRENT_CLIENT=true || HAS_TORRENT_CLIENT=false
 fi
 
+case "$HAS_TORRENT_CLIENT" in
+    true|false) ;;
+    *)
+        echo "ERROR: --torrent-client must be true or false." >&2
+        exit 2
+        ;;
+esac
+
 # 6. HAS_KODI (default based on PC_TYPE if not provided)
 if [ -z "$HAS_KODI" ]; then
     [ "$PC_TYPE" = "desktop" ] && HAS_KODI=true || HAS_KODI=false
 fi
 
+case "$HAS_KODI" in
+    true|false) ;;
+    *)
+        echo "ERROR: --kodi must be true or false." >&2
+        exit 2
+        ;;
+esac
+
 if [[ ! "$FILENAME_TIMESTAMP" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]]; then
     echo "ERROR: --timestamp must use YYYY-MM-DD_HH-MM-SS" >&2
     exit 2
 fi
+
+if ! getent passwd "$REAL_USER" >/dev/null; then
+    echo "ERROR: User does not exist: $REAL_USER" >&2
+    exit 2
+fi
+
+if [[ -z "$HOME_DIR" || ! -d "$HOME_DIR" || "$HOME_DIR" == "/" ]]; then
+    echo "ERROR: Invalid home directory for $REAL_USER: $HOME_DIR" >&2
+    exit 2
+fi
+
 
 #########################################################
 # Paths and Constants:
