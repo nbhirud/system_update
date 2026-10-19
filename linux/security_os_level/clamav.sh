@@ -364,7 +364,37 @@ ROLE=$(. /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo 
 # Back up existing configuration files before modifying them:
 #########################################################
 
-mkdir -p "$CLAMAV_BACKUP_DIR"
+# mkdir -p "$CLAMAV_BACKUP_DIR"
+# sudo install -d -o "$CLAM_USER" -g "$CLAM_USER" -m 750 "$CLAMAV_BACKUP_DIR" 
+# sudo install -d -o "$REAL_USER" -g "$REAL_USER" -m 750 "$CLAMAV_BACKUP_DIR"
+
+# Backups are created by the invoking user. Never use root to create or copy
+# files into this user-controlled destination: that would permit symlink/path attacks.
+# umask 077
+( umask 077; mkdir -p -- "$CLAMAV_BACKUP_DIR" )   # strict only for this one directory
+mkdir -p -- "$CLAMAV_BACKUP_DIR"
+
+# if [[ ! -d "$CLAMAV_BACKUP_DIR" || -L "$CLAMAV_BACKUP_DIR" ]]; then
+#     echo "ERROR: Backup destination must be a real directory, not a symlink: $CLAMAV_BACKUP_DIR" >&2
+#     exit 1
+# fi
+
+
+# SECURITY: Prevent symlink attacks on backup directory
+if [[ -L "$CLAMAV_BACKUP_DIR" ]] || [[ -h "$CLAMAV_BACKUP_DIR" ]]; then
+    echo "ERROR: Backup path is a symlink - possible attack. Aborting." >&2
+    exit 1
+fi
+
+# Ensure it's a real directory (not a symlink to a file)
+if [[ -e "$CLAMAV_BACKUP_DIR" ]] && [[ ! -d "$CLAMAV_BACKUP_DIR" ]]; then
+    echo "ERROR: Backup path exists but is not a directory." >&2
+    exit 1
+fi
+
+# Secure permissions BEFORE using the directory
+chmod 700 -- "$CLAMAV_BACKUP_DIR"
+
 
 for config_file in "$SCAN_CONF" "$FRESH_CONF" "$UNOFFICIAL_SIGS_MASTER_CONF" "$UNOFFICIAL_SIGS_OS_CONF"; do
 
