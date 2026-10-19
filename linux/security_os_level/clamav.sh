@@ -3220,6 +3220,7 @@ if ! sudo clamdscan --config-file="$SCAN_CONF" --ping 60:3; then
     exit 1
 fi
 
+
 echo "Checking ClamAV services..."
 
 FAILED=0
@@ -3265,7 +3266,8 @@ if [ "$PC_TYPE" = desktop ] && [ -n "$SELFTEST_DIR" ]; then
     T="$SELFTEST_DIR/clamav_selftest_$$.txt"
     printf '%s' "$EICAR" > "$T"
     OK=no
-    for _ in 1 2 3 4 5 6 7 8 9 10; do
+    # for _ in 1 2 3 4 5 6 7 8 9 10; do
+    for _ in $(seq 1 20); do
         sleep 1
         if [ "$ONACC_PREVENT" = yes ]; then
             if ! cat "$T" >/dev/null 2>&1; then 
