@@ -2657,10 +2657,18 @@ done
 # Validate ClamD Configuration Syntax
 # If a typo slips into your sed rules or configuration appends, clamd@scan.service will fail to start silently or throw obscure systemd errors. Adding a config syntax test before starting services saves troubleshooting time.
 echo "[+] Validating clamd configuration syntax..."
-if ! clamd --config-file="$SCAN_CONF" --test; then
-    echo "Error: ClamD configuration test failed. Please check syntax."
-    exit 1
+# if ! clamd --config-file="$SCAN_CONF" --test; then
+#     echo "Error: ClamD configuration test failed. Please check syntax."
+#     exit 1
+# fi
+
+CFGCHK=$(mktemp -d)
+sudo cat "$SCAN_CONF"  > "$CFGCHK/clamd.conf"
+sudo cat "$FRESH_CONF" > "$CFGCHK/freshclam.conf"
+if clamconf -c "$CFGCHK" 2>&1 | grep -E '^ERROR'; then
+    echo "Config error above. Originals: $CLAMAV_BACKUP_DIR" >&2; rm -rf "$CFGCHK"; exit 1
 fi
+rm -rf "$CFGCHK"
 
 
 # Fedora uses clamd@scan as the default instance.
