@@ -2519,6 +2519,10 @@ sudo systemctl enable --now clamav-weekly-scan.timer
 
 # enables an instant desktop popup at the exact moment the daemon intercepts a threat. Because clamd runs as an unprivileged background user (clamscan), it cannot trigger GUI notifications directly without a helper hook and a sudoers exception.
 
+
+################################
+################################
+
 # echo "[+] Configuring real-time VirusEvent notification hook..."
 
 # sudo tee /usr/local/bin/clamav-notify.sh > /dev/null <<'EOF'
@@ -2567,137 +2571,205 @@ sudo systemctl enable --now clamav-weekly-scan.timer
 # sudo chmod +x /usr/local/bin/clamav-notify.sh
 
 
+################################
+################################
 
-echo "[+] Configuring real-time VirusEvent notification hook..."
 
-# clamd runs VirusEvent as the clamd service user (clamscan in this setup).
-# This unprivileged wrapper passes the two documented ClamAV event variables
-# as quoted argv entries to one fixed, root-owned helper.
+# echo "[+] Configuring real-time VirusEvent notification hook..."
+
+# # clamd runs VirusEvent as the clamd service user (clamscan in this setup).
+# # This unprivileged wrapper passes the two documented ClamAV event variables
+# # as quoted argv entries to one fixed, root-owned helper.
+# sudo tee /usr/local/bin/clamav-notify.sh > /dev/null <<'EOF'
+# #!/usr/bin/bash
+# set -u
+
+# VIRUS_NAME="${CLAM_VIRUSEVENT_VIRUSNAME:-Unknown threat}"
+# FILE_PATH="${CLAM_VIRUSEVENT_FILENAME:-Unknown file}"
+
+# exec /usr/bin/sudo -n -- /usr/local/sbin/clamav-notify-root "$VIRUS_NAME" "$FILE_PATH"
+# EOF
+
+# # Privileged helper: it can only log a ClamAV alert and notify the active
+# # local graphical session. No shell is constructed from event data.
+# sudo install -d -o root -g root -m 0755 /usr/local/sbin
+# sudo tee /usr/local/sbin/clamav-notify-root > /dev/null <<'EOF'
+# #!/usr/bin/bash
+# set -Eeuo pipefail
+
+# if (( EUID != 0 )); then
+#     echo "clamav-notify-root must be run as root." >&2
+#     exit 1
+# fi
+# if (( $# != 2 )); then
+#     echo "Usage: clamav-notify-root VIRUS_NAME FILE_PATH" >&2
+#     exit 2
+# fi
+
+# # Keep untrusted filenames/labels as data; avoid notification/log spoofing by
+# # collapsing line breaks and limiting the amount of displayed text.
+# VIRUS_NAME=${1//$'\n'/ }
+# VIRUS_NAME=${VIRUS_NAME//$'\r'/ }
+# FILE_PATH=${2//$'\n'/ }
+# FILE_PATH=${FILE_PATH//$'\r'/ }
+# VIRUS_NAME=${VIRUS_NAME:0:240}
+# FILE_PATH=${FILE_PATH:0:800}
+
+# logger -p authpriv.warning -t clamav-alert -- "ALERT: Threat ${VIRUS_NAME} detected in ${FILE_PATH}"
+
+# find_active_graphical_user() {
+#     local session_id _session_uid _session_user _rest session_info
+#     local session_name session_active session_remote session_type session_class
+
+#     while read -r session_id _session_uid _session_user _rest; do
+#         [[ -n "$session_id" ]] || continue
+#         session_info=$(loginctl show-session "$session_id" \
+#             -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
+
+#         session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
+#         session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
+#         session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
+#         session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
+#         session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
+
+#         if [[ "$session_active" == yes && "$session_remote" == no &&
+#               "$session_class" == user &&
+#               ( "$session_type" == wayland || "$session_type" == x11 ) &&
+#               -n "$session_name" ]]; then
+#             printf '%s\n' "$session_name"
+#             return 0
+#         fi
+#     done < <(loginctl list-sessions --no-legend 2>/dev/null)
+
+#     return 1
+# }
+
+# ACTIVE_USER=$(find_active_graphical_user) || ACTIVE_USER=""
+# if [[ -z "$ACTIVE_USER" ]]; then
+#     logger -t clamav-alert -- "No active local graphical session; real-time notification not displayed."
+#     exit 0
+# fi
+
+# USER_UID=$(id -u -- "$ACTIVE_USER") || exit 0
+# RUNTIME_DIR="/run/user/$USER_UID"
+# if [[ ! -S "$RUNTIME_DIR/bus" ]]; then
+#     logger -t clamav-alert -- "No session D-Bus socket for $ACTIVE_USER; real-time notification not displayed."
+#     exit 0
+# fi
+
+# MESSAGE="Threat: ${VIRUS_NAME}"$'\n'"File: ${FILE_PATH}"
+# if ! runuser -u "$ACTIVE_USER" -- /usr/bin/env \
+#     XDG_RUNTIME_DIR="$RUNTIME_DIR" \
+#     DBUS_SESSION_BUS_ADDRESS="unix:path=$RUNTIME_DIR/bus" \
+#     /usr/bin/notify-send -u critical -i dialog-warning -- \
+#     "ClamAV Real-Time Alert" "$MESSAGE"; then
+#     logger -t clamav-alert -- "notify-send failed for active user $ACTIVE_USER."
+# fi
+# EOF
+
+# sudo chown root:root /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root
+# sudo chmod 0755 /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root
+
+
+# # # Grant the clamscan user permission to invoke notify-send via sudo
+# # sudo tee /etc/sudoers.d/clamav-notify > /dev/null <<'EOF'
+# # clamscan ALL=(ALL) NOPASSWD: SETENV: /usr/bin/notify-send
+# # EOF
+# # sudo chmod 440 /etc/sudoers.d/clamav-notify
+
+# # if ! sudo visudo -cf /etc/sudoers.d/clamav-notify; then
+# #     echo "ERROR: Invalid sudoers configuration for ClamAV notifications." >&2
+# #     exit 1
+# # fi
+
+# # # a root-owned file should have permissions 440
+# # sudo stat -c '%U:%G %a %n' /etc/sudoers.d/clamav-notify
+
+
+
+# # # Narrow exception: clamscan may run only this fixed, root-owned helper as root.
+# # # No SETENV is granted, and notify-send itself is no longer sudo-authorized.
+# # sudo tee /etc/sudoers.d/clamav-notify > /dev/null <<'EOF'
+# # clamscan ALL=(root) NOPASSWD: NOSETENV: /usr/local/sbin/clamav-notify-root
+# # EOF
+# # sudo chown root:root /etc/sudoers.d/clamav-notify
+# # sudo chmod 0440 /etc/sudoers.d/clamav-notify
+
+# # if ! sudo visudo -cf /etc/sudoers.d/clamav-notify; then
+# #     echo "ERROR: Invalid sudoers configuration for ClamAV notifications." >&2
+# #     exit 1
+# # fi
+# # if ! sudo visudo -c; then
+# #     echo "ERROR: The complete sudoers configuration is invalid." >&2
+# #     exit 1
+# # fi
+
+# # The above /etc/sudoers.d/clamav-notify gives the exposed process a path to a root helper. Without an argument spec, any arguments are allowed. The helper then drops to your session and shows attacker-chosen popup text.
+
+################################
+################################
+
+
+# DESIGN: every component only WRITES an event to the journal; one small program running as YOU
+# reads the journal and shows the popup. Nothing needs privileges to talk to your desktop.
+#
+#   clamd (user clamscan) --VirusEvent--> clamav-notify.sh --logger--+
+#   weekly scan (root)    ---------------------- logger ---------------+--> journald
+#   USB scan (root)       ---------------------- logger ---------------+      |
+#                                    journalctl -f <-- clamav-alert-popups (YOU) --> notify-send
+
+# 1) The hook clamd runs on each detection. clamd sets two environment variables for it.
+#    ${VAR:-unknown} = fall back to "unknown" if unset.
 sudo tee /usr/local/bin/clamav-notify.sh > /dev/null <<'EOF'
 #!/usr/bin/bash
-set -u
-
-VIRUS_NAME="${CLAM_VIRUSEVENT_VIRUSNAME:-Unknown threat}"
-FILE_PATH="${CLAM_VIRUSEVENT_FILENAME:-Unknown file}"
-
-exec /usr/bin/sudo -n -- /usr/local/sbin/clamav-notify-root "$VIRUS_NAME" "$FILE_PATH"
+logger -p authpriv.warning -t clamav-alert -- "Threat ${CLAM_VIRUSEVENT_VIRUSNAME:-unknown} in ${CLAM_VIRUSEVENT_FILENAME:-unknown}"
 EOF
+# clamd runs this as user "clamscan", so it must be readable and executable by everyone:
+sudo chown root:root /usr/local/bin/clamav-notify.sh
+sudo chmod 0755 /usr/local/bin/clamav-notify.sh
 
-# Privileged helper: it can only log a ClamAV alert and notify the active
-# local graphical session. No shell is constructed from event data.
-sudo install -d -o root -g root -m 0755 /usr/local/sbin
-sudo tee /usr/local/sbin/clamav-notify-root > /dev/null <<'EOF'
+# 2) Remove the old privilege path if an earlier run created it (-f = no error if absent).
+sudo rm -f /etc/sudoers.d/clamav-notify /usr/local/sbin/clamav-notify-root
+
+# 3) Popup service, desktop only. It runs as YOU, so it needs no sudo and no D-Bus address tricks.
+if [ "$PC_TYPE" = desktop ]; then
+    sudo tee /usr/local/bin/clamav-alert-popups > /dev/null <<'EOF'
 #!/usr/bin/bash
-set -Eeuo pipefail
-
-if (( EUID != 0 )); then
-    echo "clamav-notify-root must be run as root." >&2
-    exit 1
-fi
-if (( $# != 2 )); then
-    echo "Usage: clamav-notify-root VIRUS_NAME FILE_PATH" >&2
-    exit 2
-fi
-
-# Keep untrusted filenames/labels as data; avoid notification/log spoofing by
-# collapsing line breaks and limiting the amount of displayed text.
-VIRUS_NAME=${1//$'\n'/ }
-VIRUS_NAME=${VIRUS_NAME//$'\r'/ }
-FILE_PATH=${2//$'\n'/ }
-FILE_PATH=${FILE_PATH//$'\r'/ }
-VIRUS_NAME=${VIRUS_NAME:0:240}
-FILE_PATH=${FILE_PATH:0:800}
-
-logger -p authpriv.warning -t clamav-alert -- "ALERT: Threat ${VIRUS_NAME} detected in ${FILE_PATH}"
-
-find_active_graphical_user() {
-    local session_id _session_uid _session_user _rest session_info
-    local session_name session_active session_remote session_type session_class
-
-    while read -r session_id _session_uid _session_user _rest; do
-        [[ -n "$session_id" ]] || continue
-        session_info=$(loginctl show-session "$session_id" \
-            -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
-
-        session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
-        session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
-        session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
-        session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
-        session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
-
-        if [[ "$session_active" == yes && "$session_remote" == no &&
-              "$session_class" == user &&
-              ( "$session_type" == wayland || "$session_type" == x11 ) &&
-              -n "$session_name" ]]; then
-            printf '%s\n' "$session_name"
-            return 0
-        fi
-    done < <(loginctl list-sessions --no-legend 2>/dev/null)
-
-    return 1
-}
-
-ACTIVE_USER=$(find_active_graphical_user) || ACTIVE_USER=""
-if [[ -z "$ACTIVE_USER" ]]; then
-    logger -t clamav-alert -- "No active local graphical session; real-time notification not displayed."
-    exit 0
-fi
-
-USER_UID=$(id -u -- "$ACTIVE_USER") || exit 0
-RUNTIME_DIR="/run/user/$USER_UID"
-if [[ ! -S "$RUNTIME_DIR/bus" ]]; then
-    logger -t clamav-alert -- "No session D-Bus socket for $ACTIVE_USER; real-time notification not displayed."
-    exit 0
-fi
-
-MESSAGE="Threat: ${VIRUS_NAME}"$'\n'"File: ${FILE_PATH}"
-if ! runuser -u "$ACTIVE_USER" -- /usr/bin/env \
-    XDG_RUNTIME_DIR="$RUNTIME_DIR" \
-    DBUS_SESSION_BUS_ADDRESS="unix:path=$RUNTIME_DIR/bus" \
-    /usr/bin/notify-send -u critical -i dialog-warning -- \
-    "ClamAV Real-Time Alert" "$MESSAGE"; then
-    logger -t clamav-alert -- "notify-send failed for active user $ACTIVE_USER."
-fi
+# Follow the journal (-f), skip old entries (-n0), only our tag, message text only (-o cat).
+journalctl -f -n0 -t clamav-alert -o cat | while IFS= read -r line; do
+    # Notification bodies accept HTML-like markup, and file names are attacker-controlled:
+    # without escaping, a file named <a href="https://evil">…</a> becomes a clickable link.
+    line=${line//&/&amp;}; line=${line//</&lt;}
+    notify-send -u critical -i dialog-warning -- "ClamAV" "$line"
+done
 EOF
+    sudo chmod 0755 /usr/local/bin/clamav-alert-popups
 
-sudo chown root:root /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root
-sudo chmod 0755 /usr/local/bin/clamav-notify.sh /usr/local/sbin/clamav-notify-root
+    mkdir -p "$HOME_DIR/.config/systemd/user"
+    cat > "$HOME_DIR/.config/systemd/user/clamav-alerts.service" <<'EOF'
+[Unit]
+Description=Desktop popups for ClamAV alerts (journal reader, no privileges)
+
+[Service]
+ExecStart=/usr/local/bin/clamav-alert-popups
+Restart=always
+
+[Install]
+WantedBy=default.target
+EOF
+    # A *user* service runs only while you are logged in. Alerts raised earlier stay in the journal:
+    #   journalctl -p warning -t clamav-alert --since yesterday
+    if systemctl --user daemon-reload 2>/dev/null; then
+        systemctl --user enable --now clamav-alerts.service
+    else
+        echo "No user systemd session here; after logging in run: systemctl --user enable --now clamav-alerts.service"
+    fi
+fi
 
 
-# # Grant the clamscan user permission to invoke notify-send via sudo
-# sudo tee /etc/sudoers.d/clamav-notify > /dev/null <<'EOF'
-# clamscan ALL=(ALL) NOPASSWD: SETENV: /usr/bin/notify-send
-# EOF
-# sudo chmod 440 /etc/sudoers.d/clamav-notify
-
-# if ! sudo visudo -cf /etc/sudoers.d/clamav-notify; then
-#     echo "ERROR: Invalid sudoers configuration for ClamAV notifications." >&2
-#     exit 1
-# fi
-
-# # a root-owned file should have permissions 440
-# sudo stat -c '%U:%G %a %n' /etc/sudoers.d/clamav-notify
 
 
 
-# # Narrow exception: clamscan may run only this fixed, root-owned helper as root.
-# # No SETENV is granted, and notify-send itself is no longer sudo-authorized.
-# sudo tee /etc/sudoers.d/clamav-notify > /dev/null <<'EOF'
-# clamscan ALL=(root) NOPASSWD: NOSETENV: /usr/local/sbin/clamav-notify-root
-# EOF
-# sudo chown root:root /etc/sudoers.d/clamav-notify
-# sudo chmod 0440 /etc/sudoers.d/clamav-notify
-
-# if ! sudo visudo -cf /etc/sudoers.d/clamav-notify; then
-#     echo "ERROR: Invalid sudoers configuration for ClamAV notifications." >&2
-#     exit 1
-# fi
-# if ! sudo visudo -c; then
-#     echo "ERROR: The complete sudoers configuration is invalid." >&2
-#     exit 1
-# fi
-
-# The above /etc/sudoers.d/clamav-notify gives the exposed process a path to a root helper. Without an argument spec, any arguments are allowed. The helper then drops to your session and shows attacker-chosen popup text.
 
 #########################################################
 # SELinux: Restore expected contexts before service start
