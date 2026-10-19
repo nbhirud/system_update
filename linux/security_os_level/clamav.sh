@@ -2168,12 +2168,25 @@ for d in /home /root /etc /opt /srv /usr/local /var/tmp /tmp; do
     if [ -d "$d" ]; then ROOTS+=("$d"); fi
 done
 
-nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes --log="$LOGFILE" \
+# nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes --log="$LOGFILE" \
+#     --exclude-dir='^/var/quarantine(/|$)' \
+#     --exclude-dir='^/var/lib/(docker|containers)(/|$)' \
+#     --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
+#     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
+#     "${ROOTS[@]}"
+
+# clamdscan --multiscan --fdpass reuses the already-loaded databases and can use multiple threads. The above (clamscan) reloads everything every time and is single-threaded by nature of clamscan.
+
+# nice -n 19 ionice -c 3 clamdscan --multiscan --fdpass \
+nice -n 19 ionice -c 3 clamdscan --wait --ping 90:2 --multiscan --fdpass \
+    --infected --log="$LOGFILE" \
     --exclude-dir='^/var/quarantine(/|$)' \
     --exclude-dir='^/var/lib/(docker|containers)(/|$)' \
     --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
+    --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
     --exclude-dir='^/(proc|sys|dev|run|var/log|var/spool/postfix)(/|$)' \
     "${ROOTS[@]}"
+
 SCAN_STATUS=$?
 
 
@@ -2190,25 +2203,79 @@ SCAN_STATUS=$?
 #         break
 #     done)
 
-ACTIVE_USER=$(
-    loginctl list-sessions --no-legend |
-        awk '{print $3}' |
-        while read -r user; do
-            [[ -n "$user" ]] || continue
+# ACTIVE_USER=$(
+#     loginctl list-sessions --no-legend |
+#         awk '{print $3}' |
+#         while read -r user; do
+#             [[ -n "$user" ]] || continue
 
-            user_uid=$(id -u "$user" 2>/dev/null) || continue
+#             user_uid=$(id -u "$user" 2>/dev/null) || continue
 
-            if (( user_uid >= 1000 && user_uid < 65534 )); then
-                printf '%s\n' "$user"
-                break
-            fi
-        done
-)
+#             if (( user_uid >= 1000 && user_uid < 65534 )); then
+#                 printf '%s\n' "$user"
+#                 break
+#             fi
+#         done
+# )
 
-# Fallback if no active session is found
-if [ -z "$ACTIVE_USER" ]; then
-    ACTIVE_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1}' /etc/passwd | head -n 1)
-fi
+# # Fallback if no active session is found
+# if [ -z "$ACTIVE_USER" ]; then
+#     ACTIVE_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1}' /etc/passwd | head -n 1)
+# fi
+
+
+find_active_graphical_user() {
+    local session_id _session_uid _session_user _rest session_info
+    local session_name session_active session_remote session_type session_class
+
+    while read -r session_id _session_uid _session_user _rest; do
+        [[ -n "$session_id" ]] || continue
+        session_info=$(loginctl show-session "$session_id" \
+            -p Name -p Active -p Remote -p Type -p Class --no-pager 2>/dev/null) || continue
+
+        session_name=$(sed -n 's/^Name=//p' <<< "$session_info")
+        session_active=$(sed -n 's/^Active=//p' <<< "$session_info")
+        session_remote=$(sed -n 's/^Remote=//p' <<< "$session_info")
+        session_type=$(sed -n 's/^Type=//p' <<< "$session_info")
+        session_class=$(sed -n 's/^Class=//p' <<< "$session_info")
+
+        if [[ "$session_active" == yes && "$session_remote" == no &&
+              "$session_class" == user &&
+              ( "$session_type" == wayland || "$session_type" == x11 ) &&
+              -n "$session_name" ]]; then
+            printf '%s\n' "$session_name"
+            return 0
+        fi
+    done < <(loginctl list-sessions --no-legend 2>/dev/null)
+
+    return 1
+}
+
+notify_desktop_user() {
+    local title=$1 message=$2 icon=$3 urgency=$4 active_user user_uid runtime_dir
+
+    active_user=$(find_active_graphical_user) || active_user=""
+    [[ -n "$active_user" ]] || {
+        log "No active local graphical session; notification was not displayed: $title"
+        return 0
+    }
+
+    user_uid=$(id -u -- "$active_user") || return 0
+    runtime_dir="/run/user/$user_uid"
+    [[ -S "$runtime_dir/bus" ]] || {
+        log "No session D-Bus socket for $active_user; notification was not displayed."
+        return 0
+    }
+
+    if ! runuser -u "$active_user" -- /usr/bin/env \
+        XDG_RUNTIME_DIR="$runtime_dir" \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime_dir/bus" \
+        /usr/bin/notify-send -u "$urgency" -i "$icon" -- "$title" "$message"; then
+        log "Failed to send desktop notification to $active_user: $title"
+    fi
+}
+
+
 
 
 # # Check for infections and notify if found
@@ -2232,6 +2299,7 @@ if grep -qE 'Infected files: [1-9][0-9]*' "$LOGFILE" ||
     NOTIFICATION_TITLE="⚠ ClamAV Alert"
     NOTIFICATION_MESSAGE="Infection detected during weekly scan. Exit status: $SCAN_STATUS. Check $LOGFILE"
     NOTIFICATION_ICON="dialog-warning"
+    NOTIFICATION_URGENCY="critical"
     logger -t clamav-alert "$NOTIFICATION_MESSAGE"
     # logger -p authpriv.warning -t clamav-alert "Weekly scan: INFECTED files found, see $LOGFILE" ;;
 
@@ -2240,6 +2308,7 @@ elif [ "$SCAN_STATUS" -eq 0 ]; then
     NOTIFICATION_TITLE="ClamAV Scan Complete"
     NOTIFICATION_MESSAGE="No infections found during weekly scan. Check $LOGFILE"
     NOTIFICATION_ICON="dialog-information"
+    NOTIFICATION_URGENCY="normal"
     logger -t clamav-scan "$NOTIFICATION_MESSAGE"
 
 else
@@ -2247,6 +2316,7 @@ else
     NOTIFICATION_TITLE="⚠ ClamAV Scan Error"
     NOTIFICATION_MESSAGE="Weekly scan failed or was incomplete. Exit status: $SCAN_STATUS. Check $LOGFILE"
     NOTIFICATION_ICON="dialog-error"
+    NOTIFICATION_URGENCY="critical"
     logger -t clamav-scan "$NOTIFICATION_MESSAGE"
     # logger -p authpriv.err     -t clamav-alert "Weekly scan finished with errors (SCAN_STATUS=$SCAN_STATUS), see $LOGFILE" ;;
 
@@ -2254,14 +2324,17 @@ fi
 
 
 # Display the result to the active desktop user, if available.
-if [ -n "$ACTIVE_USER" ]; then
-    USER_UID=$(id -u "$ACTIVE_USER")
-    sudo -u "$ACTIVE_USER" \
-        DISPLAY=:0 \
-        DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USER_UID/bus" \
-        notify-send -u normal -i "$NOTIFICATION_ICON" \
-        "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE"
-fi
+# if [ -n "$ACTIVE_USER" ]; then
+#     USER_UID=$(id -u "$ACTIVE_USER")
+#     sudo -u "$ACTIVE_USER" \
+#         DISPLAY=:0 \
+#         DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USER_UID/bus" \
+#         notify-send -u normal -i "$NOTIFICATION_ICON" \
+#         "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE"
+# fi
+
+notify_desktop_user "$NOTIFICATION_TITLE" "$NOTIFICATION_MESSAGE" \
+    "$NOTIFICATION_ICON" "$NOTIFICATION_URGENCY"
 
 echo "Weekly scan finished: $(date --iso-8601=seconds)"
 exit 0
