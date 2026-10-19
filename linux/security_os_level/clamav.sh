@@ -945,11 +945,14 @@ sudo sed -i '/^Example/d' "$FRESH_CONF"
 set_config_value "$FRESH_CONF" LogTime yes
 set_config_value "$FRESH_CONF" LogFileMaxSize 20M
 set_config_value "$FRESH_CONF" LogRotate yes
+set_config_value "$FRESH_CONF" LogSyslog yes # sends logs to journald, which has its own retention.
 set_config_value "$FRESH_CONF" UpdateLogFile "$FRESH_LOG"
 set_config_value "$FRESH_CONF" DatabaseOwner "$CLAM_USER"
 set_config_value "$FRESH_CONF" NotifyClamd "$SCAN_CONF"
 set_config_value "$FRESH_CONF" Checks 12
-
+# set_config_value "$FRESH_CONF" SafeBrowsing yes
+set_config_value "$FRESH_CONF" Bytecode yes
+set_config_value "$FRESH_CONF" DNSDatabaseInfo yes
 
 
 # Configuring clamav-unofficial-sigs
