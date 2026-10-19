@@ -341,20 +341,20 @@ fi
 
 
 
-if   [ "$RAM_MB" -lt 8000 ];  then PROFILE=low
-elif [ "$RAM_MB" -lt 20000 ]; then PROFILE=mid
-else                               PROFILE=high
+if   [ "$RAM_MB" -lt 8000 ];  then RAM_PROFILE=low
+elif [ "$RAM_MB" -lt 20000 ]; then RAM_PROFILE=mid
+else                               RAM_PROFILE=high
 fi
 
 CONC_RELOAD=yes     # a second engine is loaded during reload = extra RAM (clamd.conf docs)
-if [ "$PROFILE" = low ]; then CONC_RELOAD=no; fi
+if [ "$RAM_PROFILE" = low ]; then CONC_RELOAD=no; fi
 
 ONACC_PREVENT=no    # prevention = every watched open() waits for clamd
-if [ "$RAM_MB" -ge 12000 ] && $SSD_PRESENT; then ONACC_PREVENT=yes; fi
+if [ "$RAM_MB" -ge 14000 ] && $SSD_PRESENT; then ONACC_PREVENT=yes; fi
 
 ONACC_THREADS=$(( RECOMMENDED_THREADS - 2 ))   # must stay below clamd MaxThreads
 if [ "$ONACC_THREADS" -gt 5 ]; then ONACC_THREADS=5; fi
-echo "profile=$PROFILE threads=$RECOMMENDED_THREADS prevention=$ONACC_PREVENT concurrent_reload=$CONC_RELOAD"
+echo "RAM profile=$RAM_PROFILE threads=$RECOMMENDED_THREADS prevention=$ONACC_PREVENT concurrent_reload=$CONC_RELOAD"
 
 
 ROLE=$(. /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop)
