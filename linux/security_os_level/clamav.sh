@@ -2724,26 +2724,26 @@ echo "Configuration validated successfully."
 
 ############################
 
-# The following rotates the custom USB and weekly scan logs, retaining up to eight rotated weekly files. It intentionally does not rotate the ClamAV daemon logs, because those already have their own LogRotate configuration in the script. The --debug check validates the configuration without performing rotation.
+# # The following rotates the custom USB and weekly scan logs, retaining up to eight rotated weekly files. It intentionally does not rotate the ClamAV daemon logs, because those already have their own LogRotate configuration in the script. The --debug check validates the configuration without performing rotation.
 
-sudo tee /etc/logrotate.d/clamav-custom-scans > /dev/null <<'EOF'
-/var/log/clamav/usb_scan_*.log
-/var/log/clamav/weekly_scan_*.log {
-    weekly
-    rotate 8
-    compress
-    delaycompress
-    missingok
-    notifempty
-    dateext
-    su root root
-}
-EOF
+# sudo tee /etc/logrotate.d/clamav-custom-scans > /dev/null <<'EOF'
+# /var/log/clamav/usb_scan_*.log
+# /var/log/clamav/weekly_scan*.log {
+#     weekly
+#     rotate 8
+#     compress
+#     delaycompress
+#     missingok
+#     notifempty
+#     dateext
+#     su root root
+# }
+# EOF
 
-sudo chmod 644 /etc/logrotate.d/clamav-custom-scans
+# sudo chmod 644 /etc/logrotate.d/clamav-custom-scans
 
-# Validate the configuration before finishing setup.
-sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
+# # Validate the configuration before finishing setup.
+# sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
 
 #########################################################
 # Verification
