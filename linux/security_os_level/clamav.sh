@@ -2805,6 +2805,55 @@ do
     fi
 done
 
+# split into A and B so the script file itself never contains the contiguous test string
+EICAR_A='X5O!P%@AP[4\PZX54(P^)7CC)7}$'
+EICAR_B='EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
+EICAR="${EICAR_A}${EICAR_B}"
+T=$(mktemp /tmp/eicar.XXXXXX); printf '%s' "$EICAR" > "$T"
+rc=0; sudo clamdscan --config-file="$SCAN_CONF" --fdpass "$T" >/dev/null 2>&1 || rc=$?
+# if [ "$rc" -eq 1 ]; then echo "OK: clamd detects EICAR"; else echo "FAIL: EICAR rc=$rc"; fi
+# if [ "$rc" -eq 1 ]; then echo "OK: clamd detects EICAR"; else echo "FAIL: EICAR rc=$rc"; FAILED=1; fi
+if [ "$rc" -eq 1 ]; then 
+    echo "OK: clamd detects EICAR"; 
+else 
+    echo "FAIL: EICAR rc=$rc"; 
+    FAILED=1; 
+fi
+rm -f "$T"
+
+
+SELFTEST_DIR=""
+for d in "${ONACC_DIRS[@]}"; do
+    if [ -d "$d" ]; then SELFTEST_DIR="$d"; break; fi
+done
+if [ "$PC_TYPE" = desktop ] && [ -n "$SELFTEST_DIR" ]; then
+    T="$SELFTEST_DIR/clamav_selftest_$$.txt"
+    printf '%s' "$EICAR" > "$T"
+    OK=no
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        sleep 1
+        if [ "$ONACC_PREVENT" = yes ]; then
+            if ! cat "$T" >/dev/null 2>&1; then 
+                OK=yes; 
+                break; 
+            fi   # blocked
+        else
+            if [ ! -e "$T" ]; then 
+                OK=yes; 
+                break; 
+            fi                # quarantined
+        fi
+    done
+    if [ "$OK" = yes ]; then 
+        echo "OK: on-access reacted to EICAR in $SELFTEST_DIR"
+    else 
+        echo "FAIL: on-access did NOT react to EICAR in $SELFTEST_DIR"; 
+        FAILED=1; 
+    fi
+    rm -f "$T"; sudo find "$QUARANTINE_DIR" -name 'clamav_selftest_*' -delete
+fi
+
+
 if [ "$FAILED" -ne 0 ]; then
     echo "ClamAV setup completed with errors." >&2
     exit 1
@@ -3038,6 +3087,9 @@ clamdscan --version
 # If configured correctly, ClamOnAcc will block access with an "Operation not permitted" error.
 
 # # Test with EICAR test file (safe test virus):
-# echo 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' | sudo tee /tmp/eicar.txt
+# EICAR_A='X5O!P%@AP[4\PZX54(P^)7CC)7}$'
+# EICAR_B='EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
+# EICAR="${EICAR_A}${EICAR_B}"
+# echo $EICAR | sudo tee /tmp/eicar.txt
 # sudo clamscan /tmp/eicar.txt
 # Should detect it as "Win.Test.EICAR_HDB-1"
