@@ -23,6 +23,15 @@ fi
 # root (sudo) check
 [ "$(id -u)" -ne 0 ] || { echo "Run as your normal user; the script calls sudo itself"; exit 1; }
 
+# Pre-authenticate sudo
+# sudo -v
+# Pre-authenticate sudo (non-blocking)
+if sudo -n -v 2>/dev/null; then
+    echo "[+] Sudo already authenticated"
+else
+    sudo -v || { echo "ERROR: Sudo authentication failed"; exit 1; }
+fi
+
 #########################################################
 # Useful Reading:
 #########################################################
