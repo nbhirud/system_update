@@ -373,18 +373,45 @@ echo "Detected $CPU_CORES CPU cores. Will set MaxThreads to $RECOMMENDED_THREADS
 
 # SSD Tuning
 
-SSD_PRESENT=false
-ROOT_DEV=$(df / | tail -1 | awk '{print $1}')
-BACKING_DEV=$(lsblk -no pkname "$ROOT_DEV" 2>/dev/null || basename "$ROOT_DEV" | sed 's/[0-9]*$//')
+# SSD_PRESENT=false
+# ROOT_DEV=$(df / | tail -1 | awk '{print $1}')
+# BACKING_DEV=$(lsblk -no pkname "$ROOT_DEV" 2>/dev/null || basename "$ROOT_DEV" | sed 's/[0-9]*$//')
 
-if [ -n "$BACKING_DEV" ] && [ -f "/sys/block/$BACKING_DEV/queue/rotational" ]; then
-    if [ "$(cat /sys/block/"$BACKING_DEV"/queue/rotational)" -eq 0 ]; then
-        SSD_PRESENT=true
+# if [ -n "$BACKING_DEV" ] && [ -f "/sys/block/$BACKING_DEV/queue/rotational" ]; then
+#     if [ "$(cat /sys/block/"$BACKING_DEV"/queue/rotational)" -eq 0 ]; then
+#         SSD_PRESENT=true
+#     fi
+# elif lsblk -d -o rota | grep -q "^0$"; then
+#     SSD_PRESENT=true
+# fi
+
+
+# Replacing the old SSD detection block (the one using BACKING_DEV / lsblk pkname).
+# path_is_rotational PATH: true if ANY device under PATH's filesystem is rotational (HDD) or unknown.
+path_is_rotational() {
+    local path="$1" src stack fsuuid d
+    src=$(findmnt -n -o SOURCE --target "$path" 2>/dev/null | head -n1)
+    src=${src%%\[*}                              # btrfs prints /dev/xxx[/subvolume]: strip the subvolume
+    [ -b "$src" ] || return 0                    # tmpfs/overlay/network/unknown: be conservative
+    stack=$(lsblk -s -n -o ROTA "$src" 2>/dev/null | tr -d ' ')   # -s: this device AND everything under it
+    # btrfs spanning several devices: findmnt shows only one, but sysfs lists them all
+    fsuuid=$(findmnt -n -o UUID --target "$path" 2>/dev/null | head -n1)
+    if [ -n "$fsuuid" ] && [ -d "/sys/fs/btrfs/$fsuuid/devices" ]; then
+        for d in /sys/fs/btrfs/"$fsuuid"/devices/*; do
+            stack+=$'\n'$(lsblk -s -n -o ROTA "/dev/$(basename "$d")" 2>/dev/null | tr -d ' ')
+        done
     fi
-elif lsblk -d -o rota | grep -q "^0$"; then
-    SSD_PRESENT=true
-fi
+    [ -n "$stack" ] || return 0
+    printf '%s\n' "$stack" | grep -qx '1'
+}
 
+FAST_STORAGE=true
+for p in / "$HOME_DIR" "$NBDIR" /srv; do
+    if [ -e "$p" ] && path_is_rotational "$p"; then
+        FAST_STORAGE=false; echo "INFO: $p is on rotational or unknown storage"
+    fi
+done
+SSD_PRESENT=$FAST_STORAGE   # keep the old name so ONACC_PREVENT and the weekly engine keep working
 
 
 if   [ "$RAM_MB" -lt 10000 ];  then RAM_PROFILE=low
@@ -402,7 +429,14 @@ ONACC_THREADS=$(( RECOMMENDED_THREADS - 2 ))   # must stay below clamd MaxThread
 if [ "$ONACC_THREADS" -gt 5 ]; then ONACC_THREADS=5; fi
 echo "RAM profile=$RAM_PROFILE threads=$RECOMMENDED_THREADS prevention=$ONACC_PREVENT concurrent_reload=$CONC_RELOAD"
 
-
+# OnAccessMaxFileSize
+# Facts: default 5M; files above it are NOT scanned on-access; clamd's MaxFileSize (100M)
+# is a second ceiling, so going above 100M here would do nothing.
+case "$RAM_PROFILE" in
+    low)  ONACC_MAX_FILE=25M  ;;   # slow CPU/HDD, notify-only: keep background scans short
+    mid)  ONACC_MAX_FILE=50M  ;;
+    *)    ONACC_MAX_FILE=100M ;;   # high RAM: matches clamd's own MaxFileSize
+esac
 
 
 #########################################################
