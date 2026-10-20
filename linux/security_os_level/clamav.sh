@@ -2584,6 +2584,9 @@ sudo systemctl daemon-reload
 
 # Maybe add a check here which runs "sudo freshclam" only after checking if the service isn't locking it
 
+# First signature download. clamd will not start without a database.
+# Runs as root, drops to $UPDATE_USER, which must own the log file and the DB dir.
+sudo freshclam --config-file="$FRESH_CONF"
 
 #########################################################
 # Persistent Weekly Scan Setup
