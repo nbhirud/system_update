@@ -447,6 +447,10 @@ esac
 # sudo install -d -o "$CLAM_USER" -g "$CLAM_USER" -m 750 "$CLAMAV_BACKUP_DIR" 
 # sudo install -d -o "$REAL_USER" -g "$REAL_USER" -m 750 "$CLAMAV_BACKUP_DIR"
 
+# umask 077 - Explaination:
+# A umask lists permission bits to remove from newly created files and directories. 077 removes everything for group and others, so new files get 600 and directories 700. It matters for the backup directory because those copies can contain config values, and a file created with the default umask (644) is world-readable until a later chmod. Inside ( umask 077; mkdir … ) it applies only to that subshell. The install -m 600 /dev/null line above closes the same window for the files.
+
+
 # Backups are created by the invoking user. Never use root to create or copy
 # files into this user-controlled destination: that would permit symlink/path attacks.
 # umask 077
@@ -1390,7 +1394,7 @@ set_config_value "$SCAN_CONF" AlertBrokenExecutables yes
 
 # Ransomware‑Tracker - https://github.com/ytisf/ransomware-sig - Focused on ransomware hashes and filenames.
 
-# ESET‑NOD32‑Signatures - (not officially supported) - Adds a different vendor’s perspective on threats.
+# ESET‑NOD32‑Signatures - (not officially supported) - Adds a different vendor's perspective on threats.
 
 # Sigs are usually .cvd or plain text .hdb/.mdb - Place them in /var/lib/clamav/ (or wherever your DatabaseDirectory points)
 
@@ -1514,6 +1518,13 @@ ONACC_DIRS=(
     "$NBDIR/nb_script_downloads"
     "$NBDIR/Syncthing"   # Syncthing folders that receive files from other devices
 )
+
+# Add a per-directory safeguard, because prevention should only run if every watched directory is on flash:
+# for d in "${ONACC_DIRS[@]}"; do
+#     if [ -d "$d" ] && path_is_rotational "$d"; then
+#         ONACC_PREVENT=no; echo "INFO: $d is on rotational/unknown storage -> on-access prevention disabled"; break
+#     fi
+# done
 
 # Conditionally append completed Torrents path if a torrent client is present
 if [ "${HAS_TORRENT_CLIENT:-false}" = true ]; then
@@ -2773,7 +2784,7 @@ echo "Configuring background weekly system scan timer..."
 # New designNothing in the chain gains privilege. clamd only calls logger.
 
 # Problem 2: Fragility
-# Old design: Three copies of session-detection code that parse loginctl and build D-Bus addresses. They break silently when you’re logged out or on SSH, and NoNewPrivileges or SELinux can kill the sudo path.
+# Old design: Three copies of session-detection code that parse loginctl and build D-Bus addresses. They break silently when you're logged out or on SSH, and NoNewPrivileges or SELinux can kill the sudo path.
 # New design: Components write events to the journal. One small program running as you shows popups.
 
 # Problem 3: Duplication
@@ -3556,8 +3567,10 @@ clamdscan --version
 
 # clamscan --bell --cross-fs=yes --move="/home/nbhirud/Desktop/clamscan_infected" --heuristic-alerts=yes --recursive -i . | tee clamscan.log
 
-
-
+# # prints the signature per file in quarantine
+# # sudo clamscan --infected /var/quarantine/clamav/*     # zsh expands * as you before sudo starts, and the quarantine is root-only (700), so nothing matches.
+# sudo sh -c 'clamscan --infected /var/quarantine/clamav/*'   # root's shell expands the glob
+# sudo clamscan -r --infected /var/quarantine/clamav          # no glob needed
 
 
 #########################################################
@@ -3568,9 +3581,10 @@ clamdscan --version
 # journalctl -u clamd@scan -u clamav-freshclam -u clamav-clamonacc -b
 # journalctl -t clamav-alert -t clamav-scan
 # journalctl -u clamav-weekly-scan
-# journalctl -u 'clamav-usb-scan@*'
+# journalctl -u 'clamav-usb-scan@*' # Insert usb flash drive and run this to check if it works
 # journalctl --list-boots  # Check the journal is persistent - more than one boot listed means yes
 # journalctl -u 'clamav-usb-scan@*' -n 20 # Verify on the first USB insert that the hardened unit sees the mount
+# journalctl -u clamav-unofficial-sigs -n 50
 
 # Check if the script is syntactically correct:
 # bash -n clamav.sh
@@ -3578,7 +3592,7 @@ clamdscan --version
 
 # run your setup script and inspect the resulting services:
 # systemctl --failed
-# systemctl status clamd@scan.service clamav-freshclam.service clamav-clamonacc.service --no-pager
+# systemctl status clamd@scan.service clamav-freshclam.service clamav-clamonacc.service clamav-unofficial-sigs.service --no-pager
 # systemctl status clamav-weekly-scan.timer clamav-unofficial-sigs.timer --no-pager
 
 
@@ -3658,13 +3672,12 @@ clamdscan --version
 # sudo systemctl status clamav-freshclam.service
 # sudo systemctl status clamd@scan.service
 # sudo systemctl status clamav-clamonacc.service
+# sudo systemctl status clamav-unofficial-sigs.service
 # sudo systemctl status clamav-unofficial-sigs.timer
 
 
 # sudo systemctl disable clamav-freshclam.service
 # sudo systemctl disable clamav-clamonacc.service
-
-
 
 # ############################
 # # Debugging freshclam
@@ -3725,6 +3738,40 @@ clamdscan --version
 # # Check the config file
 # grep -i user /etc/clamd.d/scan.conf
 
+# ############################
+
+# Expected output on fresh first run: all active; no restarts
+# systemctl is-active clamd@scan clamav-freshclam clamav-clamonacc
+
+# Expected output on fresh first run: clamd shows antivirus_t
+# ps -eZ | grep -E 'clamd|clamonacc|freshclam'
+
+# Expected output on fresh first run: nothing
+# sudo ausearch -m avc -ts boot | grep -iE 'clam|antivirus'
+
+# Expected output on fresh first run: Permission denied
+# sudo -u clamscan touch /var/lib/clamav/x
+
+# Expected output on fresh first run: owner clamupdate:clamscan
+# ls -l /var/lib/clamav
+
+# Expected output on fresh first run: dir root:wheel 2750; freshclam.log owned by clamupdate
+# ls -ld /var/log/clamav && ls -l /var/log/clamav
+
+# Expected output on fresh first run: no ScanOnAccess, TemporaryDirectory, LocalSocketGroup; LocalSocketMode 600
+# sudo grep -vE '^\s*(#|$)' /etc/clamd.d/scan.conf
+
+# Expected output on fresh first run: roughly 6.5-6.8 (was 9.6)
+# systemd-analyze security clamd@scan.service | tail -1
+
+# Expected output on fresh first run: unofficial-sigs at 00/06/12/18, weekly timer present
+# systemctl list-timers 'clamav-*'
+
+# Expected output on fresh first run: sudo tail -50 /var/log/clamav-unofficial-sigs/clamav-unofficial-sigs.log shows downloads without errors
+# after about 15 min
+
+# Expected output on fresh first run: popup appears
+# logger -p authpriv.warning -t clamav-alert test
 
 # ############################
 # # Debugging clamav-clamonacc.service
@@ -3760,3 +3807,25 @@ clamdscan --version
 # sudo setsebool -P antivirus_use_jit 0 && sudo systemctl restart clamd@scan
 # scan EICAR and a zip file, then: sudo ausearch -m avc -ts recent | grep -i execmem
 # if you see execmem denials: sudo setsebool -P antivirus_use_jit 1
+
+
+# https://www.man7.org/linux/man-pages/man1/systemd-analyze.1.html
+# This command analyzes the security and sandboxing settings of one
+#        or more specified service units. If at least one unit name is
+#        specified the security settings of the specified service units are
+#        inspected and a detailed analysis is shown. If no unit name is
+#        specified, all currently loaded, long-running service units are
+#        inspected and a terse table with results shown. The command checks
+#        for various security-related service settings, assigning each a
+#        numeric "exposure level" value, depending on how important a
+#        setting is. It then calculates an overall exposure level for the
+#        whole unit, which is an estimation in the range 0.0...10.0
+#        indicating how exposed a service is security-wise. High exposure
+#        levels indicate very little applied sandboxing. Low exposure
+#        levels indicate tight sandboxing and strongest security
+#        restrictions.
+# systemd-analyze security # all services summarized
+# systemd-analyze security --no-pager clamav-clamonacc.service
+# systemd-analyze security --no-pager clamav-freshclam.service
+# systemd-analyze security --no-pager clamav-unofficial-sigs.service
+# systemd-analyze security --no-pager clamd@scan.service
