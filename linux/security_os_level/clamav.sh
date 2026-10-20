@@ -3345,8 +3345,11 @@ echo "[+] Validating clamd configuration syntax..."
 # fi
 
 CFGCHK=$(mktemp -d)
-sudo cat "$SCAN_CONF"  > "$CFGCHK/clamd.conf"
-sudo cat "$FRESH_CONF" > "$CFGCHK/freshclam.conf"
+# sudo cat "$SCAN_CONF"  > "$CFGCHK/clamd.conf"
+# sudo cat "$FRESH_CONF" > "$CFGCHK/freshclam.conf"
+# Above implementation gives ShellCheck SC2024
+sudo cat "$SCAN_CONF"  | tee "$CFGCHK/clamd.conf"     > /dev/null
+sudo cat "$FRESH_CONF" | tee "$CFGCHK/freshclam.conf" > /dev/null
 if clamconf -c "$CFGCHK" 2>&1 | grep -E '^ERROR'; then
     echo "Config error above. Originals: $CLAMAV_BACKUP_DIR" >&2; rm -rf "$CFGCHK"; exit 1
 fi
@@ -3468,7 +3471,9 @@ echo "Configuration validated successfully."
 # fi
 
 echo "Waiting for clamd to load signatures (can take minutes on the HDD machines) and open socket"
-for i in {1..100}; do
+# for i in {1..100}; do
+# The above for implementation gives ShellCheck SC2034: the loop variable is unused
+for _ in {1..100}; do
     if sudo clamdscan --config-file="$SCAN_CONF" --ping 1 2>/dev/null; then
         break
     fi
@@ -3505,9 +3510,13 @@ do
 done
 
 # split into A and B so the script file itself never contains the contiguous test string
-EICAR_A='X5O!P%@AP[4\PZX54(P^)7CC)7}$'
-EICAR_B='EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
-EICAR="${EICAR_A}${EICAR_B}"
+# EICAR_A='X5O!P%@AP[4\PZX54(P^)7CC)7}$'
+# EICAR_B='EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
+# EICAR="${EICAR_A}${EICAR_B}"
+# The above implementation gives ShellCheck SC2016
+# Replace the EICAR_A / EICAR_B / EICAR lines with this (verified: decodes to the exact 68 bytes)
+EICAR=$(printf '%s' 'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo=' | base64 -d)
+grep -c 'EICAR-STANDARD' clamav.sh
 T=$(mktemp /tmp/eicar.XXXXXX); printf '%s' "$EICAR" > "$T"
 rc=0; sudo clamdscan --config-file="$SCAN_CONF" --fdpass "$T" >/dev/null 2>&1 || rc=$?
 # if [ "$rc" -eq 1 ]; then echo "OK: clamd detects EICAR"; else echo "FAIL: EICAR rc=$rc"; fi
