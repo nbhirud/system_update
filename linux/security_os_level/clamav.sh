@@ -1310,9 +1310,11 @@ sudo sed -i '/^TemporaryDirectory/d' "$SCAN_CONF"   # clears machines already co
 # ExtendedDetectionInfo yes
 
 set_config_value "$SCAN_CONF" OnAccessMaxThreads "$ONACC_THREADS"
-set_config_value "$SCAN_CONF" OnAccessMaxFileSize 25M    # default 5M: bigger files are never on-access scanned
 set_config_value "$SCAN_CONF" ConcurrentDatabaseReload "$CONC_RELOAD"
 set_config_value "$SCAN_CONF" ExtendedDetectionInfo yes  # logs size + hash with each detection
+# set_config_value "$SCAN_CONF" OnAccessMaxFileSize 25M    # default 5M: bigger files are never on-access scanned
+set_config_value "$SCAN_CONF" OnAccessMaxFileSize "$ONACC_MAX_FILE"
+
 
 # ExitOnOOM makes clamd exit cleanly on an out-of-memory condition and lets systemd restart it. The cost is a full signature reload.
 # set_config_value "$SCAN_CONF" ExitOnOOM yes
