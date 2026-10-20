@@ -3607,7 +3607,10 @@ sudo systemd-analyze verify \
 # sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
 
 echo "ClamAV services and timers are active."
-clamdscan --version
+# clamdscan --version
+# The above clamdscan command talks to the daemon, and the socket is now root-only (correct). 
+# Replace it with clamscan --version, which needs no daemon.
+clamscan --version
 
 # Check the custom scan-log rotation configuration without changing any logs:
 # sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
