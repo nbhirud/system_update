@@ -2246,7 +2246,8 @@ sudo udevadm control --reload-rules
 # sudo setsebool -P antivirus_scan_home_dirs 1
 
 # antivirus_scan_home_dirs might be absent. We are checking 
-for b in antivirus_can_scan_system antivirus_use_jit antivirus_scan_home_dirs; do
+# for b in antivirus_can_scan_system antivirus_use_jit antivirus_scan_home_dirs; do
+for b in antivirus_can_scan_system antivirus_scan_home_dirs; do
     if getsebool "$b" >/dev/null 2>&1; then 
         sudo setsebool -P "$b" 1
         echo "SELinux boolean $b set to active."
