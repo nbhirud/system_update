@@ -195,21 +195,27 @@ done
 # APPLY INTELLIGENT DEFAULTS FOR UNSET OPTIONS
 
 # Treat laptop as desktop from security perspective.
-if [ "$PC_TYPE" = "laptop" ]; then
-    PC_TYPE="desktop"
-fi
+# if [ "$PC_TYPE" = "laptop" ]; then
+#     PC_TYPE="desktop"
+# fi
 
 # 1. PC_TYPE (detected via OS release if not provided)
 if [ -z "$PC_TYPE" ]; then
-    PC_TYPE="$( . /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop )"   # subshell: no variable pollution
+    # PC_TYPE="$( . /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop )"   # subshell: no variable pollution
+    # SC1091: parse instead of sourcing (no shell code from the file is executed). Replacing the PC_TYPE="$( . /etc/os-release; ...)" line:
+    if grep -qE '^VARIANT_ID="?server"?$' /etc/os-release 2>/dev/null; then PC_TYPE_DEFAULT=server; else PC_TYPE_DEFAULT=desktop; fi
+    PC_TYPE="${PC_TYPE:-$PC_TYPE_DEFAULT}"
 
 fi
 
 case "$PC_TYPE" in
-    desktop|server)
+    desktop|server) 
+        ;;  
+    laptop) 
+        PC_TYPE=desktop 
         ;;
     *)
-        echo "ERROR: PC_TYPE must be desktop, laptop, or server." >&2
+        echo "ERROR: PC_TYPE must be desktop, laptop or server." >&2
         exit 2
         ;;
 esac
@@ -306,7 +312,10 @@ ONACC_LOG="$LOG_DIR/clamonacc.log"
 
 UNOFFICIAL_SIGS_MASTER_CONF="/etc/clamav-unofficial-sigs/master.conf"
 UNOFFICIAL_SIGS_OS_CONF="/etc/clamav-unofficial-sigs/os.conf"
-# UNOFFICIAL_SIGS_USER_CONF="/etc/clamav-unofficial-sigs/user.conf"
+UNOFFICIAL_SIGS_USER_CONF="/etc/clamav-unofficial-sigs/user.conf"
+if ! sudo test -f "$UNOFFICIAL_SIGS_USER_CONF"; then
+    sudo install -o root -g root -m 0644 /dev/null "$UNOFFICIAL_SIGS_USER_CONF"
+fi
 
 # CLAM_USER="clamav"
 CLAM_USER="clamscan"
@@ -323,12 +332,13 @@ UPDATE_USER="clamupdate"
 # clamdtop - Terminal dashboard for daemon activity, queued scans, memory usage and loaded signatures. Like htop for clamd
 
 # clamav-lib and clamav-filesystem are pulled in as dependencies. policycoreutils-python-utils provides audit2allow and semanage. util-linux provides flock
-sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamdtop policycoreutils-python-utils util-linux
+sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamdtop policycoreutils-python-utils util-linux gnupg2
 
 # Warning: clamav-unofficial-sigs will download third-party signatures.
 # Review /etc/clamav-unofficial-sigs/master.conf to control which sources are enabled.
 # Some sources are maintained by volunteers; assess trust levels accordingly.
 
+# gnupg2 - for GPG verification of Sanesecurity files (auto-disables silently if gpg is missing)
 
 #########################################################
 # Dynamic Hardware-Aware Optimization:
@@ -363,18 +373,45 @@ echo "Detected $CPU_CORES CPU cores. Will set MaxThreads to $RECOMMENDED_THREADS
 
 # SSD Tuning
 
-SSD_PRESENT=false
-ROOT_DEV=$(df / | tail -1 | awk '{print $1}')
-BACKING_DEV=$(lsblk -no pkname "$ROOT_DEV" 2>/dev/null || basename "$ROOT_DEV" | sed 's/[0-9]*$//')
+# SSD_PRESENT=false
+# ROOT_DEV=$(df / | tail -1 | awk '{print $1}')
+# BACKING_DEV=$(lsblk -no pkname "$ROOT_DEV" 2>/dev/null || basename "$ROOT_DEV" | sed 's/[0-9]*$//')
 
-if [ -n "$BACKING_DEV" ] && [ -f "/sys/block/$BACKING_DEV/queue/rotational" ]; then
-    if [ "$(cat /sys/block/"$BACKING_DEV"/queue/rotational)" -eq 0 ]; then
-        SSD_PRESENT=true
+# if [ -n "$BACKING_DEV" ] && [ -f "/sys/block/$BACKING_DEV/queue/rotational" ]; then
+#     if [ "$(cat /sys/block/"$BACKING_DEV"/queue/rotational)" -eq 0 ]; then
+#         SSD_PRESENT=true
+#     fi
+# elif lsblk -d -o rota | grep -q "^0$"; then
+#     SSD_PRESENT=true
+# fi
+
+
+# Replacing the old SSD detection block (the one using BACKING_DEV / lsblk pkname).
+# path_is_rotational PATH: true if ANY device under PATH's filesystem is rotational (HDD) or unknown.
+path_is_rotational() {
+    local path="$1" src stack fsuuid d
+    src=$(findmnt -n -o SOURCE --target "$path" 2>/dev/null | head -n1)
+    src=${src%%\[*}                              # btrfs prints /dev/xxx[/subvolume]: strip the subvolume
+    [ -b "$src" ] || return 0                    # tmpfs/overlay/network/unknown: be conservative
+    stack=$(lsblk -s -n -o ROTA "$src" 2>/dev/null | tr -d ' ')   # -s: this device AND everything under it
+    # btrfs spanning several devices: findmnt shows only one, but sysfs lists them all
+    fsuuid=$(findmnt -n -o UUID --target "$path" 2>/dev/null | head -n1)
+    if [ -n "$fsuuid" ] && [ -d "/sys/fs/btrfs/$fsuuid/devices" ]; then
+        for d in /sys/fs/btrfs/"$fsuuid"/devices/*; do
+            stack+=$'\n'$(lsblk -s -n -o ROTA "/dev/$(basename "$d")" 2>/dev/null | tr -d ' ')
+        done
     fi
-elif lsblk -d -o rota | grep -q "^0$"; then
-    SSD_PRESENT=true
-fi
+    [ -n "$stack" ] || return 0
+    printf '%s\n' "$stack" | grep -qx '1'
+}
 
+FAST_STORAGE=true
+for p in / "$HOME_DIR" "$NBDIR" /srv; do
+    if [ -e "$p" ] && path_is_rotational "$p"; then
+        FAST_STORAGE=false; echo "INFO: $p is on rotational or unknown storage"
+    fi
+done
+SSD_PRESENT=$FAST_STORAGE   # keep the old name so ONACC_PREVENT and the weekly engine keep working
 
 
 if   [ "$RAM_MB" -lt 10000 ];  then RAM_PROFILE=low
@@ -392,7 +429,14 @@ ONACC_THREADS=$(( RECOMMENDED_THREADS - 2 ))   # must stay below clamd MaxThread
 if [ "$ONACC_THREADS" -gt 5 ]; then ONACC_THREADS=5; fi
 echo "RAM profile=$RAM_PROFILE threads=$RECOMMENDED_THREADS prevention=$ONACC_PREVENT concurrent_reload=$CONC_RELOAD"
 
-
+# OnAccessMaxFileSize
+# Facts: default 5M; files above it are NOT scanned on-access; clamd's MaxFileSize (100M)
+# is a second ceiling, so going above 100M here would do nothing.
+case "$RAM_PROFILE" in
+    low)  ONACC_MAX_FILE=25M  ;;   # slow CPU/HDD, notify-only: keep background scans short
+    mid)  ONACC_MAX_FILE=50M  ;;
+    *)    ONACC_MAX_FILE=100M ;;   # high RAM: matches clamd's own MaxFileSize
+esac
 
 
 #########################################################
@@ -402,6 +446,10 @@ echo "RAM profile=$RAM_PROFILE threads=$RECOMMENDED_THREADS prevention=$ONACC_PR
 # mkdir -p "$CLAMAV_BACKUP_DIR"
 # sudo install -d -o "$CLAM_USER" -g "$CLAM_USER" -m 750 "$CLAMAV_BACKUP_DIR" 
 # sudo install -d -o "$REAL_USER" -g "$REAL_USER" -m 750 "$CLAMAV_BACKUP_DIR"
+
+# umask 077 - Explaination:
+# A umask lists permission bits to remove from newly created files and directories. 077 removes everything for group and others, so new files get 600 and directories 700. It matters for the backup directory because those copies can contain config values, and a file created with the default umask (644) is world-readable until a later chmod. Inside ( umask 077; mkdir … ) it applies only to that subshell. The install -m 600 /dev/null line above closes the same window for the files.
+
 
 # Backups are created by the invoking user. Never use root to create or copy
 # files into this user-controlled destination: that would permit symlink/path attacks.
@@ -449,12 +497,21 @@ do
     if [[ -f "$config_file" ]]; then
         backup_file="$CLAMAV_BACKUP_DIR/$(basename -- "$config_file")"
 
-        if ! sudo cat -- "$config_file" > "$backup_file"; then
+        # if ! sudo cat -- "$config_file" > "$backup_file"; then
+        #     echo "ERROR: Failed to back up $config_file" >&2
+        #     exit 1
+        # fi
+        # chmod 600 -- "$backup_file"
+
+        # Above implementation gives ShellCheck SC2024, config backup loop. 
+        # The redirect running as user is intended (a user-owned backup), but make it explicit.
+        # Create the file private FIRST, then fill it:
+        install -m 600 /dev/null "$backup_file"
+        if ! sudo cat -- "$config_file" | tee -- "$backup_file" > /dev/null; then   # pipefail catches a failing sudo cat
             echo "ERROR: Failed to back up $config_file" >&2
             exit 1
         fi
 
-        chmod 600 -- "$backup_file"
     fi
 
 done
@@ -489,10 +546,25 @@ echo "Configuration backups saved in: $CLAMAV_BACKUP_DIR"
 # sudo chown -R $CLAM_USER:$CLAM_USER "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
 
 
-sudo install -d -o "$CLAM_USER" -g "$CLAM_USER" -m 750 "$LOG_DIR"
-sudo touch "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
-sudo chown "$CLAM_USER:$CLAM_USER" "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
-sudo chmod 640 "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+# sudo install -d -o "$CLAM_USER" -g "$CLAM_USER" -m 750 "$LOG_DIR"
+# sudo touch "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+# sudo chown "$CLAM_USER:$CLAM_USER" "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+# sudo chmod 640 "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+
+
+# Design: /var/log/clamav becomes root-owned, with daemon-owned files inside. Nobody who isn't root can swap a file for a symlink, so root never follows a planted link. ClamAV's internal rotation can't work in a root-owned directory, so turn it off. At a few KB a day, with 6-month reinstalls, growth is irrelevant. LogSyslog yes still gives a free journald copy.
+
+# Why not /var/log/clamonacc: a separate directory solves the same problem with more parts. It would also need its own SELinux label (a new var_log_t directory isn't writable by the antivirus domain). /var/log/clamav already has the right label. If you still want it, add semanage fcontext -a -t antivirus_log_t '/var/log/clamonacc(/.*)?' plus restorecon.
+
+sudo install -d -o root -g wheel -m 2750 "$LOG_DIR"      # root-owned; setgid so new files inherit group wheel
+# One file per writer, owned by the account that really writes it. wheel can read without sudo.
+for spec in "$FRESH_LOG:$UPDATE_USER" "$CLAMD_LOG:$CLAM_USER" "$ONACC_LOG:root"; do
+    f=${spec%%:*}; owner=${spec##*:}
+    if [ ! -e "$f" ]; then sudo touch "$f"; fi            # touch never truncates an existing log
+    sudo chown "$owner:wheel" "$f"
+    sudo chmod 0640 "$f"
+done
+
 
 # # Creating logs with touch followed by chown/chmod leaves a brief window where unprivileged users might be able to replace or modify the log files. Use atomic file creation:
 # for logfile in "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"; do
@@ -529,6 +601,12 @@ sudo chown -R "$UPDATE_USER:$CLAM_USER" "$SIG_DB_DIR"
 sudo find "$SIG_DB_DIR" -type d -exec chmod 750 {} +
 sudo find "$SIG_DB_DIR" -type f -exec chmod 640 {} +
 
+# False-positive whitelist (persistent, not touched by the updater). Create once, after the DB directory is set up:
+if ! sudo test -f "$SIG_DB_DIR/local.ign2"; then
+    printf '%s\n' '# Signature names to ignore, one per line, WITHOUT the .UNOFFICIAL suffix.' \
+        | sudo tee "$SIG_DB_DIR/local.ign2" > /dev/null
+    sudo chown "$UPDATE_USER:$CLAM_USER" "$SIG_DB_DIR/local.ign2"; sudo chmod 0640 "$SIG_DB_DIR/local.ign2"
+fi
 
 ###########################
 # The following is Tested and works perfectly:
@@ -1022,8 +1100,10 @@ sudo sed -i '/^Example/d' "$FRESH_CONF"
 # # DatabaseMirror database.clamav.net
 
 set_config_value "$FRESH_CONF" LogTime yes
-set_config_value "$FRESH_CONF" LogFileMaxSize 20M
-set_config_value "$FRESH_CONF" LogRotate yes
+# set_config_value "$FRESH_CONF" LogFileMaxSize 20M
+# set_config_value "$FRESH_CONF" LogRotate yes
+set_config_value "$FRESH_CONF" LogFileMaxSize 0   # no limit: rotation cannot work in a root-owned dir anyway
+set_config_value "$FRESH_CONF" LogRotate no
 set_config_value "$FRESH_CONF" LogSyslog yes # sends logs to journald, which has its own retention.
 set_config_value "$FRESH_CONF" UpdateLogFile "$FRESH_LOG"
 
@@ -1047,10 +1127,10 @@ set_config_value "$FRESH_CONF" DNSDatabaseInfo yes
 # sudo sed -i "s|^#clam_group=.*|clam_group=\"$CLAM_USER\"|" "$UNOFFICIAL_SIGS_MASTER_CONF"
 
 # Use set_config_value instead of directly setting using sed
-set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" user_configuration_complete yes
+# set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" user_configuration_complete yes # Using user conf now
 # set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user "$CLAM_USER"
-set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user  "$UPDATE_USER"
-set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_group "$CLAM_USER"
+# set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user  "$UPDATE_USER" # Using user conf now
+# set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_group "$CLAM_USER" # Using user conf now
 # set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" urlhaus_enabled no   # domain list: matches blocklist hosts files by design
 
 # Enable only trusted free sources
@@ -1073,8 +1153,55 @@ set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_reload_opt "clamdscan --config
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" reload_dbs yes
 
 # set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user "$CLAM_USER"
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user  "$UPDATE_USER"
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_group "$CLAM_USER"
+# set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user  "$UPDATE_USER" # Using user conf now
+# set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_group "$CLAM_USER" # Using user conf now
+
+
+
+
+# UNOFFICIAL_SIGS_USER_CONF
+# user.conf overrides master.conf and os.conf
+
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" user_configuration_complete yes
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" clam_user  "$UPDATE_USER"
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" clam_group "$CLAM_USER"
+# (os.conf for Fedora already carries clam_dbs, clamd_pid and the reload command: no need to repeat them)
+
+# False-positive risk: LOW = only databases rated low-risk. Default MEDIUM adds spam/lottery/junk-URL sets
+# that match hosts files, filter lists, bookmarks and Thunderbird training data.
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" default_dbs_rating LOW
+
+# Freshness vs. network fingerprint (lower frequency is always safe with the providers)
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" sanesecurity_update_hours        6
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" urlhaus_update_hours             6
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" interserver_update_hours         12
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" linuxmalwaredetect_update_hours  24
+
+# Sources that need paid/registered keys: off (explicit = fewer connections and warnings)
+for src in additional malwarepatrol malwareexpert securiteinfo; do
+    set_config_value "$UNOFFICIAL_SIGS_USER_CONF" "${src}_enabled" no
+done
+
+# Supply chain/privacy: dnf updates the script, not GitHub
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" allow_upgrades no
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" allow_update_checks no
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" selinux_fixes yes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1101,8 +1228,10 @@ sudo sed -i -E '/^(ScanOnAccess|OnAccessExcludePath|OnAccessMountPath)[[:space:]
 
 set_config_value "$SCAN_CONF" LogFile "$CLAMD_LOG"
 set_config_value "$SCAN_CONF" LogTime yes
-set_config_value "$SCAN_CONF" LogFileMaxSize 10M    # ClamAV renames the full log to clamd-<timestamp>.log
-set_config_value "$SCAN_CONF" LogRotate yes
+# set_config_value "$SCAN_CONF" LogFileMaxSize 10M    # ClamAV renames the full log to clamd-<timestamp>.log
+# set_config_value "$SCAN_CONF" LogRotate yes
+set_config_value "$SCAN_CONF"  LogFileMaxSize 0    # no limit
+set_config_value "$SCAN_CONF"  LogRotate no
 set_config_value "$SCAN_CONF" LogSyslog yes    # sends logs to journald, which has its own retention.
 set_config_value "$SCAN_CONF" PidFile "$CLAMD_PID"
 set_config_value "$SCAN_CONF" FixStaleSocket yes
@@ -1181,9 +1310,11 @@ sudo sed -i '/^TemporaryDirectory/d' "$SCAN_CONF"   # clears machines already co
 # ExtendedDetectionInfo yes
 
 set_config_value "$SCAN_CONF" OnAccessMaxThreads "$ONACC_THREADS"
-set_config_value "$SCAN_CONF" OnAccessMaxFileSize 25M    # default 5M: bigger files are never on-access scanned
 set_config_value "$SCAN_CONF" ConcurrentDatabaseReload "$CONC_RELOAD"
 set_config_value "$SCAN_CONF" ExtendedDetectionInfo yes  # logs size + hash with each detection
+# set_config_value "$SCAN_CONF" OnAccessMaxFileSize 25M    # default 5M: bigger files are never on-access scanned
+set_config_value "$SCAN_CONF" OnAccessMaxFileSize "$ONACC_MAX_FILE"
+
 
 # ExitOnOOM makes clamd exit cleanly on an out-of-memory condition and lets systemd restart it. The cost is a full signature reload.
 # set_config_value "$SCAN_CONF" ExitOnOOM yes
@@ -1299,7 +1430,7 @@ set_config_value "$SCAN_CONF" AlertBrokenExecutables yes
 
 # Ransomware‑Tracker - https://github.com/ytisf/ransomware-sig - Focused on ransomware hashes and filenames.
 
-# ESET‑NOD32‑Signatures - (not officially supported) - Adds a different vendor’s perspective on threats.
+# ESET‑NOD32‑Signatures - (not officially supported) - Adds a different vendor's perspective on threats.
 
 # Sigs are usually .cvd or plain text .hdb/.mdb - Place them in /var/lib/clamav/ (or wherever your DatabaseDirectory points)
 
@@ -1423,6 +1554,13 @@ ONACC_DIRS=(
     "$NBDIR/nb_script_downloads"
     "$NBDIR/Syncthing"   # Syncthing folders that receive files from other devices
 )
+
+# Add a per-directory safeguard, because prevention should only run if every watched directory is on flash:
+# for d in "${ONACC_DIRS[@]}"; do
+#     if [ -d "$d" ] && path_is_rotational "$d"; then
+#         ONACC_PREVENT=no; echo "INFO: $d is on rotational/unknown storage -> on-access prevention disabled"; break
+#     fi
+# done
 
 # Conditionally append completed Torrents path if a torrent client is present
 if [ "${HAS_TORRENT_CLIENT:-false}" = true ]; then
@@ -2019,7 +2157,7 @@ log "Scanning $DEVICE_NODE mounted at $DEVICE_MOUNT (size <= ${SIZE_THRESHOLD_GI
 # clamdscan always recurses, so -r was a no-op; nice/ionice on the client don't throttle clamd either.
 # No --log: output goes to the unit's journal (journalctl -u 'clamav-usb-scan@*').
 SCAN_STATUS=0
-/usr/bin/clamdscan --fdpass --infected "$DEVICE_MOUNT" || SCAN_STATUS=$?   # capture the exit code safely
+/usr/bin/clamdscan --fdpass --log="$LOGFILE" --infected "$DEVICE_MOUNT" || SCAN_STATUS=$?   # capture the exit code safely
 
 case "$SCAN_STATUS" in
     0) log "USB scan completed with no detections: $DEVICE_MOUNT" ;;
@@ -2070,9 +2208,9 @@ IOSchedulingClass=idle
 # A USB device that remains connected but never mounts - for example, one with an unsupported filesystem - can leave a root-running service waiting indefinitely. Multiple devices could create multiple long-lived waiting services.
 # TimeoutStartSec=infinity
 # Five minutes gives a normal desktop ample time to mount a USB filesystem while preventing indefinite waiting. If you later add a bounded wait directly to the helper, keep the systemd timeout as a second layer of protection.
-TimeoutStartSec=5min
+TimeoutStartSec=10min
 TimeoutStopSec=10s
-NoNewPrivileges=yes
+# NoNewPrivileges=yes
 ProtectSystem=full
 ProtectHome=read-only
 PrivateTmp=yes
@@ -2081,6 +2219,7 @@ ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictSUIDSGID=yes
 LockPersonality=yes
+UMask=0027    # log files come out 640 with group wheel.
 EOF
 
 # Manual scan: identify a mounted USB filesystem's device with lsblk, then scan it.
@@ -2107,7 +2246,8 @@ sudo udevadm control --reload-rules
 # sudo setsebool -P antivirus_scan_home_dirs 1
 
 # antivirus_scan_home_dirs might be absent. We are checking 
-for b in antivirus_can_scan_system antivirus_use_jit antivirus_scan_home_dirs; do
+# for b in antivirus_can_scan_system antivirus_use_jit antivirus_scan_home_dirs; do
+for b in antivirus_can_scan_system antivirus_scan_home_dirs; do
     if getsebool "$b" >/dev/null 2>&1; then 
         sudo setsebool -P "$b" 1
         echo "SELinux boolean $b set to active."
@@ -2242,7 +2382,7 @@ ExecStart=/usr/sbin/clamonacc \
 
 Restart=on-failure
 RestartSec=5
-NoNewPrivileges=yes
+# NoNewPrivileges=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
@@ -2289,7 +2429,7 @@ CPUWeight=50
 Restart=on-failure
 RestartSec=10
 # --- sandboxing (defense in depth; SELinux already confines clamd) ---
-NoNewPrivileges=yes
+# NoNewPrivileges=yes
 ProtectSystem=full
 ProtectHome=read-only
 PrivateTmp=yes
@@ -2309,6 +2449,45 @@ EOF
 
 
 sudo systemctl daemon-reload
+
+
+#########################################################
+# clamav-unofficial-sigs timer and service
+#########################################################
+
+sudo install -d -m 0755 /etc/systemd/system/clamav-unofficial-sigs.timer.d
+sudo tee /etc/systemd/system/clamav-unofficial-sigs.timer.d/schedule.conf > /dev/null <<'EOF'
+[Timer]
+# The empty line clears the packaged schedule (upstream: hourly at :37).
+OnCalendar=
+# 00:37, 06:37, 12:37, 18:37 plus up to 1 h random delay, matching the 6-hour source intervals.
+OnCalendar=*-*-* 00/6:37:00
+RandomizedDelaySec=1h
+Persistent=true
+EOF
+sudo systemctl daemon-reload && sudo systemctl restart clamav-unofficial-sigs.timer
+
+
+sudo install -d -m 0755 /etc/systemd/system/clamav-unofficial-sigs.service.d
+sudo tee /etc/systemd/system/clamav-unofficial-sigs.service.d/hardening.conf > /dev/null <<'EOF'
+[Service]
+ProtectHome=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+# NoNewPrivileges=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+EOF
+sudo systemctl daemon-reload
+
 
 
 #########################################################
@@ -2405,6 +2584,9 @@ sudo systemctl daemon-reload
 
 # Maybe add a check here which runs "sudo freshclam" only after checking if the service isn't locking it
 
+# First signature download. clamd will not start without a database.
+# Runs as root, drops to $UPDATE_USER, which must own the log file and the DB dir.
+sudo freshclam --config-file="$FRESH_CONF"
 
 #########################################################
 # Persistent Weekly Scan Setup
@@ -2643,7 +2825,7 @@ echo "Configuring background weekly system scan timer..."
 # New designNothing in the chain gains privilege. clamd only calls logger.
 
 # Problem 2: Fragility
-# Old design: Three copies of session-detection code that parse loginctl and build D-Bus addresses. They break silently when you’re logged out or on SSH, and NoNewPrivileges or SELinux can kill the sudo path.
+# Old design: Three copies of session-detection code that parse loginctl and build D-Bus addresses. They break silently when you're logged out or on SSH, and NoNewPrivileges or SELinux can kill the sudo path.
 # New design: Components write events to the journal. One small program running as you shows popups.
 
 # Problem 3: Duplication
@@ -2682,6 +2864,7 @@ flock -n 9 || {
 }
 
 echo "Weekly scan started: $(date --iso-8601=seconds)"
+LOGFILE="/var/log/clamav/weekly_scan_$(date +%F).log"
 
 # ---- 1. WHICH SCANNER? ------------------------------------------------------
 # The installer (snippet after this heredoc) swaps @ENGINE@ for "clamdscan" (SSD machines) or
@@ -2712,6 +2895,7 @@ case "$ENGINE" in
         nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes \
             --detect-pua=yes --alert-broken=yes \
             --exclude='^/etc/hosts$' \
+            --log="$LOGFILE" \
             --exclude-dir='/nb_script_data/hostsplay(/|$)' \
             --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
             --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
@@ -2723,7 +2907,7 @@ case "$ENGINE" in
         #   clamscan), which could not otherwise read your 0700 home. ExcludePath in scan.conf is
         #   applied by clamdscan itself (it ignores --exclude-dir, tested).
         # --wait --ping 90:2: wait up to 3 minutes for clamd to finish loading signatures.
-        clamdscan --wait --ping 90:2 --multiscan --fdpass --infected "${ROOTS[@]}" || SCAN_STATUS=$?
+        clamdscan --wait --ping 90:2 --multiscan --fdpass --log="$LOGFILE" --infected "${ROOTS[@]}" || SCAN_STATUS=$?
         ;;
 esac
 
@@ -2753,8 +2937,14 @@ sudo sed -i "s/@ENGINE@/$WEEKLY_ENGINE/" /usr/local/bin/clamav-weekly-scan.sh
 # Environment=CLAMAV_WEEKLY_ENGINE=clamscan
 
 
-grep -q "CLAMAV_WEEKLY_ENGINE=@ENGINE@" /usr/local/bin/clamav-weekly-scan.sh && \
-    echo "ERROR: Engine substitution failed" >&2 && exit 1
+# grep -q "CLAMAV_WEEKLY_ENGINE=@ENGINE@" /usr/local/bin/clamav-weekly-scan.sh && echo "ERROR: Engine substitution failed" >&2 && exit 1
+if grep -q 'CLAMAV_WEEKLY_ENGINE:-@ENGINE@' /usr/local/bin/clamav-weekly-scan.sh; 
+then 
+    echo "ERROR: Engine substitution failed" >&2; 
+    exit 1; 
+fi
+
+
 echo "Scan engine set to: $WEEKLY_ENGINE"
 
 
@@ -2774,7 +2964,7 @@ ExecStart=/usr/local/bin/clamav-weekly-scan.sh
 Nice=19
 IOSchedulingClass=idle
 CPUSchedulingPolicy=idle
-NoNewPrivileges=yes
+# NoNewPrivileges=yes
 ProtectSystem=full
 ProtectHome=read-only
 # PrivateTmp=yes
@@ -2784,6 +2974,7 @@ ProtectControlGroups=yes
 RestrictSUIDSGID=yes
 LockPersonality=yes
 # ConditionACPower=true   # laptops: skip on battery (nbXPS, nbLenovo)
+UMask=0027   # log files come out 640 with group wheel.
 EOF
 
 
@@ -3154,8 +3345,11 @@ echo "[+] Validating clamd configuration syntax..."
 # fi
 
 CFGCHK=$(mktemp -d)
-sudo cat "$SCAN_CONF"  > "$CFGCHK/clamd.conf"
-sudo cat "$FRESH_CONF" > "$CFGCHK/freshclam.conf"
+# sudo cat "$SCAN_CONF"  > "$CFGCHK/clamd.conf"
+# sudo cat "$FRESH_CONF" > "$CFGCHK/freshclam.conf"
+# Above implementation gives ShellCheck SC2024
+sudo cat "$SCAN_CONF"  | tee "$CFGCHK/clamd.conf"     > /dev/null
+sudo cat "$FRESH_CONF" | tee "$CFGCHK/freshclam.conf" > /dev/null
 if clamconf -c "$CFGCHK" 2>&1 | grep -E '^ERROR'; then
     echo "Config error above. Originals: $CLAMAV_BACKUP_DIR" >&2; rm -rf "$CFGCHK"; exit 1
 fi
@@ -3277,7 +3471,9 @@ echo "Configuration validated successfully."
 # fi
 
 echo "Waiting for clamd to load signatures (can take minutes on the HDD machines) and open socket"
-for i in {1..100}; do
+# for i in {1..100}; do
+# The above for implementation gives ShellCheck SC2034: the loop variable is unused
+for _ in {1..100}; do
     if sudo clamdscan --config-file="$SCAN_CONF" --ping 1 2>/dev/null; then
         break
     fi
@@ -3295,16 +3491,20 @@ fi
 echo "Checking ClamAV services..."
 
 FAILED=0
+sleep 10   # a service that dies right after starting still reports "active" briefly
 
 for service in \
     clamav-freshclam.service \
     clamd@scan.service \
     clamav-clamonacc.service \
+    clamav-unofficial-sigs.service \
     clamav-unofficial-sigs.timer \
     clamav-weekly-scan.timer
 do
     if systemctl is-active --quiet "$service"; then
         printf 'OK: %s is active\n' "$service"
+        restarts=$(systemctl show -p NRestarts --value "$service" 2>/dev/null)   # empty for timers
+        if [ "${restarts:-0}" -gt 0 ]; then echo "WARN: $service restarted $restarts time(s): journalctl -u $service"; FAILED=1; fi
     else
         printf 'ERROR: %s is not active\n' "$service"
         sudo systemctl status "$service" --no-pager || true
@@ -3312,10 +3512,26 @@ do
     fi
 done
 
+
+# Verify clamd is still SELinux-confined (a denied transition could leave it in init_t)
+if command -v getenforce >/dev/null && [ "$(getenforce)" = Enforcing ]; then
+    CLAMD_LABEL=$(ps -o label= -C clamd 2>/dev/null | head -n1)
+    case "$CLAMD_LABEL" in
+        *:antivirus_t:*) echo "OK: clamd runs confined as antivirus_t" ;;
+        *) echo "FAIL: clamd SELinux label is '${CLAMD_LABEL:-unknown}', expected antivirus_t"; FAILED=1 ;;
+    esac
+    echo "INFO: clamonacc label: $(ps -o label= -C clamonacc 2>/dev/null | head -n1)"
+fi
+
+
 # split into A and B so the script file itself never contains the contiguous test string
-EICAR_A='X5O!P%@AP[4\PZX54(P^)7CC)7}$'
-EICAR_B='EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
-EICAR="${EICAR_A}${EICAR_B}"
+# EICAR_A='X5O!P%@AP[4\PZX54(P^)7CC)7}$'
+# EICAR_B='EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
+# EICAR="${EICAR_A}${EICAR_B}"
+# The above implementation gives ShellCheck SC2016
+# Replace the EICAR_A / EICAR_B / EICAR lines with this (verified: decodes to the exact 68 bytes)
+EICAR=$(printf '%s' 'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo=' | base64 -d)
+grep -c 'EICAR-STANDARD' clamav.sh
 T=$(mktemp /tmp/eicar.XXXXXX); printf '%s' "$EICAR" > "$T"
 rc=0; sudo clamdscan --config-file="$SCAN_CONF" --fdpass "$T" >/dev/null 2>&1 || rc=$?
 # if [ "$rc" -eq 1 ]; then echo "OK: clamd detects EICAR"; else echo "FAIL: EICAR rc=$rc"; fi
@@ -3391,7 +3607,10 @@ sudo systemd-analyze verify \
 # sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
 
 echo "ClamAV services and timers are active."
-clamdscan --version
+# clamdscan --version
+# The above clamdscan command talks to the daemon, and the socket is now root-only (correct). 
+# Replace it with clamscan --version, which needs no daemon.
+clamscan --version
 
 # Check the custom scan-log rotation configuration without changing any logs:
 # sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
@@ -3425,8 +3644,10 @@ clamdscan --version
 
 # clamscan --bell --cross-fs=yes --move="/home/nbhirud/Desktop/clamscan_infected" --heuristic-alerts=yes --recursive -i . | tee clamscan.log
 
-
-
+# # prints the signature per file in quarantine
+# # sudo clamscan --infected /var/quarantine/clamav/*     # zsh expands * as you before sudo starts, and the quarantine is root-only (700), so nothing matches.
+# sudo sh -c 'clamscan --infected /var/quarantine/clamav/*'   # root's shell expands the glob
+# sudo clamscan -r --infected /var/quarantine/clamav          # no glob needed
 
 
 #########################################################
@@ -3437,9 +3658,10 @@ clamdscan --version
 # journalctl -u clamd@scan -u clamav-freshclam -u clamav-clamonacc -b
 # journalctl -t clamav-alert -t clamav-scan
 # journalctl -u clamav-weekly-scan
-# journalctl -u 'clamav-usb-scan@*'
+# journalctl -u 'clamav-usb-scan@*' # Insert usb flash drive and run this to check if it works
 # journalctl --list-boots  # Check the journal is persistent - more than one boot listed means yes
 # journalctl -u 'clamav-usb-scan@*' -n 20 # Verify on the first USB insert that the hardened unit sees the mount
+# journalctl -u clamav-unofficial-sigs -n 50
 
 # Check if the script is syntactically correct:
 # bash -n clamav.sh
@@ -3447,7 +3669,7 @@ clamdscan --version
 
 # run your setup script and inspect the resulting services:
 # systemctl --failed
-# systemctl status clamd@scan.service clamav-freshclam.service clamav-clamonacc.service --no-pager
+# systemctl status clamd@scan.service clamav-freshclam.service clamav-clamonacc.service clamav-unofficial-sigs.service --no-pager
 # systemctl status clamav-weekly-scan.timer clamav-unofficial-sigs.timer --no-pager
 
 
@@ -3527,13 +3749,12 @@ clamdscan --version
 # sudo systemctl status clamav-freshclam.service
 # sudo systemctl status clamd@scan.service
 # sudo systemctl status clamav-clamonacc.service
+# sudo systemctl status clamav-unofficial-sigs.service
 # sudo systemctl status clamav-unofficial-sigs.timer
 
 
 # sudo systemctl disable clamav-freshclam.service
 # sudo systemctl disable clamav-clamonacc.service
-
-
 
 # ############################
 # # Debugging freshclam
@@ -3594,6 +3815,40 @@ clamdscan --version
 # # Check the config file
 # grep -i user /etc/clamd.d/scan.conf
 
+# ############################
+
+# Expected output on fresh first run: all active; no restarts
+# systemctl is-active clamd@scan clamav-freshclam clamav-clamonacc
+
+# Expected output on fresh first run: clamd shows antivirus_t
+# ps -eZ | grep -E 'clamd|clamonacc|freshclam'
+
+# Expected output on fresh first run: nothing
+# sudo ausearch -m avc -ts boot | grep -iE 'clam|antivirus'
+
+# Expected output on fresh first run: Permission denied
+# sudo -u clamscan touch /var/lib/clamav/x
+
+# Expected output on fresh first run: owner clamupdate:clamscan
+# ls -l /var/lib/clamav
+
+# Expected output on fresh first run: dir root:wheel 2750; freshclam.log owned by clamupdate
+# ls -ld /var/log/clamav && ls -l /var/log/clamav
+
+# Expected output on fresh first run: no ScanOnAccess, TemporaryDirectory, LocalSocketGroup; LocalSocketMode 600
+# sudo grep -vE '^\s*(#|$)' /etc/clamd.d/scan.conf
+
+# Expected output on fresh first run: roughly 6.5-6.8 (was 9.6)
+# systemd-analyze security clamd@scan.service | tail -1
+
+# Expected output on fresh first run: unofficial-sigs at 00/06/12/18, weekly timer present
+# systemctl list-timers 'clamav-*'
+
+# Expected output on fresh first run: sudo tail -50 /var/log/clamav-unofficial-sigs/clamav-unofficial-sigs.log shows downloads without errors
+# after about 15 min
+
+# Expected output on fresh first run: popup appears
+# logger -p authpriv.warning -t clamav-alert test
 
 # ############################
 # # Debugging clamav-clamonacc.service
@@ -3629,3 +3884,25 @@ clamdscan --version
 # sudo setsebool -P antivirus_use_jit 0 && sudo systemctl restart clamd@scan
 # scan EICAR and a zip file, then: sudo ausearch -m avc -ts recent | grep -i execmem
 # if you see execmem denials: sudo setsebool -P antivirus_use_jit 1
+
+
+# https://www.man7.org/linux/man-pages/man1/systemd-analyze.1.html
+# This command analyzes the security and sandboxing settings of one
+#        or more specified service units. If at least one unit name is
+#        specified the security settings of the specified service units are
+#        inspected and a detailed analysis is shown. If no unit name is
+#        specified, all currently loaded, long-running service units are
+#        inspected and a terse table with results shown. The command checks
+#        for various security-related service settings, assigning each a
+#        numeric "exposure level" value, depending on how important a
+#        setting is. It then calculates an overall exposure level for the
+#        whole unit, which is an estimation in the range 0.0...10.0
+#        indicating how exposed a service is security-wise. High exposure
+#        levels indicate very little applied sandboxing. Low exposure
+#        levels indicate tight sandboxing and strongest security
+#        restrictions.
+# systemd-analyze security # all services summarized
+# systemd-analyze security --no-pager clamav-clamonacc.service
+# systemd-analyze security --no-pager clamav-freshclam.service
+# systemd-analyze security --no-pager clamav-unofficial-sigs.service
+# systemd-analyze security --no-pager clamd@scan.service
