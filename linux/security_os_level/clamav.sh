@@ -497,12 +497,21 @@ do
     if [[ -f "$config_file" ]]; then
         backup_file="$CLAMAV_BACKUP_DIR/$(basename -- "$config_file")"
 
-        if ! sudo cat -- "$config_file" > "$backup_file"; then
+        # if ! sudo cat -- "$config_file" > "$backup_file"; then
+        #     echo "ERROR: Failed to back up $config_file" >&2
+        #     exit 1
+        # fi
+        # chmod 600 -- "$backup_file"
+
+        # Above implementation gives ShellCheck SC2024, config backup loop. 
+        # The redirect running as user is intended (a user-owned backup), but make it explicit.
+        # Create the file private FIRST, then fill it:
+        install -m 600 /dev/null "$backup_file"
+        if ! sudo cat -- "$config_file" | tee -- "$backup_file" > /dev/null; then   # pipefail catches a failing sudo cat
             echo "ERROR: Failed to back up $config_file" >&2
             exit 1
         fi
 
-        chmod 600 -- "$backup_file"
     fi
 
 done
