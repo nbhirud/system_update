@@ -3491,6 +3491,7 @@ fi
 echo "Checking ClamAV services..."
 
 FAILED=0
+sleep 10   # a service that dies right after starting still reports "active" briefly
 
 for service in \
     clamav-freshclam.service \
@@ -3502,6 +3503,8 @@ for service in \
 do
     if systemctl is-active --quiet "$service"; then
         printf 'OK: %s is active\n' "$service"
+        restarts=$(systemctl show -p NRestarts --value "$service" 2>/dev/null)   # empty for timers
+        if [ "${restarts:-0}" -gt 0 ]; then echo "WARN: $service restarted $restarts time(s): journalctl -u $service"; FAILED=1; fi
     else
         printf 'ERROR: %s is not active\n' "$service"
         sudo systemctl status "$service" --no-pager || true
