@@ -2208,7 +2208,7 @@ IOSchedulingClass=idle
 # A USB device that remains connected but never mounts - for example, one with an unsupported filesystem - can leave a root-running service waiting indefinitely. Multiple devices could create multiple long-lived waiting services.
 # TimeoutStartSec=infinity
 # Five minutes gives a normal desktop ample time to mount a USB filesystem while preventing indefinite waiting. If you later add a bounded wait directly to the helper, keep the systemd timeout as a second layer of protection.
-TimeoutStartSec=5min
+TimeoutStartSec=10min
 TimeoutStopSec=10s
 # NoNewPrivileges=yes
 ProtectSystem=full
