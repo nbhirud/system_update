@@ -332,12 +332,13 @@ UPDATE_USER="clamupdate"
 # clamdtop - Terminal dashboard for daemon activity, queued scans, memory usage and loaded signatures. Like htop for clamd
 
 # clamav-lib and clamav-filesystem are pulled in as dependencies. policycoreutils-python-utils provides audit2allow and semanage. util-linux provides flock
-sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamdtop policycoreutils-python-utils util-linux
+sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamdtop policycoreutils-python-utils util-linux gnupg2
 
 # Warning: clamav-unofficial-sigs will download third-party signatures.
 # Review /etc/clamav-unofficial-sigs/master.conf to control which sources are enabled.
 # Some sources are maintained by volunteers; assess trust levels accordingly.
 
+# gnupg2 - for GPG verification of Sanesecurity files (auto-disables silently if gpg is missing)
 
 #########################################################
 # Dynamic Hardware-Aware Optimization:
