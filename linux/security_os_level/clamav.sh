@@ -3512,6 +3512,18 @@ do
     fi
 done
 
+
+# Verify clamd is still SELinux-confined (a denied transition could leave it in init_t)
+if command -v getenforce >/dev/null && [ "$(getenforce)" = Enforcing ]; then
+    CLAMD_LABEL=$(ps -o label= -C clamd 2>/dev/null | head -n1)
+    case "$CLAMD_LABEL" in
+        *:antivirus_t:*) echo "OK: clamd runs confined as antivirus_t" ;;
+        *) echo "FAIL: clamd SELinux label is '${CLAMD_LABEL:-unknown}', expected antivirus_t"; FAILED=1 ;;
+    esac
+    echo "INFO: clamonacc label: $(ps -o label= -C clamonacc 2>/dev/null | head -n1)"
+fi
+
+
 # split into A and B so the script file itself never contains the contiguous test string
 # EICAR_A='X5O!P%@AP[4\PZX54(P^)7CC)7}$'
 # EICAR_B='EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
