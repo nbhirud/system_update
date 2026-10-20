@@ -312,7 +312,10 @@ ONACC_LOG="$LOG_DIR/clamonacc.log"
 
 UNOFFICIAL_SIGS_MASTER_CONF="/etc/clamav-unofficial-sigs/master.conf"
 UNOFFICIAL_SIGS_OS_CONF="/etc/clamav-unofficial-sigs/os.conf"
-# UNOFFICIAL_SIGS_USER_CONF="/etc/clamav-unofficial-sigs/user.conf"
+UNOFFICIAL_SIGS_USER_CONF="/etc/clamav-unofficial-sigs/user.conf"
+if ! sudo test -f "$UNOFFICIAL_SIGS_USER_CONF"; then
+    sudo install -o root -g root -m 0644 /dev/null "$UNOFFICIAL_SIGS_USER_CONF"
+fi
 
 # CLAM_USER="clamav"
 CLAM_USER="clamscan"
@@ -1053,10 +1056,10 @@ set_config_value "$FRESH_CONF" DNSDatabaseInfo yes
 # sudo sed -i "s|^#clam_group=.*|clam_group=\"$CLAM_USER\"|" "$UNOFFICIAL_SIGS_MASTER_CONF"
 
 # Use set_config_value instead of directly setting using sed
-set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" user_configuration_complete yes
+# set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" user_configuration_complete yes # Using user conf now
 # set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user "$CLAM_USER"
-set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user  "$UPDATE_USER"
-set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_group "$CLAM_USER"
+# set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_user  "$UPDATE_USER" # Using user conf now
+# set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" clam_group "$CLAM_USER" # Using user conf now
 # set_config_value "$UNOFFICIAL_SIGS_MASTER_CONF" urlhaus_enabled no   # domain list: matches blocklist hosts files by design
 
 # Enable only trusted free sources
@@ -1079,8 +1082,55 @@ set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_reload_opt "clamdscan --config
 set_config_value "$UNOFFICIAL_SIGS_OS_CONF" reload_dbs yes
 
 # set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user "$CLAM_USER"
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user  "$UPDATE_USER"
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_group "$CLAM_USER"
+# set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user  "$UPDATE_USER" # Using user conf now
+# set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_group "$CLAM_USER" # Using user conf now
+
+
+
+
+# UNOFFICIAL_SIGS_USER_CONF
+# user.conf overrides master.conf and os.conf
+
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" user_configuration_complete yes
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" clam_user  "$UPDATE_USER"
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" clam_group "$CLAM_USER"
+# (os.conf for Fedora already carries clam_dbs, clamd_pid and the reload command: no need to repeat them)
+
+# False-positive risk: LOW = only databases rated low-risk. Default MEDIUM adds spam/lottery/junk-URL sets
+# that match hosts files, filter lists, bookmarks and Thunderbird training data.
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" default_dbs_rating LOW
+
+# Freshness vs. network fingerprint (lower frequency is always safe with the providers)
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" sanesecurity_update_hours        6
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" urlhaus_update_hours             6
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" interserver_update_hours         12
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" linuxmalwaredetect_update_hours  24
+
+# Sources that need paid/registered keys: off (explicit = fewer connections and warnings)
+for src in additional malwarepatrol malwareexpert securiteinfo; do
+    set_config_value "$UNOFFICIAL_SIGS_USER_CONF" "${src}_enabled" no
+done
+
+# Supply chain/privacy: dnf updates the script, not GitHub
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" allow_upgrades no
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" allow_update_checks no
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" selinux_fixes yes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2318,6 +2368,45 @@ sudo systemctl daemon-reload
 
 
 #########################################################
+# clamav-unofficial-sigs timer and service
+#########################################################
+
+sudo install -d -m 0755 /etc/systemd/system/clamav-unofficial-sigs.timer.d
+sudo tee /etc/systemd/system/clamav-unofficial-sigs.timer.d/schedule.conf > /dev/null <<'EOF'
+[Timer]
+# The empty line clears the packaged schedule (upstream: hourly at :37).
+OnCalendar=
+# 00:37, 06:37, 12:37, 18:37 plus up to 1 h random delay, matching the 6-hour source intervals.
+OnCalendar=*-*-* 00/6:37:00
+RandomizedDelaySec=1h
+Persistent=true
+EOF
+sudo systemctl daemon-reload && sudo systemctl restart clamav-unofficial-sigs.timer
+
+
+sudo install -d -m 0755 /etc/systemd/system/clamav-unofficial-sigs.service.d
+sudo tee /etc/systemd/system/clamav-unofficial-sigs.service.d/hardening.conf > /dev/null <<'EOF'
+[Service]
+ProtectHome=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+# NoNewPrivileges=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+EOF
+sudo systemctl daemon-reload
+
+
+
+#########################################################
 # Maybe TODO
 #########################################################
 
@@ -3306,6 +3395,7 @@ for service in \
     clamav-freshclam.service \
     clamd@scan.service \
     clamav-clamonacc.service \
+    clamav-unofficial-sigs.service \
     clamav-unofficial-sigs.timer \
     clamav-weekly-scan.timer
 do
