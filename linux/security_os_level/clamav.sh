@@ -2937,8 +2937,14 @@ sudo sed -i "s/@ENGINE@/$WEEKLY_ENGINE/" /usr/local/bin/clamav-weekly-scan.sh
 # Environment=CLAMAV_WEEKLY_ENGINE=clamscan
 
 
-grep -q "CLAMAV_WEEKLY_ENGINE=@ENGINE@" /usr/local/bin/clamav-weekly-scan.sh && \
-    echo "ERROR: Engine substitution failed" >&2 && exit 1
+# grep -q "CLAMAV_WEEKLY_ENGINE=@ENGINE@" /usr/local/bin/clamav-weekly-scan.sh && echo "ERROR: Engine substitution failed" >&2 && exit 1
+if grep -q 'CLAMAV_WEEKLY_ENGINE:-@ENGINE@' /usr/local/bin/clamav-weekly-scan.sh; 
+then 
+    echo "ERROR: Engine substitution failed" >&2; 
+    exit 1; 
+fi
+
+
 echo "Scan engine set to: $WEEKLY_ENGINE"
 
 
