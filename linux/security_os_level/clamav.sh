@@ -195,21 +195,27 @@ done
 # APPLY INTELLIGENT DEFAULTS FOR UNSET OPTIONS
 
 # Treat laptop as desktop from security perspective.
-if [ "$PC_TYPE" = "laptop" ]; then
-    PC_TYPE="desktop"
-fi
+# if [ "$PC_TYPE" = "laptop" ]; then
+#     PC_TYPE="desktop"
+# fi
 
 # 1. PC_TYPE (detected via OS release if not provided)
 if [ -z "$PC_TYPE" ]; then
-    PC_TYPE="$( . /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop )"   # subshell: no variable pollution
+    # PC_TYPE="$( . /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop )"   # subshell: no variable pollution
+    # SC1091: parse instead of sourcing (no shell code from the file is executed). Replacing the PC_TYPE="$( . /etc/os-release; ...)" line:
+    if grep -qE '^VARIANT_ID="?server"?$' /etc/os-release 2>/dev/null; then PC_TYPE_DEFAULT=server; else PC_TYPE_DEFAULT=desktop; fi
+    PC_TYPE="${PC_TYPE:-$PC_TYPE_DEFAULT}"
 
 fi
 
 case "$PC_TYPE" in
-    desktop|server)
+    desktop|server) 
+        ;;  
+    laptop) 
+        PC_TYPE=desktop 
         ;;
     *)
-        echo "ERROR: PC_TYPE must be desktop, laptop, or server." >&2
+        echo "ERROR: PC_TYPE must be desktop, laptop or server." >&2
         exit 2
         ;;
 esac
