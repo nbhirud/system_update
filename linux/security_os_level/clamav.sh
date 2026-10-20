@@ -546,10 +546,25 @@ echo "Configuration backups saved in: $CLAMAV_BACKUP_DIR"
 # sudo chown -R $CLAM_USER:$CLAM_USER "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
 
 
-sudo install -d -o "$CLAM_USER" -g "$CLAM_USER" -m 750 "$LOG_DIR"
-sudo touch "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
-sudo chown "$CLAM_USER:$CLAM_USER" "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
-sudo chmod 640 "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+# sudo install -d -o "$CLAM_USER" -g "$CLAM_USER" -m 750 "$LOG_DIR"
+# sudo touch "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+# sudo chown "$CLAM_USER:$CLAM_USER" "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+# sudo chmod 640 "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"
+
+
+# Design: /var/log/clamav becomes root-owned, with daemon-owned files inside. Nobody who isn't root can swap a file for a symlink, so root never follows a planted link. ClamAV's internal rotation can't work in a root-owned directory, so turn it off. At a few KB a day, with 6-month reinstalls, growth is irrelevant. LogSyslog yes still gives a free journald copy.
+
+# Why not /var/log/clamonacc: a separate directory solves the same problem with more parts. It would also need its own SELinux label (a new var_log_t directory isn't writable by the antivirus domain). /var/log/clamav already has the right label. If you still want it, add semanage fcontext -a -t antivirus_log_t '/var/log/clamonacc(/.*)?' plus restorecon.
+
+sudo install -d -o root -g wheel -m 2750 "$LOG_DIR"      # root-owned; setgid so new files inherit group wheel
+# One file per writer, owned by the account that really writes it. wheel can read without sudo.
+for spec in "$FRESH_LOG:$UPDATE_USER" "$CLAMD_LOG:$CLAM_USER" "$ONACC_LOG:root"; do
+    f=${spec%%:*}; owner=${spec##*:}
+    if [ ! -e "$f" ]; then sudo touch "$f"; fi            # touch never truncates an existing log
+    sudo chown "$owner:wheel" "$f"
+    sudo chmod 0640 "$f"
+done
+
 
 # # Creating logs with touch followed by chown/chmod leaves a brief window where unprivileged users might be able to replace or modify the log files. Use atomic file creation:
 # for logfile in "$FRESH_LOG" "$CLAMD_LOG" "$ONACC_LOG"; do
@@ -586,6 +601,12 @@ sudo chown -R "$UPDATE_USER:$CLAM_USER" "$SIG_DB_DIR"
 sudo find "$SIG_DB_DIR" -type d -exec chmod 750 {} +
 sudo find "$SIG_DB_DIR" -type f -exec chmod 640 {} +
 
+# False-positive whitelist (persistent, not touched by the updater). Create once, after the DB directory is set up:
+if ! sudo test -f "$SIG_DB_DIR/local.ign2"; then
+    printf '%s\n' '# Signature names to ignore, one per line, WITHOUT the .UNOFFICIAL suffix.' \
+        | sudo tee "$SIG_DB_DIR/local.ign2" > /dev/null
+    sudo chown "$UPDATE_USER:$CLAM_USER" "$SIG_DB_DIR/local.ign2"; sudo chmod 0640 "$SIG_DB_DIR/local.ign2"
+fi
 
 ###########################
 # The following is Tested and works perfectly:
@@ -1079,8 +1100,10 @@ sudo sed -i '/^Example/d' "$FRESH_CONF"
 # # DatabaseMirror database.clamav.net
 
 set_config_value "$FRESH_CONF" LogTime yes
-set_config_value "$FRESH_CONF" LogFileMaxSize 20M
-set_config_value "$FRESH_CONF" LogRotate yes
+# set_config_value "$FRESH_CONF" LogFileMaxSize 20M
+# set_config_value "$FRESH_CONF" LogRotate yes
+set_config_value "$FRESH_CONF" LogFileMaxSize 0   # no limit: rotation cannot work in a root-owned dir anyway
+set_config_value "$FRESH_CONF" LogRotate no
 set_config_value "$FRESH_CONF" LogSyslog yes # sends logs to journald, which has its own retention.
 set_config_value "$FRESH_CONF" UpdateLogFile "$FRESH_LOG"
 
@@ -1205,8 +1228,10 @@ sudo sed -i -E '/^(ScanOnAccess|OnAccessExcludePath|OnAccessMountPath)[[:space:]
 
 set_config_value "$SCAN_CONF" LogFile "$CLAMD_LOG"
 set_config_value "$SCAN_CONF" LogTime yes
-set_config_value "$SCAN_CONF" LogFileMaxSize 10M    # ClamAV renames the full log to clamd-<timestamp>.log
-set_config_value "$SCAN_CONF" LogRotate yes
+# set_config_value "$SCAN_CONF" LogFileMaxSize 10M    # ClamAV renames the full log to clamd-<timestamp>.log
+# set_config_value "$SCAN_CONF" LogRotate yes
+set_config_value "$SCAN_CONF"  LogFileMaxSize 0    # no limit
+set_config_value "$SCAN_CONF"  LogRotate no
 set_config_value "$SCAN_CONF" LogSyslog yes    # sends logs to journald, which has its own retention.
 set_config_value "$SCAN_CONF" PidFile "$CLAMD_PID"
 set_config_value "$SCAN_CONF" FixStaleSocket yes
@@ -2130,7 +2155,7 @@ log "Scanning $DEVICE_NODE mounted at $DEVICE_MOUNT (size <= ${SIZE_THRESHOLD_GI
 # clamdscan always recurses, so -r was a no-op; nice/ionice on the client don't throttle clamd either.
 # No --log: output goes to the unit's journal (journalctl -u 'clamav-usb-scan@*').
 SCAN_STATUS=0
-/usr/bin/clamdscan --fdpass --infected "$DEVICE_MOUNT" || SCAN_STATUS=$?   # capture the exit code safely
+/usr/bin/clamdscan --fdpass --log="$LOGFILE" --infected "$DEVICE_MOUNT" || SCAN_STATUS=$?   # capture the exit code safely
 
 case "$SCAN_STATUS" in
     0) log "USB scan completed with no detections: $DEVICE_MOUNT" ;;
@@ -2183,7 +2208,7 @@ IOSchedulingClass=idle
 # Five minutes gives a normal desktop ample time to mount a USB filesystem while preventing indefinite waiting. If you later add a bounded wait directly to the helper, keep the systemd timeout as a second layer of protection.
 TimeoutStartSec=5min
 TimeoutStopSec=10s
-NoNewPrivileges=yes
+# NoNewPrivileges=yes
 ProtectSystem=full
 ProtectHome=read-only
 PrivateTmp=yes
@@ -2192,6 +2217,7 @@ ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictSUIDSGID=yes
 LockPersonality=yes
+UMask=0027    # log files come out 640 with group wheel.
 EOF
 
 # Manual scan: identify a mounted USB filesystem's device with lsblk, then scan it.
@@ -2353,7 +2379,7 @@ ExecStart=/usr/sbin/clamonacc \
 
 Restart=on-failure
 RestartSec=5
-NoNewPrivileges=yes
+# NoNewPrivileges=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
@@ -2400,7 +2426,7 @@ CPUWeight=50
 Restart=on-failure
 RestartSec=10
 # --- sandboxing (defense in depth; SELinux already confines clamd) ---
-NoNewPrivileges=yes
+# NoNewPrivileges=yes
 ProtectSystem=full
 ProtectHome=read-only
 PrivateTmp=yes
@@ -2832,6 +2858,7 @@ flock -n 9 || {
 }
 
 echo "Weekly scan started: $(date --iso-8601=seconds)"
+LOGFILE="/var/log/clamav/weekly_scan_$(date +%F).log"
 
 # ---- 1. WHICH SCANNER? ------------------------------------------------------
 # The installer (snippet after this heredoc) swaps @ENGINE@ for "clamdscan" (SSD machines) or
@@ -2862,6 +2889,7 @@ case "$ENGINE" in
         nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes \
             --detect-pua=yes --alert-broken=yes \
             --exclude='^/etc/hosts$' \
+            --log="$LOGFILE" \
             --exclude-dir='/nb_script_data/hostsplay(/|$)' \
             --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
             --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
@@ -2873,7 +2901,7 @@ case "$ENGINE" in
         #   clamscan), which could not otherwise read your 0700 home. ExcludePath in scan.conf is
         #   applied by clamdscan itself (it ignores --exclude-dir, tested).
         # --wait --ping 90:2: wait up to 3 minutes for clamd to finish loading signatures.
-        clamdscan --wait --ping 90:2 --multiscan --fdpass --infected "${ROOTS[@]}" || SCAN_STATUS=$?
+        clamdscan --wait --ping 90:2 --multiscan --fdpass --log="$LOGFILE" --infected "${ROOTS[@]}" || SCAN_STATUS=$?
         ;;
 esac
 
@@ -2924,7 +2952,7 @@ ExecStart=/usr/local/bin/clamav-weekly-scan.sh
 Nice=19
 IOSchedulingClass=idle
 CPUSchedulingPolicy=idle
-NoNewPrivileges=yes
+# NoNewPrivileges=yes
 ProtectSystem=full
 ProtectHome=read-only
 # PrivateTmp=yes
@@ -2934,6 +2962,7 @@ ProtectControlGroups=yes
 RestrictSUIDSGID=yes
 LockPersonality=yes
 # ConditionACPower=true   # laptops: skip on battery (nbXPS, nbLenovo)
+UMask=0027   # log files come out 640 with group wheel.
 EOF
 
 
