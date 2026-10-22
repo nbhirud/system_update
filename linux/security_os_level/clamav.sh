@@ -1920,7 +1920,7 @@ set_config_value "$SCAN_CONF" AlertBrokenExecutables yes
 # MinSSNCount 1
 
 
-# Enable heuristic detection in clamd.conf:
+# Enable heuristic detection in SCAN_CONF:
 # HeuristicScanPrecedence yes
 # StructuredDataDetection yes
 
@@ -1968,7 +1968,7 @@ set_config_value "$SCAN_CONF" AlertBrokenExecutables yes
 # Sigs are usually .cvd or plain text .hdb/.mdb - Place them in /var/lib/clamav/ (or wherever your DatabaseDirectory points)
 
 # ClamAV‑Bytecode‑Repo - (https://github.com/Cisco-Talos/clamav-bytecode) - additional experimental Bytecode modules.
-# Enable in clamd.conf - Bytecode = Yes
+# Enable in SCAN_CONF - Bytecode = Yes
 # place the .cbc files in the bytecode directory (default: /var/lib/clamav/bytecode/
 
 
@@ -3047,7 +3047,7 @@ sudo systemctl daemon-reload
 # icap_enable on
 # icap_service clamav_scan reqmod_precache icap://127.0.0.1:1344/clamav
 # icap_service clamav_scan respmod_precache icap://127.0.0.1:1344/clamav
-# # Ensure clamd is running and configured for network access (TCPSocket in clamd.conf):
+# # Ensure clamd is running and configured for network access (TCPSocket in SCAN_CONF):
 # TCPSocket 3310
 # TCPAddr 127.0.0.1
 
@@ -4130,8 +4130,8 @@ verify_setup
 # # Or view the service status with extended output
 # sudo systemctl status clamd@scan.service -l
 
-# # Configuration File Issues Check /etc/clamav/clamd.conf for syntax errors:
-# sudo clamd --config-file=/etc/clamav/clamd.conf --test
+# # Configuration File Issues Check SCAN_CONF for syntax errors:
+# sudo clamd --config-file=$SCAN_CONF --test
 
 # # check if the clamscan user exists
 # id clamscan
