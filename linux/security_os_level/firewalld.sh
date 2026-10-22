@@ -342,7 +342,8 @@ DEFAULT_ZONE="$DROP_ZONE"
 # SSH_LIMIT_PUBLIC="1/m"
 # SSH_LIMIT_HOME="5/m"
 
-FIREWALLD_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/firewalld/firewalld_$FILENAME_TIMESTAMP"
+FIREWALLD_BACKUP_BASE_DIR="$SCRIPT_BACKUPS_DIR/firewalld"
+FIREWALLD_BACKUP_DIR="$FIREWALLD_BACKUP_BASE_DIR/firewalld_$FILENAME_TIMESTAMP"
 
 
 #########################################################
@@ -813,6 +814,7 @@ add_firewall_port() {
 #########################################################
 
 mkdir -p "$FIREWALLD_BACKUP_DIR"
+chown "$REAL_USER":"$REAL_USER" "$FIREWALLD_BACKUP_BASE_DIR" "$FIREWALLD_BACKUP_DIR"
 cp -a /etc/firewalld "$FIREWALLD_BACKUP_DIR"
 echo "Backup: $FIREWALLD_BACKUP_DIR"
 
