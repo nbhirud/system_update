@@ -2928,27 +2928,29 @@ EOF
 # 3. CPUWeight=50 added: systemd gives the daemon a lower relative CPU weight than services with the default weight of 100 when they compete for CPU time. It does not cap CPU use when the system is otherwise idle.
 #
 sudo mkdir -p /etc/systemd/system/clamd@scan.service.d
-cat <<EOF | sudo tee /etc/systemd/system/clamd@scan.service.d/override.conf
+
+# cat <<EOF | sudo tee /etc/systemd/system/clamd@scan.service.d/override.conf
+# so it stops printing to your terminal:
+sudo tee /etc/systemd/system/clamd@scan.service.d/override.conf > /dev/null <<EOF
 [Service]
 CPUWeight=50
 Restart=on-failure
 RestartSec=10
-# --- sandboxing (defense in depth; SELinux already confines clamd) ---
 # NoNewPrivileges=yes
-ProtectSystem=full
-ProtectHome=read-only
-PrivateTmp=yes
-ProtectKernelTunables=yes
-ProtectKernelModules=yes
-ProtectKernelLogs=yes
-ProtectControlGroups=yes
-ProtectClock=yes
-ProtectHostname=yes
-RestrictSUIDSGID=yes
-RestrictRealtime=yes
-RestrictNamespaces=yes
-LockPersonality=yes
-RestrictAddressFamilies=AF_UNIX
+# ProtectSystem=full
+# ProtectHome=read-only
+# PrivateTmp=yes
+# ProtectKernelTunables=yes
+# ProtectKernelModules=yes
+# ProtectKernelLogs=yes
+# ProtectControlGroups=yes
+# ProtectClock=yes
+# ProtectHostname=yes
+# RestrictSUIDSGID=yes
+# RestrictRealtime=yes
+# RestrictNamespaces=yes
+# LockPersonality=yes
+# RestrictAddressFamilies=AF_UNIX
 # MemoryDenyWriteExecute
 EOF
 
