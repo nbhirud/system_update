@@ -783,7 +783,7 @@ fi
 chmod 700 -- "$CLAMAV_BACKUP_DIR"
 
 
-for config_file in "$SCAN_CONF" "$FRESH_CONF" "$UNOFFICIAL_SIGS_MASTER_CONF" "$UNOFFICIAL_SIGS_OS_CONF"; 
+for config_file in "$SCAN_CONF" "$FRESH_CONF" "$UNOFFICIAL_SIGS_MASTER_CONF" "$UNOFFICIAL_SIGS_OS_CONF" "$UNOFFICIAL_SIGS_USER_CONF"; 
 do
 
     # if [ -f "$config_file" ]; then
