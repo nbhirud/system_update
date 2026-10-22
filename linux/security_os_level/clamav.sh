@@ -2723,7 +2723,8 @@ ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictSUIDSGID=yes
 LockPersonality=yes
-UMask=0027    # log files come out 640 with group wheel.
+# log files come out 640 with group wheel (UMask=0027)
+UMask=0027
 EOF
 
 # Manual scan: identify a mounted USB filesystem's device with lsblk, then scan it.
