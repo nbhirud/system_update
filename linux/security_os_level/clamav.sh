@@ -19,6 +19,11 @@ fi
 # # To debug the script, run:
 # DEBUG=1 bash script.sh
 
+# Allow only one run of this script at a time
+exec 8>"${XDG_RUNTIME_DIR:-/tmp}/clamav-setup.lock"
+flock -n 8 || { echo "Another run of this script is in progress" >&2; exit 1; }
+
+
 # TODO
 # Create a script where you pass directory to be scanned
 # Script creates folder and log file based on timestamp in /home/user/username/Desktop/<here>
