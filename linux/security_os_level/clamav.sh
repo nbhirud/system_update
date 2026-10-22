@@ -2077,35 +2077,6 @@ add_config_value "$SCAN_CONF" OnAccessExcludeUname $CLAM_USER
 # Old entries persist because add_config_value only appends. Reset, then rebuild.
 sudo sed -i '/^OnAccessIncludePath/d' "$SCAN_CONF"
 
-# Watch where payloads LAND, not profile or cache dirs.
-# Initialize base directories common to all client setups
-# NEVER use OnAccessExcludePath on a directory that has subfolders: clamonacc logs
-# "ERROR: ClamInotif: can't exclude ..." and silently stops blocking the WHOLE watch.
-ONACC_DIRS=(
-    "$HOME_DIR/Downloads"
-    "$NBDIR/Downloads"
-    "$NBDIR/nb_script_downloads"
-    "$NBDIR/Syncthing"   # Syncthing folders that receive files from other devices
-)
-
-# Add a per-directory safeguard, because prevention should only run if every watched directory is on flash:
-# for d in "${ONACC_DIRS[@]}"; do
-#     if [ -d "$d" ] && path_is_rotational "$d"; then
-#         ONACC_PREVENT=no; echo "INFO: $d is on rotational/unknown storage -> on-access prevention disabled"; break
-#     fi
-# done
-
-# Conditionally append completed Torrents path if a torrent client is present
-if [ "${HAS_TORRENT_CLIENT:-false}" = true ]; then
-    ONACC_DIRS+=("$NBDIR/Torrents/Completed")
-fi
-
-# Conditionally append Kodi path if Kodi is installed
-# Because it uses random repos
-if [ "${HAS_KODI:-false}" = true ]; then
-    ONACC_DIRS+=("$HOME_DIR/.kodi") # Because it uses random repos
-fi
-
 # Basically, the following skips the onaccess path inclusions for servers
 # Apply inclusions (skipping servers / non-desktop PCs)
 # if [ "$PC_TYPE" = desktop ]; then
