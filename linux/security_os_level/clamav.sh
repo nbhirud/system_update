@@ -731,6 +731,22 @@ backup_as_user() {   # backup_as_user /abs/path...  -> $CLAMAV_BACKUP_DIR/files/
 # Back up existing configuration files before reseting and modifying them:
 #########################################################
 
+for unit in clamav-unofficial-sigs.timer \
+            clamav-unofficial-sigs.service \
+            clamav-weekly-scan.timer \
+            clamav-weekly-scan.service \
+            clamav-clamonacc.service \
+            clamd@scan.service \
+            clamav-freshclam.service; 
+do
+
+    if systemctl cat "$unit" >/dev/null 2>&1; then 
+        sudo systemctl stop "$unit"; 
+    fi   # stop is a no-op on inactive units
+
+done
+sudo systemctl reset-failed 'clam*' 2>/dev/null || true
+
 # mkdir -p "$CLAMAV_BACKUP_DIR"
 # sudo install -d -o "$CLAM_USER" -g "$CLAM_USER" -m 750 "$CLAMAV_BACKUP_DIR" 
 # sudo install -d -o "$REAL_USER" -g "$REAL_USER" -m 750 "$CLAMAV_BACKUP_DIR"
