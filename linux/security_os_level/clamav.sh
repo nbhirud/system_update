@@ -1648,12 +1648,11 @@ set_config_value "$FRESH_CONF" Bytecode yes
 # sudo sed -i "s|^clamd_reload_opt=.*|clamd_reload_opt=\"clamdscan --config-file=$SCAN_CONF --reload\"|" "$UNOFFICIAL_SIGS_OS_CONF"
 # sudo sed -i "s|^reload_dbs=.*|reload_dbs=\"yes\"|" "$UNOFFICIAL_SIGS_OS_CONF"
 
-
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_dbs "$SIG_DB_DIR"
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_pid "$CLAMD_PID"
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_socket "$CLAMD_SOCK"
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_reload_opt "clamdscan --config-file=$SCAN_CONF --reload"
-set_config_value "$UNOFFICIAL_SIGS_OS_CONF" reload_dbs yes
+# set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_dbs "$SIG_DB_DIR"
+# set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_pid "$CLAMD_PID"
+# set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_socket "$CLAMD_SOCK"
+# set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clamd_reload_opt "clamdscan --config-file=$SCAN_CONF --reload"
+# set_config_value "$UNOFFICIAL_SIGS_OS_CONF" reload_dbs yes
 
 # set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user "$CLAM_USER"
 # set_config_value "$UNOFFICIAL_SIGS_OS_CONF" clam_user  "$UPDATE_USER" # Using user conf now
@@ -1665,6 +1664,32 @@ set_config_value "$UNOFFICIAL_SIGS_OS_CONF" reload_dbs yes
 # UNOFFICIAL_SIGS_USER_CONF
 # user.conf overrides master.conf and os.conf
 
+# unofficial-sigs: make user.conf the single declarative source and stop editing master.conf/os.conf. 
+# In the user.conf block, replacing the above snippet with an unconditional reset 
+# (sudo install -m 0600 -o root -g root /dev/null "$UNOFFICIAL_SIGS_USER_CONF"). 
+# Only make changes in user.conf
+# Then set every toggle explicitly so junk from other guides (master.conf/os.conf) can't survive:
+
+# sudo install -m 0600 -o root -g root /dev/null "$UNOFFICIAL_SIGS_USER_CONF"
+
+if ! sudo test -f "$UNOFFICIAL_SIGS_USER_CONF"; then
+    # clean copy for the user.conf
+    # truncates the file on every run, and every key the script cares about is then set explicitly (that’s why every line says “Updated”). Any key you don’t set falls back to master.conf/os.conf.
+    # sudo install -m 0600 -o root -g root /dev/null "$UNOFFICIAL_SIGS_USER_CONF"
+    sudo install -o root -g root -m 0644 /dev/null "$UNOFFICIAL_SIGS_USER_CONF"
+fi
+
+# A header so nobody edits it by hand
+printf '%s\n' '# Managed by clamav.sh: rewritten on every run. Make permanent changes in the script.' \
+    | sudo tee "$UNOFFICIAL_SIGS_USER_CONF" > /dev/null
+
+
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" clam_dbs "$SIG_DB_DIR"
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" clamd_pid "$CLAMD_PID"
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" clamd_socket "$CLAMD_SOCK"
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" clamd_reload_opt "clamdscan --config-file=$SCAN_CONF --reload"
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" reload_dbs yes
+
 set_config_value "$UNOFFICIAL_SIGS_USER_CONF" user_configuration_complete yes
 set_config_value "$UNOFFICIAL_SIGS_USER_CONF" clam_user  "$UPDATE_USER"
 set_config_value "$UNOFFICIAL_SIGS_USER_CONF" clam_group "$CLAM_USER"
@@ -1674,34 +1699,34 @@ set_config_value "$UNOFFICIAL_SIGS_USER_CONF" clam_group "$CLAM_USER"
 # that match hosts files, filter lists, bookmarks and Thunderbird training data.
 set_config_value "$UNOFFICIAL_SIGS_USER_CONF" default_dbs_rating LOW
 
+
+# Sources that are free and worth enabling: on
+for src in sanesecurity urlhaus linuxmalwaredetect interserver; do
+    set_config_value "$UNOFFICIAL_SIGS_USER_CONF" "${src}_enabled" yes
+done
+
+# Sources that need paid/registered keys: off (explicit = fewer connections and warnings)
+# Also free sources not worth enabling: off
+for src in additional malwarepatrol malwareexpert securiteinfo yararulesproject ditekshen twinclams; do
+    set_config_value "$UNOFFICIAL_SIGS_USER_CONF" "${src}_enabled" no
+done
+
 # Freshness vs. network fingerprint (lower frequency is always safe with the providers)
 set_config_value "$UNOFFICIAL_SIGS_USER_CONF" sanesecurity_update_hours        6
 set_config_value "$UNOFFICIAL_SIGS_USER_CONF" urlhaus_update_hours             6
 set_config_value "$UNOFFICIAL_SIGS_USER_CONF" interserver_update_hours         12
 set_config_value "$UNOFFICIAL_SIGS_USER_CONF" linuxmalwaredetect_update_hours  24
 
-# Sources that need paid/registered keys: off (explicit = fewer connections and warnings)
-for src in additional malwarepatrol malwareexpert securiteinfo; do
-    set_config_value "$UNOFFICIAL_SIGS_USER_CONF" "${src}_enabled" no
-done
-
 # Supply chain/privacy: dnf updates the script, not GitHub
 set_config_value "$UNOFFICIAL_SIGS_USER_CONF" allow_upgrades no
 set_config_value "$UNOFFICIAL_SIGS_USER_CONF" allow_update_checks no
 set_config_value "$UNOFFICIAL_SIGS_USER_CONF" selinux_fixes yes
 
-
-
-
-
-
-
-
-
-
-
-
-
+# Other options
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" remove_disabled_databases yes
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" enable_gpg yes 
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" enable_random yes 
+set_config_value "$UNOFFICIAL_SIGS_USER_CONF" keep_db_backup no
 
 
 
