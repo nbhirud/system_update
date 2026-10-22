@@ -1607,6 +1607,8 @@ set_config_value "$FRESH_CONF" LogRotate no
 set_config_value "$FRESH_CONF" LogSyslog yes # sends logs to journald, which has its own retention.
 set_config_value "$FRESH_CONF" UpdateLogFile "$FRESH_LOG"
 
+set_config_value "$FRESH_CONF" DatabaseMirror database.clamav.net
+
 # This is Fedora's default layout: freshclam owns the DB, clamd can only read it. clamd's own SelfCheck (default every 600 s) reloads changed databases.
 set_config_value "$FRESH_CONF" DatabaseOwner "$UPDATE_USER"
 
@@ -1616,7 +1618,8 @@ set_config_value "$FRESH_CONF" DatabaseOwner "$UPDATE_USER"
 set_config_value "$FRESH_CONF" Checks 12
 # set_config_value "$FRESH_CONF" SafeBrowsing yes
 set_config_value "$FRESH_CONF" Bytecode yes
-set_config_value "$FRESH_CONF" DNSDatabaseInfo yes
+# set_config_value "$FRESH_CONF" DNSDatabaseInfo yes # invalid value
+# set_config_value "$FRESH_CONF" DNSDatabaseInfo current.cvd.clamav.net  # default
 
 
 # Configuring clamav-unofficial-sigs
