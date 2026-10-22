@@ -738,17 +738,7 @@ need_root() {
 # firewalld should be already installed, but just in case
 sudo dnf install -y firewalld firewall-config
 
-if  [ "$DESKTOP" = "kde" ]
-then
-
-    # https://firewalld.org/documentation/utilities/firewall-applet.html
-    # firewall-applet - is an official tray applet for firewalld
-    sudo dnf install -y firewall-applet
-
-fi
-
 sudo systemctl enable --now firewalld
-
 
 #########################################################
 # functions:
@@ -1728,9 +1718,71 @@ fi
 # Enable firewall-applet tray tool to autostart
 #########################################################
 
-mkdir -p ~/.config/autostart
 
-cat << 'EOF' > ~/.config/autostart/firewall-applet.desktop
+if [ "$DESKTOP" = "kde" ]; 
+then
+
+    # https://firewalld.org/documentation/utilities/firewall-applet.html
+    # firewall-applet - is an official tray applet for firewalld
+    sudo dnf install -y firewall-applet
+
+    # https://firewalld.org/documentation/man-pages/firewall-applet.html
+    # firewall-applet has additional settings to adapt the look and feel. QSettings is used and stores them in ~/.config/firewall/applet.conf. The file is automatically reloaded if it has been changed and the new settings will immediately be effective. 
+    # There is also the global config file /etc/firewall/applet.conf, which contains the default values. The settings in this file will be overloaded by settings in the user settings file. 
+
+    # Default values in /etc/firewall/applet.conf
+    # [General]
+    # notifications=false
+    # show-inactive=false
+    # blink=false
+    # blink-count=5
+    # shields-up=block
+    # shields-down=public
+
+    # What we want to override the above defaults by using ~/.config/firewall/applet.conf:
+    # [General]
+    # notifications=true
+    # blink=true
+    # shields-up=public
+    # shields-down=home
+
+# shields-up - public if PRIVACY_LEVEL = home and drop if PRIVACY_LEVEL =  paranoid
+# shields-down - home if PRIVACY_LEVEL = home and public if PRIVACY_LEVEL =  paranoid
+
+# Determine shields-up and shields-down zones based on PRIVACY_LEVEL
+    if [ "$PRIVACY_LEVEL" = "paranoid" ]; then
+        SHIELDS_UP="drop"
+        SHIELDS_DOWN="public"
+    else
+        # Default/home privacy level
+        SHIELDS_UP="public"
+        SHIELDS_DOWN="home"
+    fi
+
+# # Write out the firewall-applet configuration file
+#     mkdir -p ~/.config/firewall
+#     cat << 'EOF' > ~/.config/firewall/applet.conf
+# [General]
+# notifications=true
+# blink=true
+# shields-up=public
+# shields-down=home
+# EOF
+
+    # Write out the firewall-applet configuration file
+    mkdir -p ~/.config/firewall
+    cat << EOF > ~/.config/firewall/applet.conf
+[General]
+notifications=true
+blink=true
+shields-up=$SHIELDS_UP
+shields-down=$SHIELDS_DOWN
+EOF
+
+
+    # Setup desktop autostart entry
+    mkdir -p ~/.config/autostart
+    cat << 'EOF' > ~/.config/autostart/firewall-applet.desktop
 [Desktop Entry]
 Type=Application
 Name=Firewall Applet
@@ -1741,6 +1793,9 @@ Terminal=false
 Categories=System;
 X-KDE-autostart-enabled=true
 EOF
+
+fi
+
 
 #########################################################
 # Create aliases in .zshrc
