@@ -129,6 +129,7 @@ FILENAME_TIMESTAMP=""
 SCRIPT_BACKUPS_DIR=""
 HAS_TORRENT_CLIENT=""
 HAS_KODI=""
+CHECK_ONLY=""
 
 
 # PARSE NAMED OPTIONS
@@ -183,6 +184,10 @@ while [[ $# -gt 0 ]]; do
             FILENAME_TIMESTAMP="$2"
             shift 2
             ;;
+        --check-only) 
+            CHECK_ONLY=true 
+            shift
+            ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo "  --pc-type <desktop|laptop|server>"
@@ -191,6 +196,8 @@ while [[ $# -gt 0 ]]; do
             echo "  --kodi <true|false>"
             echo "  --backup-dir <path>"
             echo "  --timestamp <YYYY-MM-DD_HH-MM-SS>"
+            echo "  --check-only"
+            echo "  --help|-h"
             exit 0
             ;;
         *)
@@ -284,6 +291,264 @@ if [[ -z "$HOME_DIR" || ! -d "$HOME_DIR" || "$HOME_DIR" == "/" ]]; then
     echo "ERROR: Invalid home directory for $REAL_USER: $HOME_DIR" >&2
     exit 2
 fi
+
+if [ -z "$CHECK_ONLY" ]; then
+    CHECK_ONLY=false
+fi
+
+
+
+#########################################################
+# helper - verify new or existing setup - verify_setup():
+#########################################################
+
+
+# This allows us to have a --check-only mode option
+
+# verify_setup() {
+verify_setup() {
+    # Read what was really configured from the live file, so this also works with --check-only.
+    ONACC_PREVENT=$(sudo awk '$1=="OnAccessPrevention"{print $2}' "$SCAN_CONF" 2>/dev/null)
+    ONACC_PREVENT=${ONACC_PREVENT:-no}
+
+    # if systemctl is-active --quiet clamd@scan.service; then
+    #     echo "ClamAV automation successful"
+    #     clamdscan --version
+    # else
+    #     echo "Critical: ClamAV daemon failed to start. Reviewing journal logs..."
+    #     # journalctl -u clamd@scan.service --no-pager -n 50
+    #     # exit 1
+    # fi
+
+
+    # # I know the following could go in the else block just above. But wanted to keep this here bacause this is an interesting use of || (OR) condition that I would like to ponder upon:
+
+    # # Verify both services started successfully.
+    # sudo systemctl is-active --quiet clamd@scan.service || {
+    #     echo "ERROR: clamd@scan.service is not active." >&2
+    #     sudo journalctl -u clamd@scan.service -b --no-pager -n 50
+    #     exit 1
+    # }
+
+    # sudo systemctl is-active --quiet clamav-clamonacc.service || {
+    #     echo "ERROR: clamav-clamonacc.service is not active." >&2
+    #     sudo journalctl -u clamav-clamonacc.service -b --no-pager -n 50
+    #     exit 1
+    # }
+
+    # if ! systemctl is-active --quiet clamav-unofficial-sigs.timer; then
+    #     echo "ERROR: Unofficial-signature update timer is not active." >&2
+    #     sudo systemctl status clamav-unofficial-sigs.timer --no-pager
+    #     exit 1
+    # fi
+
+    # echo "Waiting for clamd to load signatures (can take minutes on the HDD machines)..."
+    # if ! sudo clamdscan --config-file="$SCAN_CONF" --ping 60:3; then
+    #     sudo journalctl -u clamd@scan -n 50 --no-pager; exit 1
+    # fi
+
+    echo "Waiting for clamd to load signatures (can take minutes on the HDD machines) and open socket"
+    # for i in {1..100}; do
+    # The above for implementation gives ShellCheck SC2034: the loop variable is unused
+    for _ in {1..100}; do
+        if sudo clamdscan --config-file="$SCAN_CONF" --ping 1 2>/dev/null; then
+            break
+        fi
+        echo "Waiting"
+        sleep 2
+    done
+
+    if ! sudo clamdscan --config-file="$SCAN_CONF" --ping 60:3; then
+        echo "ERROR: clamd failed to respond on socket." >&2
+        sudo journalctl -u clamd@scan -n 50 --no-pager
+        exit 1
+    fi
+
+
+    echo "Checking ClamAV services..."
+
+    FAILED=0
+    sleep 10   # a service that dies right after starting still reports "active" briefly
+
+    for service in \
+        clamav-freshclam.service \
+        clamd@scan.service \
+        clamav-clamonacc.service \
+        clamav-unofficial-sigs.timer \
+        clamav-weekly-scan.timer
+    do
+        if systemctl is-active --quiet "$service"; then
+            printf 'OK: %s is active\n' "$service"
+            restarts=$(systemctl show -p NRestarts --value "$service" 2>/dev/null)   # empty for timers
+            if [ "${restarts:-0}" -gt 0 ]; then echo "WARN: $service restarted $restarts time(s): journalctl -u $service"; FAILED=1; fi
+        else
+            printf 'ERROR: %s is not active\n' "$service"
+            sudo systemctl status "$service" --no-pager || true
+            FAILED=1
+        fi
+    done
+
+    # clamav-unofficial-sigs.service \  - It's a job started by the timer, and it,s supposed to be inactive between runs.
+    # Job services: inactive between runs is normal. They only must not have FAILED.
+    for job in clamav-unofficial-sigs.service clamav-weekly-scan.service; do
+        if systemctl is-failed --quiet "$job"; then echo "ERROR: $job failed: journalctl -u $job"; FAILED=1
+        else echo "OK: $job has not failed (inactive between timer runs is normal)"; fi
+    done
+
+
+    # Verify clamd is still SELinux-confined (a denied transition could leave it in init_t)
+    if command -v getenforce >/dev/null && [ "$(getenforce)" = Enforcing ]; then
+        CLAMD_LABEL=$(ps -o label= -C clamd 2>/dev/null | head -n1)
+        case "$CLAMD_LABEL" in
+            *:antivirus_t:*) echo "OK: clamd runs confined as antivirus_t" ;;
+            *) echo "FAIL: clamd SELinux label is '${CLAMD_LABEL:-unknown}', expected antivirus_t"; FAILED=1 ;;
+        esac
+        echo "INFO: clamonacc label: $(ps -o label= -C clamonacc 2>/dev/null | head -n1)"
+    fi
+
+
+    EICAR=$(printf '%s' 'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo=' | base64 -d)
+
+    # Self-check: the script must not spell out the EICAR string (on-access would quarantine copies of the script).
+    # 'EICAR-STAND''ARD' = same pattern, but this source line itself contains no contiguous literal.
+    if grep -q 'EICAR-STAND''ARD' "${BASH_SOURCE[0]}"; then
+        echo "WARN: this script contains the literal EICAR string; delete the commented EICAR_B= lines" >&2
+    fi
+
+    T=$(mktemp /tmp/eicar.XXXXXX); printf '%s' "$EICAR" > "$T"
+    rc=0; sudo clamdscan --config-file="$SCAN_CONF" --fdpass "$T" >/dev/null 2>&1 || rc=$?
+    # if [ "$rc" -eq 1 ]; then echo "OK: clamd detects EICAR"; else echo "FAIL: EICAR rc=$rc"; fi
+    # if [ "$rc" -eq 1 ]; then echo "OK: clamd detects EICAR"; else echo "FAIL: EICAR rc=$rc"; FAILED=1; fi
+    if [ "$rc" -eq 1 ]; then 
+        echo "OK: clamd detects EICAR"; 
+    else 
+        echo "FAIL: EICAR rc=$rc"; 
+        FAILED=1; 
+    fi
+    rm -f "$T"
+
+    ###########################
+
+    # SELFTEST_DIR=""
+    # for d in "${ONACC_DIRS[@]}"; do
+    #     if [ -d "$d" ]; then SELFTEST_DIR="$d"; break; fi
+    # done
+    # if [ "$PC_TYPE" = desktop ] && [ -n "$SELFTEST_DIR" ]; then
+    #     T="$SELFTEST_DIR/clamav_selftest_$$.txt"
+    #     printf '%s' "$EICAR" > "$T"
+    #     OK=no
+    #     # for _ in 1 2 3 4 5 6 7 8 9 10; do
+    #     for _ in $(seq 1 20); do
+    #         sleep 1
+    #         if [ "$ONACC_PREVENT" = yes ]; then
+    #             if ! cat "$T" >/dev/null 2>&1; then 
+    #                 OK=yes; 
+    #                 break; 
+    #             fi   # blocked
+    #         else
+    #             if [ ! -e "$T" ]; then 
+    #                 OK=yes; 
+    #                 break; 
+    #             fi                # quarantined
+    #         fi
+    #     done
+    #     if [ "$OK" = yes ]; then 
+    #         echo "OK: on-access reacted to EICAR in $SELFTEST_DIR"
+    #     else 
+    #         echo "FAIL: on-access did NOT react to EICAR in $SELFTEST_DIR"; 
+    #         FAILED=1; 
+    #     fi
+    #     rm -f "$T"; sudo find "$QUARANTINE_DIR" -name 'clamav_selftest_*' -delete
+    # fi
+
+
+    ###########################
+
+
+    onacc_selftest() {   # 0 = on-access reacted to EICAR in every testable watched dir
+        local d t ok rc=0
+        for d in "${ONACC_DIRS[@]}"; do
+            [ -d "$d" ] || continue
+            [ -e "$d/.stfolder" ] && { echo "INFO: skipping Syncthing folder $d (the test file would sync)"; continue; }
+            t="$d/clamav_selftest_$$.txt"
+            printf '%s' "$EICAR" > "$t" || { echo "WARN: cannot write a test file in $d"; continue; }
+            ok=no
+            for _ in $(seq 1 20); do
+                sleep 1
+                if [ "$ONACC_PREVENT" = yes ]; then
+                    if ! cat "$t" >/dev/null 2>&1; then ok=yes; break; fi   # blocked
+                elif [ ! -e "$t" ]; then ok=yes; break; fi                  # quarantined
+            done
+            if [ "$ok" = yes ]; then echo "OK: on-access reacted to EICAR in $d"
+            else echo "FAIL: on-access did NOT react to EICAR in $d"; rc=1; fi
+            rm -f "$t"
+        done
+        sudo find "$QUARANTINE_DIR" -name 'clamav_selftest_*' -delete
+        return $rc
+    }
+
+    if [ "$PC_TYPE" = desktop ] && ! onacc_selftest; then
+        if ! $CHECK_ONLY && [ -f /etc/systemd/system/clamav-clamonacc.service.d/20-hardening.conf ]; then
+            echo "Retrying on-access WITHOUT the sandbox drop-in..." >&2
+            sudo rm -f /etc/systemd/system/clamav-clamonacc.service.d/20-hardening.conf
+            sudo systemctl daemon-reload && sudo systemctl restart clamav-clamonacc.service
+            sleep 10
+            if onacc_selftest; then
+                echo "WARN: on-access works only WITHOUT the hardening drop-in; it was removed (journalctl -u clamav-clamonacc)" >&2
+            else FAILED=1; fi
+        else FAILED=1; fi
+    fi
+
+
+    ###########################
+
+    # systemd unit files don't allow trailing comments. The whole text after = becomes the value. Comments must be on their own line.
+    if sudo grep -nE '^[A-Za-z]+=.*[[:space:]]#' /etc/systemd/system/clamav-*.service /etc/systemd/system/clamav-*.timer /etc/systemd/system/*/*.conf 2>/dev/null; then
+        echo "ERROR: unit files contain trailing comments (invalid)" >&2; FAILED=1
+    fi
+
+    ###########################
+    
+    if [ "$FAILED" -ne 0 ]; then
+        echo "ClamAV setup completed with errors." >&2
+        exit 1
+    fi
+
+
+    # Firewall Rule Check - The LocalSocketMode 600 ensures no network exposure, but verify:
+    echo "[+] Checking for unintended network exposure..."
+    if grep -Eq '^[[:space:]]*TCPSocket' "$SCAN_CONF"; then
+        echo "ERROR: TCPSocket is enabled! ClamAV should use Unix socket only." >&2
+        exit 1
+    fi
+    if sudo ss -tlnp 2>/dev/null | grep -q ':3310'; then
+        echo "ERROR: Something listening on port 3310." >&2
+        exit 1
+    fi
+    echo "[+] No network exposure detected."
+
+    # echo "Validating generated systemd units and logrotate configuration..."
+    echo "Validating generated systemd units"
+    sudo systemd-analyze verify \
+        /etc/systemd/system/clamav-usb-scan@.service \
+        /etc/systemd/system/clamav-clamonacc.service \
+        /etc/systemd/system/clamav-weekly-scan.service \
+        /etc/systemd/system/clamav-weekly-scan.timer
+    # sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
+
+    echo "ClamAV services and timers are active."
+    # clamdscan --version
+    # The above clamdscan command talks to the daemon, and the socket is now root-only (correct). 
+    # Replace it with clamscan --version, which needs no daemon.
+    clamscan --version
+
+    # Check the custom scan-log rotation configuration without changing any logs:
+    # sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
+
+    # clean machines already configured with removed logrotate:
+    # sudo rm -f /etc/logrotate.d/clamav-custom-scans
+
+}
 
 
 #########################################################
@@ -3443,189 +3708,7 @@ echo "Configuration validated successfully."
 # Verification
 #########################################################
 
-# if systemctl is-active --quiet clamd@scan.service; then
-#     echo "ClamAV automation successful"
-#     clamdscan --version
-# else
-#     echo "Critical: ClamAV daemon failed to start. Reviewing journal logs..."
-#     # journalctl -u clamd@scan.service --no-pager -n 50
-#     # exit 1
-# fi
-
-
-# # I know the following could go in the else block just above. But wanted to keep this here bacause this is an interesting use of || (OR) condition that I would like to ponder upon:
-
-# # Verify both services started successfully.
-# sudo systemctl is-active --quiet clamd@scan.service || {
-#     echo "ERROR: clamd@scan.service is not active." >&2
-#     sudo journalctl -u clamd@scan.service -b --no-pager -n 50
-#     exit 1
-# }
-
-# sudo systemctl is-active --quiet clamav-clamonacc.service || {
-#     echo "ERROR: clamav-clamonacc.service is not active." >&2
-#     sudo journalctl -u clamav-clamonacc.service -b --no-pager -n 50
-#     exit 1
-# }
-
-# if ! systemctl is-active --quiet clamav-unofficial-sigs.timer; then
-#     echo "ERROR: Unofficial-signature update timer is not active." >&2
-#     sudo systemctl status clamav-unofficial-sigs.timer --no-pager
-#     exit 1
-# fi
-
-# echo "Waiting for clamd to load signatures (can take minutes on the HDD machines)..."
-# if ! sudo clamdscan --config-file="$SCAN_CONF" --ping 60:3; then
-#     sudo journalctl -u clamd@scan -n 50 --no-pager; exit 1
-# fi
-
-echo "Waiting for clamd to load signatures (can take minutes on the HDD machines) and open socket"
-# for i in {1..100}; do
-# The above for implementation gives ShellCheck SC2034: the loop variable is unused
-for _ in {1..100}; do
-    if sudo clamdscan --config-file="$SCAN_CONF" --ping 1 2>/dev/null; then
-        break
-    fi
-    echo "Waiting"
-    sleep 2
-done
-
-if ! sudo clamdscan --config-file="$SCAN_CONF" --ping 60:3; then
-    echo "ERROR: clamd failed to respond on socket." >&2
-    sudo journalctl -u clamd@scan -n 50 --no-pager
-    exit 1
-fi
-
-
-echo "Checking ClamAV services..."
-
-FAILED=0
-sleep 10   # a service that dies right after starting still reports "active" briefly
-
-for service in \
-    clamav-freshclam.service \
-    clamd@scan.service \
-    clamav-clamonacc.service \
-    clamav-unofficial-sigs.service \
-    clamav-unofficial-sigs.timer \
-    clamav-weekly-scan.timer
-do
-    if systemctl is-active --quiet "$service"; then
-        printf 'OK: %s is active\n' "$service"
-        restarts=$(systemctl show -p NRestarts --value "$service" 2>/dev/null)   # empty for timers
-        if [ "${restarts:-0}" -gt 0 ]; then echo "WARN: $service restarted $restarts time(s): journalctl -u $service"; FAILED=1; fi
-    else
-        printf 'ERROR: %s is not active\n' "$service"
-        sudo systemctl status "$service" --no-pager || true
-        FAILED=1
-    fi
-done
-
-
-# Verify clamd is still SELinux-confined (a denied transition could leave it in init_t)
-if command -v getenforce >/dev/null && [ "$(getenforce)" = Enforcing ]; then
-    CLAMD_LABEL=$(ps -o label= -C clamd 2>/dev/null | head -n1)
-    case "$CLAMD_LABEL" in
-        *:antivirus_t:*) echo "OK: clamd runs confined as antivirus_t" ;;
-        *) echo "FAIL: clamd SELinux label is '${CLAMD_LABEL:-unknown}', expected antivirus_t"; FAILED=1 ;;
-    esac
-    echo "INFO: clamonacc label: $(ps -o label= -C clamonacc 2>/dev/null | head -n1)"
-fi
-
-
-# split into A and B so the script file itself never contains the contiguous test string
-# EICAR_A='X5O!P%@AP[4\PZX54(P^)7CC)7}$'
-# EICAR_B='EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
-# EICAR="${EICAR_A}${EICAR_B}"
-# The above implementation gives ShellCheck SC2016
-# Replace the EICAR_A / EICAR_B / EICAR lines with this (verified: decodes to the exact 68 bytes)
-EICAR=$(printf '%s' 'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQVJELUFOVElWSVJVUy1URVNULUZJTEUhJEgrSCo=' | base64 -d)
-grep -c 'EICAR-STANDARD' clamav.sh
-T=$(mktemp /tmp/eicar.XXXXXX); printf '%s' "$EICAR" > "$T"
-rc=0; sudo clamdscan --config-file="$SCAN_CONF" --fdpass "$T" >/dev/null 2>&1 || rc=$?
-# if [ "$rc" -eq 1 ]; then echo "OK: clamd detects EICAR"; else echo "FAIL: EICAR rc=$rc"; fi
-# if [ "$rc" -eq 1 ]; then echo "OK: clamd detects EICAR"; else echo "FAIL: EICAR rc=$rc"; FAILED=1; fi
-if [ "$rc" -eq 1 ]; then 
-    echo "OK: clamd detects EICAR"; 
-else 
-    echo "FAIL: EICAR rc=$rc"; 
-    FAILED=1; 
-fi
-rm -f "$T"
-
-
-SELFTEST_DIR=""
-for d in "${ONACC_DIRS[@]}"; do
-    if [ -d "$d" ]; then SELFTEST_DIR="$d"; break; fi
-done
-if [ "$PC_TYPE" = desktop ] && [ -n "$SELFTEST_DIR" ]; then
-    T="$SELFTEST_DIR/clamav_selftest_$$.txt"
-    printf '%s' "$EICAR" > "$T"
-    OK=no
-    # for _ in 1 2 3 4 5 6 7 8 9 10; do
-    for _ in $(seq 1 20); do
-        sleep 1
-        if [ "$ONACC_PREVENT" = yes ]; then
-            if ! cat "$T" >/dev/null 2>&1; then 
-                OK=yes; 
-                break; 
-            fi   # blocked
-        else
-            if [ ! -e "$T" ]; then 
-                OK=yes; 
-                break; 
-            fi                # quarantined
-        fi
-    done
-    if [ "$OK" = yes ]; then 
-        echo "OK: on-access reacted to EICAR in $SELFTEST_DIR"
-    else 
-        echo "FAIL: on-access did NOT react to EICAR in $SELFTEST_DIR"; 
-        FAILED=1; 
-    fi
-    rm -f "$T"; sudo find "$QUARANTINE_DIR" -name 'clamav_selftest_*' -delete
-fi
-
-
-if [ "$FAILED" -ne 0 ]; then
-    echo "ClamAV setup completed with errors." >&2
-    exit 1
-fi
-
-
-# Firewall Rule Check - The LocalSocketMode 600 ensures no network exposure, but verify:
-echo "[+] Checking for unintended network exposure..."
-if grep -Eq '^[[:space:]]*TCPSocket' "$SCAN_CONF"; then
-    echo "ERROR: TCPSocket is enabled! ClamAV should use Unix socket only." >&2
-    exit 1
-fi
-if sudo ss -tlnp 2>/dev/null | grep -q ':3310'; then
-    echo "ERROR: Something listening on port 3310." >&2
-    exit 1
-fi
-echo "[+] No network exposure detected."
-
-
-
-echo "Validating generated systemd units and logrotate configuration..."
-sudo systemd-analyze verify \
-    /etc/systemd/system/clamav-usb-scan@.service \
-    /etc/systemd/system/clamav-clamonacc.service \
-    /etc/systemd/system/clamav-weekly-scan.service \
-    /etc/systemd/system/clamav-weekly-scan.timer
-# sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
-
-echo "ClamAV services and timers are active."
-# clamdscan --version
-# The above clamdscan command talks to the daemon, and the socket is now root-only (correct). 
-# Replace it with clamscan --version, which needs no daemon.
-clamscan --version
-
-# Check the custom scan-log rotation configuration without changing any logs:
-# sudo logrotate --debug /etc/logrotate.d/clamav-custom-scans
-
-# clean machines already configured with removed logrotate:
-# sudo rm -f /etc/logrotate.d/clamav-custom-scans
+verify_setup
 
 #########################################################
 # Scanning syntax:
