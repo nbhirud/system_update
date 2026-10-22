@@ -27,13 +27,13 @@ NBDIR="$HOME_DIR/nb"
 # Replacing the old SSD detection block (the one using BACKING_DEV / lsblk pkname).
 # path_is_rotational PATH: true if ANY device under PATH's filesystem is rotational (HDD) or unknown.
 path_is_rotational() {
-    local path="$1" src stack fsuuid d
-    src=$(findmnt -n -o SOURCE --target "$path" 2>/dev/null | head -n1)
+    local target_path="$1" src stack fsuuid d
+    src=$(findmnt -n -o SOURCE --target "$target_path" 2>/dev/null | head -n1)
     src=${src%%\[*}                              # btrfs prints /dev/xxx[/subvolume]: strip the subvolume
     [ -b "$src" ] || return 0                    # tmpfs/overlay/network/unknown: be conservative
     stack=$(lsblk -s -n -o ROTA "$src" 2>/dev/null | tr -d ' ')   # -s: this device AND everything under it
     # btrfs spanning several devices: findmnt shows only one, but sysfs lists them all
-    fsuuid=$(findmnt -n -o UUID --target "$path" 2>/dev/null | head -n1)
+    fsuuid=$(findmnt -n -o UUID --target "$target_path" 2>/dev/null | head -n1)
     if [ -n "$fsuuid" ] && [ -d "/sys/fs/btrfs/$fsuuid/devices" ]; then
         for d in /sys/fs/btrfs/"$fsuuid"/devices/*; do
             stack+=$'\n'$(lsblk -s -n -o ROTA "/dev/$(basename "$d")" 2>/dev/null | tr -d ' ')
@@ -44,6 +44,9 @@ path_is_rotational() {
 }
 
 FAST_STORAGE=true
+
+# In case of a hybrid system, where there is an SSD as well as an HDD, we return false if any of the below directories is on HDD
+# This design decision comes from its usage in clamav.sh
 for p in / "$HOME_DIR" "$NBDIR" /srv; do
     if [ -e "$p" ] && path_is_rotational "$p"; then
         FAST_STORAGE=false; 
