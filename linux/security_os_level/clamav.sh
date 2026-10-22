@@ -225,8 +225,9 @@ SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
 
 # 4. SCRIPT_BACKUPS_DIR
 SCRIPT_BACKUPS_DIR="${SCRIPT_BACKUPS_DIR:-$SCRIPT_DATA/backups}"
-CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
 
+CLAMAV_BACKUP_DIR_BASE="$SCRIPT_BACKUPS_DIR/clamav"
+CLAMAV_BACKUP_DIR="$CLAMAV_BACKUP_DIR_BASE/clamav_$FILENAME_TIMESTAMP"
 
 # Treat laptop as desktop from security perspective.
 # if [ "$PC_TYPE" = "laptop" ]; then
@@ -746,6 +747,10 @@ do
 
 done
 sudo systemctl reset-failed 'clam*' 2>/dev/null || true
+
+mkdir -p "$CLAMAV_BACKUP_DIR_BASE"
+chown "$REAL_USER":"$REAL_USER" "$CLAMAV_BACKUP_DIR_BASE"
+
 
 # mkdir -p "$CLAMAV_BACKUP_DIR"
 # sudo install -d -o "$CLAM_USER" -g "$CLAM_USER" -m 750 "$CLAMAV_BACKUP_DIR" 
