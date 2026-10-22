@@ -3479,7 +3479,8 @@ ProtectControlGroups=yes
 RestrictSUIDSGID=yes
 LockPersonality=yes
 # ConditionACPower=true   # laptops: skip on battery (nbXPS, nbLenovo)
-UMask=0027   # log files come out 640 with group wheel.
+# log files come out 640 with group wheel (UMask=0027)
+UMask=0027
 EOF
 
 
