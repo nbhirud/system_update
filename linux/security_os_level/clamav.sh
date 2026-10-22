@@ -1109,7 +1109,7 @@ sudo restorecon -R "$QUARANTINE_DIR"
 # # Configure /etc/fangfrisch/fangfrisch.conf
 # # [malwarepatrol]
 # # enabled = true
-# # url = https://cdn.malwarepatrol.net/lists/clamav_basic
+# # url = https://www.malwarepatrol.net/free-guard-upgrade-option/ - discontinued free
 # # receipt_code = YOUR-RECEIPT-NUMBER
 # # product_code = 8
 # # output = /var/lib/clamav/malwarepatrol.db
