@@ -1796,9 +1796,14 @@ set_config_value "$SCAN_CONF" LocalSocketGroup clamscan
 
 # the socket is root-only, so a compromised user session can't stop clamd.
 set_config_value "$SCAN_CONF" LocalSocketMode 600
-sudo sed -i '/^LocalSocketGroup/d' "$SCAN_CONF"    # TODO - What does this do?
-sudo gpasswd -d "$REAL_USER" clamscan 2>/dev/null || true    # undo earlier membership
+# sudo sed -i '/^LocalSocketGroup/d' "$SCAN_CONF"    # deletes the LocalSocketGroup line
 
+# sudo gpasswd -d "$REAL_USER" clamscan 2>/dev/null || true    # undo earlier membership
+# gpasswd, guarded and quiet
+if getent group clamscan | cut -d: -f4 | tr ',' '\n' | grep -qx "$REAL_USER"; then
+    sudo gpasswd -d "$REAL_USER" clamscan > /dev/null
+    echo "Removed $REAL_USER from group clamscan (log out and in to apply)"
+fi
 
 
 
