@@ -2978,6 +2978,7 @@ sudo systemctl daemon-reload && sudo systemctl restart clamav-unofficial-sigs.ti
 sudo install -d -m 0755 /etc/systemd/system/clamav-unofficial-sigs.service.d
 sudo tee /etc/systemd/system/clamav-unofficial-sigs.service.d/hardening.conf > /dev/null <<'EOF'
 [Service]
+Type=oneshot
 ProtectHome=yes
 PrivateTmp=yes
 ProtectSystem=full
@@ -2992,6 +2993,12 @@ RestrictRealtime=yes
 LockPersonality=yes
 # NoNewPrivileges=yes
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+# If an update is already running, skip or queue instead of failing outright with status 1
+# TimeoutStartSec=600
+# Allow up to 30 minutes for slow mirrors, large downloads, and database integrity checks
+TimeoutStartSec=30min
+# Ensure proper slice isolation
+Slice=system-antivirus.slice
 EOF
 sudo systemctl daemon-reload
 
