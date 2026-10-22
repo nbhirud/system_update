@@ -939,7 +939,12 @@ done
 
 # Why not /var/log/clamonacc: a separate directory solves the same problem with more parts. It would also need its own SELinux label (a new var_log_t directory isn't writable by the antivirus domain). /var/log/clamav already has the right label. If you still want it, add semanage fcontext -a -t antivirus_log_t '/var/log/clamonacc(/.*)?' plus restorecon.
 
-sudo install -d -o root -g wheel -m 2750 "$LOG_DIR"      # root-owned; setgid so new files inherit group wheel
+# sudo install -d -o root -g wheel -m 2750 "$LOG_DIR"      # root-owned; setgid so new files inherit group wheel
+
+# 2751 = setgid + rwx root, r-x wheel, --x everyone else:
+# daemon accounts (clamupdate, clamscan) may TRAVERSE the directory but not list it; file contents stay protected by 640.
+sudo install -d -o root -g wheel -m 2751 "$LOG_DIR"
+
 # One file per writer, owned by the account that really writes it. wheel can read without sudo.
 for spec in "$FRESH_LOG:$UPDATE_USER" "$CLAMD_LOG:$CLAM_USER" "$ONACC_LOG:root"; do
     f=${spec%%:*}; owner=${spec##*:}
@@ -973,16 +978,25 @@ done
 # # # Database files generally need read access, not execute permission.
 # # sudo find "$SIG_DB_DIR" -type f -exec chmod 640 {} +
 
-
-
 # DB dir: ownership kept as you have it; dirs need +x, files don't (your TODO at L169)
 # sudo chown -R "$CLAM_USER:$CLAM_USER" "$SIG_DB_DIR"
+
+getent passwd "$UPDATE_USER" >/dev/null || { echo "ERROR: user $UPDATE_USER missing (package clamav-freshclam not installed?)" >&2; exit 1; }
+sudo install -d -o "$UPDATE_USER" -g "$CLAM_USER" -m 0750 "$SIG_DB_DIR"   # creates it, or fixes owner/mode if it exists
 
 # owner = updater (rw), group = clamd (read-only)
 sudo chown -R "$UPDATE_USER:$CLAM_USER" "$SIG_DB_DIR"
 
 sudo find "$SIG_DB_DIR" -type d -exec chmod 750 {} +
 sudo find "$SIG_DB_DIR" -type f -exec chmod 640 {} +
+
+
+# what local.ign2 is. ClamAV reads every *.ign2 file in the database directory. Each line is a signature name ClamAV then never reports. The snippet below only creates an empty file (plus a comment line) so the mechanism exists; you add entries only when needed. Rules:
+#     - Whitelist only a signature that fires on a file you know is good and can't keep out of the scan paths.
+#     - Use the exact name from clamscan output, without .UNOFFICIAL.
+#     - Prefer path exclusions for whole classes (like hosts lists).
+#     - Remove an entry when the reason is gone.
+
 
 # False-positive whitelist (persistent, not touched by the updater). Create once, after the DB directory is set up:
 if ! sudo test -f "$SIG_DB_DIR/local.ign2"; then
