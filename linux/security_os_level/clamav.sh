@@ -210,6 +210,24 @@ done
 
 # APPLY INTELLIGENT DEFAULTS FOR UNSET OPTIONS
 
+# 2. REAL_USER (defaults to SUDO_USER or current user)
+REAL_USER="${REAL_USER:-${SUDO_USER:-$USER}}"
+
+# 3. TIMESTAMP (defaults to current time if not provided)
+FILENAME_TIMESTAMP="${FILENAME_TIMESTAMP:-$(date +%Y-%m-%d_%H-%M-%S)}"
+
+# Derived paths using REAL_USER and TIMESTAMP
+HOME_DIR="$(getent passwd "$REAL_USER" | cut -d: -f6)"
+NBDIR="$HOME_DIR/nb"
+SCRIPT_DATA="$NBDIR/nb_script_data"
+CODEPROJECTS_DIR="$NBDIR/CodeProjects"
+SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
+
+# 4. SCRIPT_BACKUPS_DIR
+SCRIPT_BACKUPS_DIR="${SCRIPT_BACKUPS_DIR:-$SCRIPT_DATA/backups}"
+CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
+
+
 # Treat laptop as desktop from security perspective.
 # if [ "$PC_TYPE" = "laptop" ]; then
 #     PC_TYPE="desktop"
@@ -217,12 +235,9 @@ done
 
 # 1. PC_TYPE (detected via OS release if not provided)
 if [ -z "$PC_TYPE" ]; then
-    # PC_TYPE="$( . /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop )"   # subshell: no variable pollution
-    # SC1091: parse instead of sourcing (no shell code from the file is executed). Replacing the PC_TYPE="$( . /etc/os-release; ...)" line:
-    if grep -qE '^VARIANT_ID="?server"?$' /etc/os-release 2>/dev/null; then PC_TYPE_DEFAULT=server; else PC_TYPE_DEFAULT=desktop; fi
-    PC_TYPE="${PC_TYPE:-$PC_TYPE_DEFAULT}"
-
+    PC_TYPE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_pc_type.sh)
 fi
+
 
 case "$PC_TYPE" in
     desktop|server) 
@@ -236,20 +251,6 @@ case "$PC_TYPE" in
         ;;
 esac
 
-# 2. REAL_USER (defaults to SUDO_USER or current user)
-REAL_USER="${REAL_USER:-${SUDO_USER:-$USER}}"
-
-# 3. TIMESTAMP (defaults to current time if not provided)
-FILENAME_TIMESTAMP="${FILENAME_TIMESTAMP:-$(date +%Y-%m-%d_%H-%M-%S)}"
-
-# Derived paths using REAL_USER and TIMESTAMP
-HOME_DIR="$(getent passwd "$REAL_USER" | cut -d: -f6)"
-NBDIR="$HOME_DIR/nb"
-SCRIPT_DATA="$NBDIR/nb_script_data"
-
-# 4. SCRIPT_BACKUPS_DIR
-SCRIPT_BACKUPS_DIR="${SCRIPT_BACKUPS_DIR:-$SCRIPT_DATA/backups}"
-CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
 
 # 5. HAS_TORRENT_CLIENT (default based on PC_TYPE if not provided)
 if [ -z "$HAS_TORRENT_CLIENT" ]; then
@@ -618,13 +619,21 @@ sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamdtop p
 # Dynamic Hardware-Aware Optimization:
 #########################################################
 
+# The following logic was moved to separate scripts for standardization and reuse across all other scripts too.
+CPU_CORES=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_cpu_cores.sh)
+RAM_MB=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ram_size.sh)
+RAM_PROFILE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ram_profile.sh) # either low or mid or high
+SSD_PRESENT=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ssd_present.sh)
 
-CPU_CORES=$(nproc)
+for h in get_cpu_cores get_ram_size get_ram_profile get_ssd_present; do
+    [ -f "$SYSUPDATE_CODE_BASE_DIR/linux/common/$h.sh" ] || { echo "ERROR: missing helper $h.sh under $SYSUPDATE_CODE_BASE_DIR (clone your system_update repo first)" >&2; exit 1; }
+done
 
-# RAM_GB=$(( $(grep MemTotal /proc/meminfo | awk '{print $2}') / 1024 / 1024 ))
-RAM_MB=$(awk '/^MemTotal:/ {print int($2/1024)}' /proc/meminfo)
-# RAM_GB=$(( RAM_MB / 1024 ))
-
+# (after the four assignments)
+[[ "$CPU_CORES" =~ ^[0-9]+$ ]] || { echo "ERROR: get_cpu_cores.sh must print only an integer (got '$CPU_CORES')" >&2; exit 1; }
+[[ "$RAM_MB"   =~ ^[0-9]+$ ]] || { echo "ERROR: get_ram_size.sh must print only an integer (got '$RAM_MB')" >&2; exit 1; }
+case "$RAM_PROFILE" in low|mid|high) ;; *) echo "ERROR: get_ram_profile.sh must print low, mid or high (got '$RAM_PROFILE')" >&2; exit 1 ;; esac
+case "$SSD_PRESENT" in true|false) ;; *) echo "ERROR: get_ssd_present.sh must print true or false (got '$SSD_PRESENT')" >&2; exit 1 ;; esac
 
 
 # ClamAV multi-threaded scanning (--multiscan or clamd operations) can easily saturate 100% of available CPU power. By setting MaxThreads to total cores minus one (leaving at least 2 for low-end setups), you prevent ClamAV from completely starving your desktop environment, kernel, and UI responsiveness (Wayland/KDE) during background scans or heavy file unzipping.
