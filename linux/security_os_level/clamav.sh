@@ -1231,7 +1231,7 @@ sudo restorecon -R "$QUARANTINE_DIR"
 
 
 #########################################################
-# reusable configuration-setting function - Updates an active or commented setting, removes duplicate instances - set_config_value()
+# helper - reusable configuration-setting function - Updates an active or commented setting, removes duplicate instances - set_config_value()
 #########################################################
 
 # # Set or replace a single-line configuration directive.
@@ -1430,6 +1430,98 @@ add_config_value() (
 
     echo "Added: $config_key $config_value"
 )
+
+
+
+#########################################################
+# helper with a health check and automatic rollback - apply_dropin_or_rollback():
+#########################################################
+
+# systemd-analyze security - see commented Debugging section at the end for details
+
+
+# apply_dropin_or_rollback UNIT FILENAME "HEALTH COMMAND"  (drop-in text on stdin)
+# Installs a drop-in, restarts the unit, runs the health check; if it fails, removes the drop-in and restarts again.
+apply_dropin_or_rollback() {
+    local unit="$1" name="$2" health="$3" dir="/etc/systemd/system/$1.d"
+    sudo install -d -m 0755 "$dir"
+    sudo tee "$dir/$name" > /dev/null        # drop-in content comes from the heredoc
+    sudo systemctl daemon-reload
+    sudo systemctl restart "$unit"
+    if ! bash -c "$health"; then
+        echo "WARN: $unit failed its health check with $name: rolling back" >&2
+        sudo rm -f "$dir/$name"; 
+        sudo systemctl daemon-reload; 
+        sudo systemctl restart "$unit"
+        return 1
+    fi
+    echo "OK: $unit: $name applied"
+}
+
+
+#########################################################
+# helper Reset configs to a clean baseline (helpful on a re-run) - reset_conf_from_clamconf():
+#########################################################
+
+# Reset configs to a clean baseline. clamconf -g writes a complete documented default file with every option commented out (I verified: the only active line is Example, which your existing sed -i '/^Example/d' already removes). That removes stale directives from other guides without per-key purge lines. Define the helper with the others, and call it before the Example removal for scan.conf and for freshclam.conf:
+
+# reset_conf_from_clamconf() {    # reset_conf_from_clamconf SCAN_CONF "$SCAN_CONF"
+#     local kind="$1" target="$2" tmp
+#     command -v clamconf >/dev/null || { echo "WARN: clamconf missing; keeping $target" >&2; return 0; }
+#     tmp=$(mktemp)
+#     clamconf -g "$kind" > "$tmp"
+#     sudo install -m 0644 -o root -g root "$tmp" "$target"    # backups were already taken earlier in the script
+#     sudo restorecon "$target" 2>/dev/null || true
+#     rm -f "$tmp"
+# }
+
+
+# reset_conf_from_clamconf() {
+#     local kind="$1" target="$2" tmp 
+#     command -v clamconf >/dev/null || { echo "WARN: clamconf missing; keeping $target" >&2; return 0; }
+#     tmp=$(mktemp)
+#     if ! clamconf --gen-config="$kind" > "$tmp" 2>/dev/null && ! clamconf -g "$kind" > "$tmp" 2>/dev/null; then
+#         # Fallback if generation fails: copy from package default or keep existing if present
+#         rm -f "$tmp"
+#         return 0
+#     fi
+    
+#     sudo install -m 0644 -o root -g root "$tmp" "$target"
+#     sudo restorecon "$target" 2>/dev/null || true
+#     rm -f "$tmp"
+# }
+
+
+reset_conf_from_clamconf() {
+    local kind="$1" target="$2" tmp
+    command -v clamconf >/dev/null || {
+        echo "WARN: clamconf missing; keeping $target" >&2
+        return 0
+    }
+
+    tmp=$(mktemp)
+
+    # Try the names this Fedora package actually accepts, in order of preference
+    if ! clamconf -g "$kind" >"$tmp" 2>/dev/null; then
+        echo "WARN: clamconf -g $kind failed; leaving $target unchanged" >&2
+        rm -f "$tmp"
+        return 0
+    fi
+
+    # Safety: never install an error message as a config
+    if head -1 "$tmp" | grep -q '^ERROR:'; then
+        echo "ERROR: clamconf produced an error instead of a config for $kind" >&2
+        rm -f "$tmp"
+        return 1
+    fi
+
+    sudo install -m 0644 -o root -g root "$tmp" "$target"
+    sudo restorecon "$target" 2>/dev/null || true
+    rm -f "$tmp"
+    echo "Reset $target from clamconf -g $kind"
+}
+
+
 
 
 
