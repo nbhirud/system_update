@@ -1540,13 +1540,24 @@ reset_conf_from_clamconf() {
 # Stop services only if they exist and are currently active.
 # This avoids aborting on a fresh installation where a service
 # may not yet be installed or started.
-for service in clamav-freshclam.service clamd@scan.service; do
-    if systemctl cat "$service" >/dev/null 2>&1; then
-        if systemctl is-active --quiet "$service"; then
-            sudo systemctl stop "$service"
-        fi
-    fi
-done
+# We moved this before backups
+# for service in clamav-freshclam.service clamd@scan.service; do
+#     if systemctl cat "$service" >/dev/null 2>&1; then
+#         if systemctl is-active --quiet "$service"; then
+#             sudo systemctl stop "$service"
+#         fi
+#     fi
+# done
+
+# Replace/Reset old (already backed up) SCAN_CONF and FRESH_CONF with fresh copy. Useful on a re-run
+# reset_conf_from_clamconf clamd.conf     "$SCAN_CONF"
+# reset_conf_from_clamconf freshclam.conf "$FRESH_CONF"
+
+# reset_conf_from_clamconf clamd     "$SCAN_CONF"
+# reset_conf_from_clamconf freshclam "$FRESH_CONF"
+
+reset_conf_from_clamconf "freshclam.conf"   "$FRESH_CONF"
+reset_conf_from_clamconf "clamd.d/scan.conf" "$SCAN_CONF"
 
 # Note:
 # The following and all similar config changes work when the configuration contains the commented line: #LogTime ...
