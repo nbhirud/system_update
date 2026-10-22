@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# Running the script with sh: On Fedora sh is bash in POSIX mode
+# Re-exec under real bash: `sh clamav.sh` would run bash in POSIX mode; dash has no arrays at all.
+if [ -z "${BASH_VERSION:-}" ] || shopt -oq posix 2>/dev/null; then exec bash "$0" "$@"; fi
+
 # set -eux
 
 # set -Eeuo pipefail
