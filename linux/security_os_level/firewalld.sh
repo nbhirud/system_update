@@ -81,46 +81,245 @@ else
 fi
 
 #########################################################
-# Input data processing
+# Input data processing - positional arguments - old way (replaced below with named options)
 #########################################################
 
-# TODO optional inputs:
-# FILENAME_TIMESTAMP
-# SCRIPT_BACKUPS_DIR
-# SYSUPDATE_CODE_BASE_DIR
-# HOME_LAN_SUBNET
-# HOME_ZONE_CONNECTIONS
-# PUBLIC_ZONE_CONNECTIONS
-# DESKTOP
+# # Optional positional inputs
 
-FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
+# # Argument order:
+# #   1. FILENAME_TIMESTAMP
+# #   2. SCRIPT_BACKUPS_DIR
+# #   3. SYSUPDATE_CODE_BASE_DIR
+# #   4. HOME_LAN_SUBNET
+# #   5. DESKTOP
+# #   6. PRIVACY_LEVEL
+# #   7. HOME_DIR
+# #   8. REAL_USER
 
-# HOME_DIR=$(getent passwd $USER | cut -d: -f6)
-# Get the actual user's home when runing a script with sudo
-HOME_DIR=$(getent passwd "$SUDO_USER" | cut -d: -f6)
 
+# # Empty or omitted arguments use the defaults below.
+
+# # Determine the actual user, including when this script runs under sudo.
+# # REAL_USER="${SUDO_USER:-$USER}"
+# REAL_USER="${8:-${SUDO_USER:-${USER}}}"
+
+# # Determine the actual user's home directory when runing a script with sudo.
+# # HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+# # HOME_DIR=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+# HOME_DIR="${7:-$(getent passwd "$REAL_USER" | cut -d: -f6)}"
+
+# # Fallback if the user's home directory could not be determined.
+# HOME_DIR="${HOME_DIR:-$HOME}"
+
+# # Common directories.
+# NBDIR="$HOME_DIR/nb"
+# SCRIPT_DATA="$NBDIR/nb_script_data"
+# CODEPROJECTS_DIR="$NBDIR/CodeProjects"
+
+# # Optional inputs with defaults.
+# FILENAME_TIMESTAMP="${1:-$(date +%Y-%m-%d_%H-%M-%S)}"
+
+# SCRIPT_BACKUPS_DIR="${2:-$SCRIPT_DATA/backups}"
+
+# SYSUPDATE_CODE_BASE_DIR="${3:-$CODEPROJECTS_DIR/system_update}"
+
+# HOME_LAN_SUBNET="${4:-192.168.0.0/24}"
+
+# DESKTOP="${5:-$(sh "$SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh")}"
+
+# PRIVACY_LEVEL="${6:-portable}"
+
+# # Other derived paths.
+# ZSHRC="$HOME_DIR/.zshrc"
+
+# echo "Desktop Environment is $DESKTOP"
+
+
+# # Usage:
+
+# # sh "linux/security_os_level/firewalld.sh" \
+# #     "$FILENAME_TIMESTAMP" \
+# #     "$SCRIPT_BACKUPS_DIR" \
+# #     "$SYSUPDATE_CODE_BASE_DIR" \
+# #     "$HOME_LAN_SUBNET" \
+# #     "$DESKTOP" \
+# #     "$PRIVACY_LEVEL" \
+# #     "$HOME_DIR" \
+# #     "$REAL_USER"
+
+# # If you want to use defaults for some arguments:
+# # You cannot skip a middle positional argument simply by omitting it. Pass an empty string as a placeholder.
+# # For example, to provide only FILENAME_TIMESTAMP and PRIVACY_LEVEL while defaulting everything else:
+# # sh "linux/security_os_level/firewalld.sh" \
+# #     "$FILENAME_TIMESTAMP" \
+# #     "" \
+# #     "" \
+# #     "" \
+# #     "" \
+# #     "$PRIVACY_LEVEL"
+
+
+
+#########################################################
+# Input data processing - named options (new way)
+#########################################################
+
+# You can pass options in any order.
+# Any omitted option gets its default value.
+# Unknown options and options without values cause an error.
+# --help displays the supported options.
+# Existing variables inherited from the environment are retained as fallback values if an option is omitted. If you want defaults to ignore inherited variables, that can be changed.
+
+show_usage() {
+    cat <<'EOF'
+Usage: sh script.sh [OPTIONS]
+
+Options:
+  --filename-timestamp VALUE       Timestamp used in filenames
+  --script-backups-dir VALUE       Directory for script backups
+  --sysupdate-code-base-dir VALUE  System update code base directory
+  --home-lan-subnet VALUE          Home LAN subnet (CIDR notation)
+  --privacy-level VALUE            Privacy level (default: portable)
+  --desktop VALUE                  Desktop environment
+  --home-dir VALUE                 Actual user's home directory
+  --real-user VALUE                Actual username
+  -h, --help                       Show this help
+EOF
+}
+
+####################
+# Parse named arguments.
+
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --filename-timestamp)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || {
+                echo "Error: --filename-timestamp requires a non-empty value." >&2
+                exit 2
+            }
+            FILENAME_TIMESTAMP="$2"
+            shift 2
+            ;;
+
+        --script-backups-dir)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || {
+                echo "Error: --script-backups-dir requires a non-empty value." >&2
+                exit 2
+            }
+            SCRIPT_BACKUPS_DIR="$2"
+            shift 2
+            ;;
+
+        --sysupdate-code-base-dir)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || {
+                echo "Error: --sysupdate-code-base-dir requires a non-empty value." >&2
+                exit 2
+            }
+            SYSUPDATE_CODE_BASE_DIR="$2"
+            shift 2
+            ;;
+
+        --home-lan-subnet)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || {
+                echo "Error: --home-lan-subnet requires a non-empty value." >&2
+                exit 2
+            }
+            HOME_LAN_SUBNET="$2"
+            shift 2
+            ;;
+
+        --privacy-level)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || {
+                echo "Error: --privacy-level requires a non-empty value." >&2
+                exit 2
+            }
+            PRIVACY_LEVEL="$2"
+            shift 2
+            ;;
+
+        --desktop)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || {
+                echo "Error: --desktop requires a non-empty value." >&2
+                exit 2
+            }
+            DESKTOP="$2"
+            shift 2
+            ;;
+
+        --home-dir)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || {
+                echo "Error: --home-dir requires a non-empty value." >&2
+                exit 2
+            }
+            HOME_DIR="$2"
+            shift 2
+            ;;
+
+        --real-user)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || {
+                echo "Error: --real-user requires a non-empty value." >&2
+                exit 2
+            }
+            REAL_USER="$2"
+            shift 2
+            ;;
+
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+
+        *)
+            echo "Error: Unknown option: $1" >&2
+            show_usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+
+####################
+# Set defaults for values not supplied by the caller.
+
+
+# Resolve the actual user, including when running under sudo.
+REAL_USER="${REAL_USER:-${SUDO_USER:-${USER}}}"
+
+# Determine the actual user's home directory.
+HOME_DIR="${HOME_DIR:-$(getent passwd "$REAL_USER" | cut -d: -f6)}"
+HOME_DIR="${HOME_DIR:-$HOME}"
+
+# Common directories.
 NBDIR="$HOME_DIR/nb"
 SCRIPT_DATA="$NBDIR/nb_script_data"
-SCRIPT_BACKUPS_DIR="$SCRIPT_DATA/backups"
+CODEPROJECTS_DIR="$NBDIR/CodeProjects"
+
+# Set defaults only when the caller has not supplied values.
+FILENAME_TIMESTAMP="${FILENAME_TIMESTAMP:-$(date +%Y-%m-%d_%H-%M-%S)}"
+SCRIPT_BACKUPS_DIR="${SCRIPT_BACKUPS_DIR:-$SCRIPT_DATA/backups}"
+SYSUPDATE_CODE_BASE_DIR="${SYSUPDATE_CODE_BASE_DIR:-$CODEPROJECTS_DIR/system_update}"
+HOME_LAN_SUBNET="${HOME_LAN_SUBNET:-192.168.0.0/24}"
+PRIVACY_LEVEL="${PRIVACY_LEVEL:-paranoid}" # home, portable, paranoid
+
+# Treat portable as paranoid from security perspective.
+if [ "$PRIVACY_LEVEL" = "portable" ]; then
+    PRIVACY_LEVEL="paranoid"
+fi
+
+# Detect the desktop environment only when not supplied.
+if [ -z "${DESKTOP:-}" ]; then
+    DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh") || {
+        echo "Error: Failed to detect desktop environment." >&2
+        exit 1
+    }
+fi
+
+# Other derived paths.
 ZSHRC="$HOME_DIR/.zshrc"
 
-CODEPROJECTS_DIR="$NBDIR/CodeProjects"
-SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
-
-DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/check_desktop_env.sh)
 echo "Desktop Environment is $DESKTOP"
 
-# HOME_LAN_SUBNET="192.168.0.0/24"   
-
-# TODO - find out if these connections can even be assigned to zones while setting up PC for the first time when most of these connections aren't even configured/connected ever
-# HOME_ZONE_CONNECTIONS = () # list of wifi connections and ethernet connectons that should be assigned to home zone like own home network
-# PUBLIC_ZONE_CONNECTIONS = () # list of wifi connections and ethernet connectons that should be assigned to public zone like relatives' place or friends' place
-
-# Prompt for Home Wi-Fi SSIDs (space-separated) another way of doing HOME_ZONE_CONNECTIONS
-# read command - use the -p option to display a prompt before reading. The prompt is printed before read executes and does not include a newline
-# read command - To disable backslash escaping (\t for tab, \n for newline, etc), invoke the command with the -r option. 
-# read -r -p "[?] Enter your trusted Home Wi-Fi SSID(s) [e.g., MyHomeWiFi HotspotName]: " -a HOME_ZONE_CONNECTIONS
-# read -r -p "[?] Enter your Semi Trusted known Public Wi-Fi SSID(s) [e.g., YourFriendsWiFi YourRelativesWiFi HotspotName]: " -a PUBLIC_ZONE_CONNECTIONS
 
 #########################################################
 # Set user-defined constants/variables
