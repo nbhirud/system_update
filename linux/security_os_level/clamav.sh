@@ -822,6 +822,85 @@ done
 
 echo "Configuration backups saved in: $CLAMAV_BACKUP_DIR"
 
+# If master.conf or os.conf were modified by another guide, we’d only see it in state_before.txt (rpm -V marks them c).
+if rpm -V clamav-unofficial-sigs 2>/dev/null | grep -E '^[^ ]*5[^ ]* +c /etc/clamav-unofficial-sigs/(master|os)\.conf'; then
+    echo "WARN: master.conf/os.conf were modified by something else. user.conf overrides the keys we set; for a full reset: sudo dnf reinstall clamav-unofficial-sigs and restore .rpmnew if any" >&2
+fi
+
+# back up everything the script creates/finds
+mkdir -p "$CLAMAV_BACKUP_DIR/files"
+backup_as_user \
+    /usr/local/bin/clamav-usb-scan.sh /usr/local/bin/clamav-weekly-scan.sh /usr/local/bin/clamav-notify.sh \
+    /usr/local/bin/clamav-alert-popups /usr/local/sbin/clamav-notify-root \
+    /etc/systemd/system/clamav-usb-scan@.service /etc/systemd/system/clamav-clamonacc.service \
+    /etc/systemd/system/clamav-weekly-scan.service /etc/systemd/system/clamav-weekly-scan.timer \
+    /etc/udev/rules.d/99-clamav-usb.rules "$HOME_DIR/.config/systemd/user/clamav-alerts.service" \
+    "$SIG_DB_DIR/local.ign2"      # your whitelist: user data
+
+# Snapshot of the state BEFORE any change: the best tool for diagnosing a repair run.
+(
+    set +e    # The set +e subshell stops a failing ls or an empty grep from aborting the script.
+    echo "### state BEFORE changes: $(date --iso-8601=seconds)"
+    echo "## ClamAV units";                   systemctl list-unit-files --no-legend '*clam*'
+    echo "## rpm -V (c = a config file was modified)"; rpm -V clamav clamd clamav-freshclam clamav-update clamav-unofficial-sigs
+    echo "## ownership + SELinux labels";     sudo ls -laZd /var/lib/clamav /var/log/clamav /var/quarantine/clamav /run/clamd.scan
+    echo "## SELinux";                        getenforce; getsebool -a | grep antivirus
+    echo "## active scan.conf lines";         sudo grep -vE '^[[:space:]]*(#|$)' "$SCAN_CONF"
+) > "$CLAMAV_BACKUP_DIR/state_before.txt" 2>&1
+
+
+
+
+#########################################################
+# Back up and remove existing drop-ins (services, timers, sudoers root rule):
+#########################################################
+
+# Sweep stale drop-ins (other guides' overrides). 
+# Back them up as you (tar piped to a user-run extract, no root write into your folder), then remove. Before writing the units:
+
+mkdir -p "$CLAMAV_BACKUP_DIR/dropins"
+for d in    clamd@scan.service.d \
+            clamav-freshclam.service.d \
+            clamav-clamonacc.service.d \
+            clamav-unofficial-sigs.service.d \
+            clamav-unofficial-sigs.timer.d; 
+do
+    if [ -d "/etc/systemd/system/$d" ]; then
+        sudo tar -C /etc/systemd/system -cf - "$d" | tar -C "$CLAMAV_BACKUP_DIR/dropins" -xf -
+        sudo rm -rf "/etc/systemd/system/$d"
+        echo "Removed stale drop-in dir $d (backed up)"
+    fi
+done
+
+# a leftover root rule is a security problem: back up, remove
+# for f in /etc/sudoers.d/*clam*; 
+# do        
+#     [ -e "$f" ] || continue
+#     sudo cat "$f" | tee "$CLAMAV_BACKUP_DIR/dropins/$(basename "$f")" > /dev/null
+#     sudo rm -f -- "$f"; echo "Removed stale sudoers rule $f (backed up)"
+# done
+
+# `sudo find` lists the directory as root.
+while IFS= read -r -d '' f; do
+    sudo cat -- "$f" | tee "$CLAMAV_BACKUP_DIR/dropins/$(basename -- "$f")" > /dev/null
+    sudo rm -f -- "$f"
+    echo "Removed stale sudoers rule $f (backed up)"
+done < <(sudo find /etc/sudoers.d -maxdepth 1 -type f -name '*clam*' -print0 2>/dev/null)
+
+
+EXPECTED=" clamd@.service clamd@scan.service clamav-freshclam.service clamav-clamonacc.service clamav-unofficial-sigs.service clamav-unofficial-sigs.timer clamav-weekly-scan.service clamav-weekly-scan.timer clamav-usb-scan@.service "
+while read -r unit _; do
+    case "$EXPECTED" in *" $unit "*) continue ;; esac
+    frag=$(systemctl show -p FragmentPath --value "$unit" 2>/dev/null)
+    if [ -n "$frag" ] && rpm -qf "$frag" >/dev/null 2>&1; then continue; fi   # shipped by a package: fine
+    echo "WARN: ClamAV-related unit not created by this script or a package: $unit ($frag)"
+done < <(systemctl list-unit-files --no-legend '*clam*' 2>/dev/null)
+OTHER=$(sudo grep -rlsE 'freshclam|clamscan|clamdscan|clamonacc' /etc/cron* /var/spool/cron "$HOME_DIR/.config/systemd/user" 2>/dev/null | grep -vE 'clamav-(weekly|usb|alerts|unofficial)' || true)
+if [ -n "$OTHER" ]; then printf 'WARN: other automation mentions ClamAV tools (two updaters fight over locks):\n%s\n' "$OTHER"; fi
+for p in /etc/clamd.conf /etc/clamav; do
+    if [ -e "$p" ]; then echo "WARN: $p exists (old-guide path; Fedora uses $SCAN_CONF)"; fi
+done
+
 
 #########################################################
 ### Filesystem and Permissions - Ensure volatile directories exist and have correct ownership.
