@@ -3110,6 +3110,78 @@ fi
 
 sudo freshclam --config-file="$FRESH_CONF"
 
+
+#########################################################
+# Update databases for the first time
+#########################################################
+
+
+# clamd (est. 5.8 -> about 4.8). PrivateNetwork is the big one: clamd only needs a file-path socket, so it gets no network at all.
+# The health check connects from the HOST namespace, which also proves the socket is still reachable.
+apply_dropin_or_rollback clamd@scan.service 20-hardening.conf "sudo clamdscan --config-file=$SCAN_CONF --ping 60:3" <<'EOF' || echo "WARN: clamd hardening not applied"
+[Service]
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallArchitectures=native
+EOF
+
+# clamonacc (est. 8.3 -> about 3.5-5). No ProtectHome: --move must write into your home. Capabilities cut to what fanotify + move need.
+apply_dropin_or_rollback clamav-clamonacc.service 20-hardening.conf 'sleep 8; systemctl is-active --quiet clamav-clamonacc.service' <<'EOF' || echo "WARN: clamonacc hardening not applied"
+[Service]
+ProtectSystem=full
+PrivateTmp=yes
+PrivateNetwork=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX
+SystemCallArchitectures=native
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_DAC_OVERRIDE CAP_DAC_READ_SEARCH CAP_FOWNER CAP_CHOWN CAP_FSETID
+EOF
+
+# freshclam (est. 9.6 -> about 6.9). Needs internet; AF_NETLINK for name resolution.
+apply_dropin_or_rollback clamav-freshclam.service 20-hardening.conf 'sleep 30; systemctl is-active --quiet clamav-freshclam.service && journalctl -u clamav-freshclam --since "-2min" | grep -qi "update process started"' <<'EOF' || echo "WARN: freshclam hardening not applied"
+[Service]
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+SystemCallArchitectures=native
+EOF
+
+
+
 #########################################################
 # Persistent Weekly Scan Setup
 #########################################################
