@@ -3100,6 +3100,14 @@ sudo systemctl daemon-reload
 
 # First signature download. clamd will not start without a database.
 # Runs as root, drops to $UPDATE_USER, which must own the log file and the DB dir.
+# sudo freshclam --config-file="$FRESH_CONF"
+
+
+# Ensure freshclam service is stopped before manual initialization, or rely on systemd-native start:
+if systemctl is-active --quiet clamav-freshclam.service; then
+    sudo systemctl stop clamav-freshclam.service
+fi
+
 sudo freshclam --config-file="$FRESH_CONF"
 
 #########################################################
