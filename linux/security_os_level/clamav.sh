@@ -712,7 +712,23 @@ esac
 
 
 #########################################################
-# Back up existing configuration files before modifying them:
+# helper to back up everything the script creates/finds - backup_as_user():
+#########################################################
+
+
+backup_as_user() {   # backup_as_user /abs/path...  -> $CLAMAV_BACKUP_DIR/files/<path>
+    local p
+    for p in "$@"; do
+        if sudo test -e "$p"; then
+            sudo tar -C / -cpf - "${p#/}" | tar -C "$CLAMAV_BACKUP_DIR/files" -xpf - --no-same-owner
+        fi
+    done
+}
+
+
+
+#########################################################
+# Back up existing configuration files before reseting and modifying them:
 #########################################################
 
 # mkdir -p "$CLAMAV_BACKUP_DIR"
