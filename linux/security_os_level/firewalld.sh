@@ -1264,7 +1264,7 @@ fi
 # add_firewall_service "kdeconnect" # KDECONNECT and GSCONNECT
 # https://userbase.kde.org/KDEConnect
 
-if $KDECONNECT_AVAILABLE; then
+if $KDECONNECT_AVAILABLE || $GSCONNECT_AVAILABLE ; then
   
     ##### home
     sudo firewall-cmd --permanent --zone="$HOME_ZONE" --add-service=kdeconnect
