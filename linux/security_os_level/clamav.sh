@@ -572,6 +572,7 @@ verify_setup() {
 
 
 # Define operational paths
+# SCAN_CONF="/etc/clamav/clamd.conf"    # Wrong path
 SCAN_CONF="/etc/clamd.d/scan.conf"
 FRESH_CONF="/etc/freshclam.conf"
 RUNTIME_DIR="/run/clamd.scan"
@@ -588,13 +589,42 @@ ONACC_LOG="$LOG_DIR/clamonacc.log"
 UNOFFICIAL_SIGS_MASTER_CONF="/etc/clamav-unofficial-sigs/master.conf"
 UNOFFICIAL_SIGS_OS_CONF="/etc/clamav-unofficial-sigs/os.conf"
 UNOFFICIAL_SIGS_USER_CONF="/etc/clamav-unofficial-sigs/user.conf"
-if ! sudo test -f "$UNOFFICIAL_SIGS_USER_CONF"; then
-    sudo install -o root -g root -m 0644 /dev/null "$UNOFFICIAL_SIGS_USER_CONF"
-fi
+# if ! sudo test -f "$UNOFFICIAL_SIGS_USER_CONF"; then
+#     sudo install -o root -g root -m 0644 /dev/null "$UNOFFICIAL_SIGS_USER_CONF"
+# fi
 
 # CLAM_USER="clamav"
 CLAM_USER="clamscan"
 UPDATE_USER="clamupdate" 
+
+# Watch where payloads LAND, not profile or cache dirs.
+# Initialize base directories common to all client setups
+# NEVER use OnAccessExcludePath on a directory that has subfolders: clamonacc logs
+# "ERROR: ClamInotif: can't exclude ..." and silently stops blocking the WHOLE watch.
+ONACC_DIRS=(
+    "$HOME_DIR/Downloads"
+    "$NBDIR/Downloads"
+    "$NBDIR/nb_script_downloads"
+    "$NBDIR/Syncthing"   # Syncthing folders that receive files from other devices
+)
+
+
+# Conditionally append completed Torrents path if a torrent client is present
+if [ "${HAS_TORRENT_CLIENT:-false}" = true ]; then
+    ONACC_DIRS+=("$NBDIR/Torrents/Completed")
+fi
+
+# Conditionally append Kodi path if Kodi is installed
+# Because it uses random repos
+if [ "${HAS_KODI:-false}" = true ]; then
+    ONACC_DIRS+=("$HOME_DIR/.kodi") # Because it uses random repos
+fi
+
+
+if $CHECK_ONLY; then 
+    verify_setup; 
+    exit $?; 
+fi
 
 
 #########################################################
@@ -654,56 +684,15 @@ if [ "$RECOMMENDED_THREADS" -lt 4 ]; then RECOMMENDED_THREADS=4; fi
 echo "Detected $CPU_CORES CPU cores. Will set MaxThreads to $RECOMMENDED_THREADS."
 
 
-# SSD Tuning
-
-# SSD_PRESENT=false
-# ROOT_DEV=$(df / | tail -1 | awk '{print $1}')
-# BACKING_DEV=$(lsblk -no pkname "$ROOT_DEV" 2>/dev/null || basename "$ROOT_DEV" | sed 's/[0-9]*$//')
-
-# if [ -n "$BACKING_DEV" ] && [ -f "/sys/block/$BACKING_DEV/queue/rotational" ]; then
-#     if [ "$(cat /sys/block/"$BACKING_DEV"/queue/rotational)" -eq 0 ]; then
-#         SSD_PRESENT=true
-#     fi
-# elif lsblk -d -o rota | grep -q "^0$"; then
-#     SSD_PRESENT=true
-# fi
-
-
-# Replacing the old SSD detection block (the one using BACKING_DEV / lsblk pkname).
-# path_is_rotational PATH: true if ANY device under PATH's filesystem is rotational (HDD) or unknown.
-path_is_rotational() {
-    local path="$1" src stack fsuuid d
-    src=$(findmnt -n -o SOURCE --target "$path" 2>/dev/null | head -n1)
-    src=${src%%\[*}                              # btrfs prints /dev/xxx[/subvolume]: strip the subvolume
-    [ -b "$src" ] || return 0                    # tmpfs/overlay/network/unknown: be conservative
-    stack=$(lsblk -s -n -o ROTA "$src" 2>/dev/null | tr -d ' ')   # -s: this device AND everything under it
-    # btrfs spanning several devices: findmnt shows only one, but sysfs lists them all
-    fsuuid=$(findmnt -n -o UUID --target "$path" 2>/dev/null | head -n1)
-    if [ -n "$fsuuid" ] && [ -d "/sys/fs/btrfs/$fsuuid/devices" ]; then
-        for d in /sys/fs/btrfs/"$fsuuid"/devices/*; do
-            stack+=$'\n'$(lsblk -s -n -o ROTA "/dev/$(basename "$d")" 2>/dev/null | tr -d ' ')
-        done
-    fi
-    [ -n "$stack" ] || return 0
-    printf '%s\n' "$stack" | grep -qx '1'
-}
-
-FAST_STORAGE=true
-for p in / "$HOME_DIR" "$NBDIR" /srv; do
-    if [ -e "$p" ] && path_is_rotational "$p"; then
-        FAST_STORAGE=false; echo "INFO: $p is on rotational or unknown storage"
-    fi
-done
-SSD_PRESENT=$FAST_STORAGE   # keep the old name so ONACC_PREVENT and the weekly engine keep working
-
-
-if   [ "$RAM_MB" -lt 10000 ];  then RAM_PROFILE=low
-elif [ "$RAM_MB" -lt 20000 ]; then RAM_PROFILE=mid
-else                               RAM_PROFILE=high
-fi
-
-CONC_RELOAD=yes     # a second engine is loaded during reload = extra RAM (clamd.conf docs)
+CONC_RELOAD=yes     # a second engine is loaded during reload = extra RAM (SCAN_CONF docs)
 if [ "$RAM_PROFILE" = low ]; then CONC_RELOAD=no; fi
+
+# Add a per-directory safeguard, because prevention should only run if every watched directory is on flash:
+# for d in "${ONACC_DIRS[@]}"; do
+#     if [ -d "$d" ] && path_is_rotational "$d"; then
+#         ONACC_PREVENT=no; echo "INFO: $d is on rotational/unknown storage -> on-access prevention disabled"; break
+#     fi
+# done
 
 ONACC_PREVENT=no    # prevention = every watched open() waits for clamd
 if [ "$RAM_MB" -ge 14000 ] && $SSD_PRESENT; then ONACC_PREVENT=yes; fi
