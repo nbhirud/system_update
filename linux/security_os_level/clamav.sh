@@ -3915,6 +3915,7 @@ elif [[ "$SELINUX_MODE" == "Disabled" ]]; then
     echo "WARNING: SELinux is disabled. It cannot be enabled with setenforce." >&2
 fi
 
+# The -v below makes it very noisy. Drop it later after done testing this script
 sudo restorecon -Rv /var/log/clamav
 sudo restorecon -Rv /var/lib/clamav
 
@@ -4245,7 +4246,7 @@ verify_setup
 # Expected output on fresh first run: owner clamupdate:clamscan
 # ls -l /var/lib/clamav
 
-# Expected output on fresh first run: dir root:wheel 2750; freshclam.log owned by clamupdate
+# Expected output on fresh first run: dir root:wheel 2751; freshclam.log owned by clamupdate
 # ls -ld /var/log/clamav && ls -l /var/log/clamav
 
 # Expected output on fresh first run: no ScanOnAccess, TemporaryDirectory, LocalSocketGroup; LocalSocketMode 600
@@ -4287,8 +4288,9 @@ verify_setup
 
 # # Test with EICAR test file (safe test virus):
 # EICAR_A='X5O!P%@AP[4\PZX54(P^)7CC)7}$'
-# EICAR_B='EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
-# EICAR="${EICAR_A}${EICAR_B}"
+# EICAR_B='EICAR-STAND'
+# EICAR_C='ARD-ANTIVIRUS-TEST-FILE!$H+H*'
+# EICAR="${EICAR_A}${EICAR_B}${EICAR_C}"
 # echo $EICAR | sudo tee /tmp/eicar.txt
 # sudo clamscan /tmp/eicar.txt
 # Should detect it as "Win.Test.EICAR_HDB-1"
