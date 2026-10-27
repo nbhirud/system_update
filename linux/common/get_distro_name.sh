@@ -14,4 +14,4 @@ then
     # lsb_release -is  | tr '[:upper:]' '[:lower:]'
 fi
 
-echo $DISTRO_NAME
+echo "$DISTRO_NAME"
