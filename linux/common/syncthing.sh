@@ -31,8 +31,6 @@ sudo dnf install -y syncthing
 
 # fi
 
-# Enable it to launch automatically on login  and start it
-systemctl --user enable --now syncthing.service
 
 # mkdir -p "$HOME_DIR"/nb/Syncthing/{Obsidian,Joplin,send_to_devices} # not POSIX compliant
 
@@ -149,6 +147,55 @@ elif [ "$DESKTOP" = "kde" ]; then
   flatpak install -y flathub io.github.martchus.syncthingtray
 
 fi
+
+systemctl --user daemon-reload
+systemctl --user restart syncthing
+
+# Enable it to launch automatically on login  and start it
+# Following syntax runs under your specific user account. Reads/writes files in ~ with your default user permissions. Security risk is Low. A compromised Syncthing process only sees your user files. Inherits your user session variables (e.g., HOME, XDG_CONFIG_HOME).
+systemctl --user enable --now syncthing.service
+
+# Run syncthing the system level while retaining your user permissions, Fedora supports the system-wide template service.
+# This runs Syncthing as a system service managed by root, but drops privileges specifically to the nbhirud user.
+# sudo systemctl enable --now syncthing@nbhirud.service
+# sudo systemctl enable --now syncthing@"$USER".service
+
+
+################################
+
+# # To make Syncthing resilient against sudden power losses, adjust systemd service policies and user lingering settings.
+# # Allows background start without waiting for graphical session
+# # Enable lingering for your user account. This forces systemd to spin up your user manager instance immediately at kernel boot, regardless of whether a display manager session has cleanly initialized.
+# loginctl enable-linger $USER
+# # Verify:
+# loginctl show-user $USER | grep Linger
+
+
+#################################
+# # Create a systemd service drop-in configuration. This instructs systemd to retry starting Syncthing indefinitely, removes stale locks before startup, and waits until network and storage targets are fully mounted.
+# mkdir -p ~/.config/systemd/user/syncthing.service.d/
+# cat <<'EOF' > ~/.config/systemd/user/syncthing.service.d/override.conf
+# [Unit]
+# After=network-online.target local-fs.target
+# Wants=network-online.target
+
+# [Service]
+# # Clean up stale locks that cause startup aborts after ungraceful crashes
+# ExecStartPre=/bin/sh -c 'rm -f %h/.local/state/syncthing/index-*.db/LOCK %h/.config/syncthing/index-*.db/LOCK'
+
+# # Auto-restart policies for sudden crashes
+# Restart=on-failure
+# RestartSec=10s
+# StartLimitIntervalSec=60s
+# StartLimitBurst=10
+# EOF
+# # Verify - The output should show Drop-In: .../override.conf.
+# systemctl --user daemon-reload
+# systemctl --user status syncthing
+# # Ensure the user service is active and listening.
+# systemctl --user enable --now syncthing.service
+# # Verify
+# systemctl --user is-active syncthing
 
 
 ##################################################
