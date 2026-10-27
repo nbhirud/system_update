@@ -83,8 +83,8 @@ sudo mv "$HOSTS_FILE_NEW" /etc/hosts
 sudo chmod "$PERM" /etc/hosts
 # sudo chown user:group /etc/hosts # TODO - find out correct user/group
 
-sudo ausearch -c 'systemd-resolve' --raw | sudo audit2allow -M my-systemdresolve
-sudo semodule -X 300 -i my-systemdresolve.pp
+# sudo ausearch -c 'systemd-resolve' --raw | sudo audit2allow -M my-systemdresolve
+# sudo semodule -X 300 -i my-systemdresolve.pp
 sudo /sbin/restorecon -v /etc/hosts
 
 # https://github.com/StevenBlack/hosts?tab=readme-ov-file#linux
