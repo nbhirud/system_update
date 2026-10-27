@@ -1898,7 +1898,7 @@ for p in '^/proc/' '^/sys/' '^/dev/' '^/run/' '^/var/quarantine/' '^/var/lib/cla
 done
 
 add_config_value "$SCAN_CONF" ExcludePath '^/etc/hosts$'
-add_config_value "$SCAN_CONF" ExcludePath "^$SCRIPT_DATA/hostsplay/"
+add_config_value "$SCAN_CONF" ExcludePath "^/home/nbhirud/nb/nb_script_data/hostsplay/"
 
 # Content Scanning Options
 # sudo sed -i 's|^#ScanPE.*|ScanPE yes|' "$SCAN_CONF"
@@ -3502,9 +3502,7 @@ case "$ENGINE" in
             --detect-pua=yes --alert-broken=yes \
             --exclude='^/etc/hosts$' \
             --log="$LOGFILE" \
-            --exclude-dir='/nb_script_data/hostsplay(/|$)' \
-            --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
-            --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
+            --exclude-dir='/home/nbhirud/nb/nb_script_data/hostsplay(/|$)' \
             "${ROOTS[@]}" || SCAN_STATUS=$?
         ;;
     *)
