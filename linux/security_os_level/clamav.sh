@@ -3498,7 +3498,21 @@ case "$ENGINE" in
     clamscan)
         # Standalone scanner: loads its OWN copy of the signatures, ignores scan.conf, so the flags
         # that matter are repeated here. nice/ionice really work because THIS process does the reading.
-        nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes \
+            # --exclude-dir="^/home/[^/]+/\.config/(VSCodium|Code|libreoffice)" \
+            # --exclude-dir="^/home/[^/]+/\.cache/JetBrains" \
+            # --exclude-dir="^/home/[^/]+/\.local/share/JetBrains" \
+            # --exclude-dir="^/home/[^/]+/\.cargo" \
+            # --exclude-dir="^/home/[^/]+/\.config/(librewolf|BraveSoftware)" \
+            # --exclude-dir="^/home/[^/]+/\.var/app/com\.brave\.Browser" \
+            # --exclude-dir="^/home/[^/]+/\.local/share/torbrowser" \
+            # --exclude-dir="^/home/[^/]+/\.npm" \
+            # --exclude-dir="^/root/\.npm" \
+            # --exclude-dir="^/home/[^/]+/.*\.venv" \
+            # --exclude-dir="^/home/[^/]+/.*/node_modules" \
+            # --exclude-dir="^/opt" \
+            # --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
+            # --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
+        nice -n 19 ionice -c 3 clamscan -r --infected --recursive --cross-fs=yes \
             --detect-pua=yes --alert-broken=yes \
             --exclude='^/etc/hosts$' \
             --log="$LOGFILE" \
