@@ -21,5 +21,17 @@ sudo sh install-docker.sh
 
 cd "$HOME"
 
-systemctl enable --now docker
 
+# Ensure Docker Starts After Firewalld
+# Configure systemd to make sure Firewalld is fully initialized before Docker attempts to hook into the network stack:
+sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo tee /etc/systemd/system/docker.service.d/override.conf <<'EOF'
+[Unit]
+After=firewalld.service
+Wants=firewalld.service
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl restart firewalld
+systemctl enable --now docker
+# sudo systemctl restart docker

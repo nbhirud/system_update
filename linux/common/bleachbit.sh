@@ -7,13 +7,27 @@ set -eux
 # https://www.baeldung.com/linux/clean-up-linux-system
 
 
+#HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
 
-HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
-SCRIPT_DOWNLOADS_DIR="$HOME_DIR/nb/nb_script_downloads"
-DOWNLOADS_DIR_BLEACHBIT="$SCRIPT_DOWNLOADS_DIR/Bleachbit/bleachbit_$(date +%Y-%m-%d_%H-%M-%S)"
+REAL_USER="${SUDO_USER:-$USER}"
+HOME_DIR="$(getent passwd "$REAL_USER" | cut -d: -f6)"
 
-mkdir -p "$DOWNLOADS_DIR_BLEACHBIT"
-cd "$DOWNLOADS_DIR_BLEACHBIT" || exit
+NBDIR="$HOME_DIR/nb"
+SCRIPT_DATA="${NBDIR}/nb_script_data"
+
+FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
+
+
+SCRIPT_DATA_DOWNLOADS="${SCRIPT_DATA}/downloads"
+
+BLEACHBIT_DOWNLOADS_DIR_BASE="${SCRIPT_DATA_DOWNLOADS}/bleachbit"
+BLEACHBIT_CURRENT_DOWNLOADS_DIR="${BLEACHBIT_DOWNLOADS_DIR_BASE}/bleachbit_${FILENAME_TIMESTAMP}"
+
+
+mkdir -p "${BLEACHBIT_CURRENT_DOWNLOADS_DIR}"
+chown "${REAL_USER}":"${REAL_USER}" "${BLEACHBIT_DOWNLOADS_DIR_BASE}" "${BLEACHBIT_CURRENT_DOWNLOADS_DIR}"
+
+cd "$BLEACHBIT_CURRENT_DOWNLOADS_DIR" || exit
 
 url=$(curl -fsSL https://www.bleachbit.org/download/linux |
     grep -oE 'https://download\.bleachbit\.org/[^"]+\.fc[0-9]+\.noarch\.rpm' |

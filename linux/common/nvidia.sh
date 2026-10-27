@@ -1,5 +1,5 @@
 
-
+# https://rpmfusion.org/Howto/NVIDIA?highlight=%28%5CbCategoryHowto%5Cb%29#Installing_the_drivers
 # https://docs.nvidia.com/datacenter/tesla/driver-installation-guide/fedora.html
 # https://docs.fedoraproject.org/en-US/quick-docs/mok-enrollment/
 # The above uses https://developer.download.nvidia.com/compute/cuda/repos/fedora43/x86_64/

@@ -19,14 +19,14 @@ set -eux
 #     echo "DESKTOP not provided. Identifying."
 #     HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
 #     SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
-#     DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
+#     DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh)
 # else 
 #     DESKTOP="$1"
 # fi
 
 HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
 SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
-DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/check_desktop_env.sh)
+DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_desktop_env.sh)
 
 echo "The current DESKTOP is $DESKTOP."
 
@@ -47,7 +47,7 @@ DOWNLOAD_METHOD="archive" # Choose one of "full", "sparse", "archive"
 
 
 # echo "************************ Identify Desktop Environment ************************"
-# DESKTOP=$(sh "$SYSUPDATE_CODE_DIR"/linux/common/check_desktop_env.sh)
+# DESKTOP=$(sh "$SYSUPDATE_CODE_DIR"/linux/common/get_desktop_env.sh)
 # echo "Desktop Environment is $DESKTOP"
 
 ##########################################################################
@@ -303,3 +303,20 @@ fi
 
 
 
+
+# ##########################################################################
+# # Finding a font
+# ##########################################################################
+
+# grep
+#     -v	Invert match, show lines that do not match
+#     -e pattern	Specify a pattern (use multiple times to exclude several)
+#     --exclude="GLOB"	Skip files matching the glob pattern
+#     --include="GLOB"	Search only files matching the glob pattern
+#     --exclude-dir=DIR	Skip directories matching the name
+#     -r	Recursive search (skips symlinks found while descending)
+#     -R	Recursive search (follows all symlinks)
+
+# fc-list | grep -i Noto | grep -i nerd | grep -i Sans | grep -i Regular
+
+# fc-list | grep -i nerd | grep -i Sans | grep -i Regular | grep -vi condensed | grep -vi Bold | grep -vi italic | grep -vi Propo | grep -vi light | grep -vi thin | grep -v Medium | grep -vi black | grep -i Noto

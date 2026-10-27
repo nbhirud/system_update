@@ -31,8 +31,6 @@ sudo dnf install -y syncthing
 
 # fi
 
-# Enable it to launch automatically on login  and start it
-systemctl --user enable --now syncthing.service
 
 # mkdir -p "$HOME_DIR"/nb/Syncthing/{Obsidian,Joplin,send_to_devices} # not POSIX compliant
 
@@ -45,19 +43,72 @@ systemctl --user enable --now syncthing.service
 # done
 
 SYNC_DIRS=(
-    "DCIM_nbM42_external"  
-    "DCIM_nbM42_internal"  
-    "DeSyncCC"  
-    "Joplin"  
-    "KeePass"  
-    "kodi_backups"  
-    "nbM42_and_nbMain"  
-    "nbM42_sms_import_export"  
-    "nbMain_and_nbAcer"  
-    "Obsidian"  
-    "OrgMode"  
-    "Recordings_nbM42"  
-    "Signal_Backup_nbM42"
+
+  "Global"
+  "Global/Joplin"
+  "Global/KeePass"
+  "Global/Obsidian"
+  "Global/OrgMode"
+  "Global/kodi_backups"
+  "Global/Grayjay"
+  "Global/Learn"
+  "Global/Resume"
+  "Global/Important_Documents"
+  "Global/Canada"
+  "Global/USA"
+  "Global/India"
+
+  "nbM42"
+  "nbM42/DCIM_sd"
+  "nbM42/DCIM_int"
+  "nbM42/nbMain_and_nbM42"
+  "nbM42/sms_import_export"
+  "nbM42/Recordings_sd"
+  "nbM42/Recordings_int"
+  "nbM42/Signal_Backups"
+  "nbM42/DeSyncCC"
+  "nbM42/colota_geo_locations"
+  "nbM42/Music_int"
+  "nbM42/pano_scrobbler"
+  "nbM42/Pictures_int"
+  "nbM42/Ringtones_int"
+  "nbM42/ProtonAG"
+
+  "nbWave"
+  "nbWave/DCIM_sd"
+  "nbWave/DCIM_int"
+  "nbWave/nbMain_and_nbWave"
+  "nbWave/sms_import_export"
+  "nbWave/Recordings_sd"
+  "nbWave/Recordings_int"
+  "nbWave/Signal_Backups"
+  "nbWave/Movies_int"
+  "nbWave/Movies_sd"
+  "nbWave/Music_int"
+  "nbWave/Music_sd"
+  "nbWave/Pictures_int"
+  "nbWave/Pictures_sd"
+
+  "nbAcer"
+  "nbAcer/nbMain_and_nbAcer"
+  "nbAcer/Pictures"
+
+  "nbXPS"
+  "nbXPS/nbMain_and_nbXPS"
+  "nbXPS/Pictures"
+
+  "nbLenovo"
+  "nbLenovo/nbMain_and_nbLenovo"
+  "nbLenovo/Pictures"
+
+  "nbMac"
+  "nbMac/nbMain_and_nbMac"
+  "nbMac/Pictures"
+
+  "nbMain"
+
+  "nbServer"
+
 )
 
 for i in "${SYNC_DIRS[@]}"
@@ -132,11 +183,23 @@ done
 
 # sudo firewall-cmd --reload
 
-#############################
+#########################################################
+# drop-in override for user service
+#########################################################
+
+
+
+
+mkdir -p ~/.config/systemd/user/syncthing.service.d/
+sudo tee  ~/.config/systemd/user/syncthing.service.d/override.conf  <<'EOF'
+[Unit]
+After=network-online.target
+Wants=network-online.target
+EOF
 
 
 echo "************************ Identify Desktop Environment ************************"
-DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
+DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh)
 echo "Desktop Environment is $DESKTOP"
 
 
@@ -149,6 +212,55 @@ elif [ "$DESKTOP" = "kde" ]; then
   flatpak install -y flathub io.github.martchus.syncthingtray
 
 fi
+
+systemctl --user daemon-reload
+systemctl --user restart syncthing
+
+# Enable it to launch automatically on login  and start it
+# Following syntax runs under your specific user account. Reads/writes files in ~ with your default user permissions. Security risk is Low. A compromised Syncthing process only sees your user files. Inherits your user session variables (e.g., HOME, XDG_CONFIG_HOME).
+systemctl --user enable --now syncthing.service
+
+# Run syncthing the system level while retaining your user permissions, Fedora supports the system-wide template service.
+# This runs Syncthing as a system service managed by root, but drops privileges specifically to the nbhirud user.
+# sudo systemctl enable --now syncthing@nbhirud.service
+# sudo systemctl enable --now syncthing@"$USER".service
+
+
+################################
+
+# # To make Syncthing resilient against sudden power losses, adjust systemd service policies and user lingering settings.
+# # Allows background start without waiting for graphical session
+# # Enable lingering for your user account. This forces systemd to spin up your user manager instance immediately at kernel boot, regardless of whether a display manager session has cleanly initialized.
+# loginctl enable-linger $USER
+# # Verify:
+# loginctl show-user $USER | grep Linger
+
+
+#################################
+# # Create a systemd service drop-in configuration. This instructs systemd to retry starting Syncthing indefinitely, removes stale locks before startup, and waits until network and storage targets are fully mounted.
+# mkdir -p ~/.config/systemd/user/syncthing.service.d/
+# cat <<'EOF' > ~/.config/systemd/user/syncthing.service.d/override.conf
+# [Unit]
+# After=network-online.target local-fs.target
+# Wants=network-online.target
+
+# [Service]
+# # Clean up stale locks that cause startup aborts after ungraceful crashes
+# ExecStartPre=/bin/sh -c 'rm -f %h/.local/state/syncthing/index-*.db/LOCK %h/.config/syncthing/index-*.db/LOCK'
+
+# # Auto-restart policies for sudden crashes
+# Restart=on-failure
+# RestartSec=10s
+# StartLimitIntervalSec=60s
+# StartLimitBurst=10
+# EOF
+# # Verify - The output should show Drop-In: .../override.conf.
+# systemctl --user daemon-reload
+# systemctl --user status syncthing
+# # Ensure the user service is active and listening.
+# systemctl --user enable --now syncthing.service
+# # Verify
+# systemctl --user is-active syncthing
 
 
 ##################################################

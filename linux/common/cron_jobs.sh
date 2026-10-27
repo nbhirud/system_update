@@ -16,8 +16,8 @@
 # clamav - scan once a week
 
 
-# once a week? - sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh
-
+# once a week? - sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag.sh --setup-type full --desktop kde
+# bash linux/security_os_level/proton_ag.sh --setup-type full --desktop kde
 
 # nbpdate - on startup, shutdown and every hour maybe
 

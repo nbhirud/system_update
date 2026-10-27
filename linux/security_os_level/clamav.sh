@@ -65,7 +65,7 @@ fi
 # # HAS_KODI
 # # REAL_USER
 # # FILENAME_TIMESTAMP
-# # SCRIPT_BACKUPS_DIR
+# # SCRIPT_DATA_BACKUPS
 # # PC_TYPE
 
 # REAL_USER="${SUDO_USER:-$USER}"
@@ -76,8 +76,8 @@ fi
 # HOME_DIR=$(getent passwd "$REAL_USER" | cut -d: -f6)
 # NBDIR="$HOME_DIR/nb"
 # SCRIPT_DATA="$NBDIR/nb_script_data"
-# SCRIPT_BACKUPS_DIR="$SCRIPT_DATA/backups"
-# CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
+# SCRIPT_DATA_BACKUPS="$SCRIPT_DATA/backups"
+# CLAMAV_CURRENT_BACKUP_DIR="$SCRIPT_DATA_BACKUPS/clamav/clamav_$FILENAME_TIMESTAMP"
 
 # PC_TYPE=$(. /etc/os-release; [ "${VARIANT_ID:-}" = server ] && echo server || echo desktop)
 
@@ -102,9 +102,9 @@ fi
 # NBDIR="$HOME_DIR/nb"
 # SCRIPT_DATA="$NBDIR/nb_script_data"
 
-# # 4. SCRIPT_BACKUPS_DIR (defaults to standard path under nb_script_data)
-# : "${SCRIPT_BACKUPS_DIR:="$SCRIPT_DATA/backups"}"
-# CLAMAV_BACKUP_DIR="$SCRIPT_BACKUPS_DIR/clamav/clamav_$FILENAME_TIMESTAMP"
+# # 4. SCRIPT_DATA_BACKUPS (defaults to standard path under nb_script_data)
+# : "${SCRIPT_DATA_BACKUPS:="$SCRIPT_DATA/backups"}"
+# CLAMAV_CURRENT_BACKUP_DIR="$SCRIPT_DATA_BACKUPS/clamav/clamav_$FILENAME_TIMESTAMP"
 
 # # 5. HAS_TORRENT_CLIENT (default: true for desktop, false for server)
 # if [ -z "${HAS_TORRENT_CLIENT:-}" ]; then
@@ -126,7 +126,7 @@ fi
 PC_TYPE=""
 REAL_USER=""
 FILENAME_TIMESTAMP=""
-SCRIPT_BACKUPS_DIR=""
+SCRIPT_DATA_BACKUPS=""
 HAS_TORRENT_CLIENT=""
 HAS_KODI=""
 CHECK_ONLY=""
@@ -169,11 +169,11 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --backup-dir=*)
-            SCRIPT_BACKUPS_DIR="${1#*=}"
+            SCRIPT_DATA_BACKUPS="${1#*=}"
             shift
             ;;
         --backup-dir)
-            SCRIPT_BACKUPS_DIR="$2"
+            SCRIPT_DATA_BACKUPS="$2"
             shift 2
             ;;
         --timestamp=*)
@@ -223,11 +223,17 @@ SCRIPT_DATA="$NBDIR/nb_script_data"
 CODEPROJECTS_DIR="$NBDIR/CodeProjects"
 SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
 
-# 4. SCRIPT_BACKUPS_DIR
-SCRIPT_BACKUPS_DIR="${SCRIPT_BACKUPS_DIR:-$SCRIPT_DATA/backups}"
+#/home/nbhirud/nb/nb_script_data
 
-CLAMAV_BACKUP_DIR_BASE="$SCRIPT_BACKUPS_DIR/clamav"
-CLAMAV_BACKUP_DIR="$CLAMAV_BACKUP_DIR_BASE/clamav_$FILENAME_TIMESTAMP"
+# Script downloads dir for onaccess scan
+SCRIPT_DATA_DOWNLOADS="${SCRIPT_DATA}/downloads"
+
+# Backups directory
+
+SCRIPT_DATA_BACKUPS="${SCRIPT_DATA}/backups"
+
+CLAMAV_BACKUP_DIR_BASE="${SCRIPT_DATA_BACKUPS}/clamav"
+CLAMAV_CURRENT_BACKUP_DIR="${CLAMAV_BACKUP_DIR_BASE}/clamav_${FILENAME_TIMESTAMP}"
 
 # Treat laptop as desktop from security perspective.
 # if [ "$PC_TYPE" = "laptop" ]; then
@@ -605,7 +611,7 @@ UPDATE_USER="clamupdate"
 ONACC_DIRS=(
     "$HOME_DIR/Downloads"
     "$NBDIR/Downloads"
-    "$NBDIR/nb_script_downloads"
+    "$SCRIPT_DATA_DOWNLOADS"
     "$NBDIR/Syncthing"   # Syncthing folders that receive files from other devices
 )
 
@@ -651,10 +657,10 @@ sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamdtop p
 #########################################################
 
 # The following logic was moved to separate scripts for standardization and reuse across all other scripts too.
-CPU_CORES=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_cpu_cores.sh)
-RAM_MB=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ram_size.sh)
+CPU_CORES=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_cpu_cores.sh) # number of cores using nproc
+RAM_MB=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ram_size.sh) # Total RAM memory in MB
 RAM_PROFILE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ram_profile.sh) # either low or mid or high
-SSD_PRESENT=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ssd_present.sh)
+SSD_PRESENT=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ssd_present.sh) # true or false
 
 for h in get_cpu_cores get_ram_size get_ram_profile get_ssd_present; do
     [ -f "$SYSUPDATE_CODE_BASE_DIR/linux/common/$h.sh" ] || { echo "ERROR: missing helper $h.sh under $SYSUPDATE_CODE_BASE_DIR (clone your system_update repo first)" >&2; exit 1; }
@@ -717,11 +723,11 @@ esac
 #########################################################
 
 
-backup_as_user() {   # backup_as_user /abs/path...  -> $CLAMAV_BACKUP_DIR/files/<path>
+backup_as_user() {   # backup_as_user /abs/path...  -> $CLAMAV_CURRENT_BACKUP_DIR/files/<path>
     local p
     for p in "$@"; do
         if sudo test -e "$p"; then
-            sudo tar -C / -cpf - "${p#/}" | tar -C "$CLAMAV_BACKUP_DIR/files" -xpf - --no-same-owner
+            sudo tar -C / -cpf - "${p#/}" | tar -C "$CLAMAV_CURRENT_BACKUP_DIR/files" -xpf - --no-same-owner
         fi
     done
 }
@@ -748,13 +754,14 @@ do
 done
 sudo systemctl reset-failed 'clam*' 2>/dev/null || true
 
-mkdir -p "$CLAMAV_BACKUP_DIR_BASE"
-chown "$REAL_USER":"$REAL_USER" "$CLAMAV_BACKUP_DIR_BASE"
+mkdir -p "${CLAMAV_BACKUP_DIR_BASE}"
+chown "${REAL_USER}":"${REAL_USER}" "${CLAMAV_BACKUP_DIR_BASE}"
 
 
-# mkdir -p "$CLAMAV_BACKUP_DIR"
-# sudo install -d -o "$CLAM_USER" -g "$CLAM_USER" -m 750 "$CLAMAV_BACKUP_DIR" 
-# sudo install -d -o "$REAL_USER" -g "$REAL_USER" -m 750 "$CLAMAV_BACKUP_DIR"
+
+# mkdir -p "$CLAMAV_CURRENT_BACKUP_DIR"
+# sudo install -d -o "$CLAM_USER" -g "$CLAM_USER" -m 750 "$CLAMAV_CURRENT_BACKUP_DIR"
+# sudo install -d -o "$REAL_USER" -g "$REAL_USER" -m 750 "$CLAMAV_CURRENT_BACKUP_DIR"
 
 # umask 077 - Explaination:
 # A umask lists permission bits to remove from newly created files and directories. 077 removes everything for group and others, so new files get 600 and directories 700. It matters for the backup directory because those copies can contain config values, and a file created with the default umask (644) is world-readable until a later chmod. Inside ( umask 077; mkdir … ) it applies only to that subshell. The install -m 600 /dev/null line above closes the same window for the files.
@@ -763,36 +770,36 @@ chown "$REAL_USER":"$REAL_USER" "$CLAMAV_BACKUP_DIR_BASE"
 # Backups are created by the invoking user. Never use root to create or copy
 # files into this user-controlled destination: that would permit symlink/path attacks.
 # umask 077
-( umask 077; mkdir -p -- "$CLAMAV_BACKUP_DIR" )   # strict only for this one directory
-mkdir -p -- "$CLAMAV_BACKUP_DIR"
+( umask 077; mkdir -p -- "$CLAMAV_CURRENT_BACKUP_DIR" )   # strict only for this one directory
+mkdir -p -- "$CLAMAV_CURRENT_BACKUP_DIR"
 
-# if [[ ! -d "$CLAMAV_BACKUP_DIR" || -L "$CLAMAV_BACKUP_DIR" ]]; then
-#     echo "ERROR: Backup destination must be a real directory, not a symlink: $CLAMAV_BACKUP_DIR" >&2
+# if [[ ! -d "$CLAMAV_CURRENT_BACKUP_DIR" || -L "$CLAMAV_CURRENT_BACKUP_DIR" ]]; then
+#     echo "ERROR: Backup destination must be a real directory, not a symlink: $CLAMAV_CURRENT_BACKUP_DIR" >&2
 #     exit 1
 # fi
 
 
 # SECURITY: Prevent symlink attacks on backup directory
-if [[ -L "$CLAMAV_BACKUP_DIR" ]] || [[ -h "$CLAMAV_BACKUP_DIR" ]]; then
+if [[ -L "$CLAMAV_CURRENT_BACKUP_DIR" ]] || [[ -h "$CLAMAV_CURRENT_BACKUP_DIR" ]]; then
     echo "ERROR: Backup path is a symlink - possible attack. Aborting." >&2
     exit 1
 fi
 
 # Ensure it's a real directory (not a symlink to a file)
-if [[ -e "$CLAMAV_BACKUP_DIR" ]] && [[ ! -d "$CLAMAV_BACKUP_DIR" ]]; then
+if [[ -e "$CLAMAV_CURRENT_BACKUP_DIR" ]] && [[ ! -d "$CLAMAV_CURRENT_BACKUP_DIR" ]]; then
     echo "ERROR: Backup path exists but is not a directory." >&2
     exit 1
 fi
 
 # Secure permissions BEFORE using the directory
-chmod 700 -- "$CLAMAV_BACKUP_DIR"
+chmod 700 -- "$CLAMAV_CURRENT_BACKUP_DIR"
 
 
 for config_file in "$SCAN_CONF" "$FRESH_CONF" "$UNOFFICIAL_SIGS_MASTER_CONF" "$UNOFFICIAL_SIGS_OS_CONF" "$UNOFFICIAL_SIGS_USER_CONF"; 
 do
 
     # if [ -f "$config_file" ]; then
-    #     sudo cp -a "$config_file" "$CLAMAV_BACKUP_DIR/"
+    #     sudo cp -a "$config_file" "$CLAMAV_CURRENT_BACKUP_DIR/"
     # fi
 
     # The above does check whether the backup directory itself is a symlink, but that does not prevent an individual file inside the directory from being a symlink.
@@ -804,7 +811,7 @@ do
     # Create private backups as the invoking user.
     # Root is used only to READ the protected source configuration files.
     if [[ -f "$config_file" ]]; then
-        backup_file="$CLAMAV_BACKUP_DIR/$(basename -- "$config_file")"
+        backup_file="$CLAMAV_CURRENT_BACKUP_DIR/$(basename -- "$config_file")"
 
         # if ! sudo cat -- "$config_file" > "$backup_file"; then
         #     echo "ERROR: Failed to back up $config_file" >&2
@@ -825,7 +832,7 @@ do
 
 done
 
-echo "Configuration backups saved in: $CLAMAV_BACKUP_DIR"
+echo "Configuration backups saved in: $CLAMAV_CURRENT_BACKUP_DIR"
 
 # If master.conf or os.conf were modified by another guide, we’d only see it in state_before.txt (rpm -V marks them c).
 if rpm -V clamav-unofficial-sigs 2>/dev/null | grep -E '^[^ ]*5[^ ]* +c /etc/clamav-unofficial-sigs/(master|os)\.conf'; then
@@ -833,7 +840,7 @@ if rpm -V clamav-unofficial-sigs 2>/dev/null | grep -E '^[^ ]*5[^ ]* +c /etc/cla
 fi
 
 # back up everything the script creates/finds
-mkdir -p "$CLAMAV_BACKUP_DIR/files"
+mkdir -p "$CLAMAV_CURRENT_BACKUP_DIR/files"
 backup_as_user \
     /usr/local/bin/clamav-usb-scan.sh /usr/local/bin/clamav-weekly-scan.sh /usr/local/bin/clamav-notify.sh \
     /usr/local/bin/clamav-alert-popups /usr/local/sbin/clamav-notify-root \
@@ -851,7 +858,7 @@ backup_as_user \
     echo "## ownership + SELinux labels";     sudo ls -laZd /var/lib/clamav /var/log/clamav /var/quarantine/clamav /run/clamd.scan
     echo "## SELinux";                        getenforce; getsebool -a | grep antivirus
     echo "## active scan.conf lines";         sudo grep -vE '^[[:space:]]*(#|$)' "$SCAN_CONF"
-) > "$CLAMAV_BACKUP_DIR/state_before.txt" 2>&1
+) > "$CLAMAV_CURRENT_BACKUP_DIR/state_before.txt" 2>&1
 
 
 
@@ -863,7 +870,7 @@ backup_as_user \
 # Sweep stale drop-ins (other guides' overrides). 
 # Back them up as you (tar piped to a user-run extract, no root write into your folder), then remove. Before writing the units:
 
-mkdir -p "$CLAMAV_BACKUP_DIR/dropins"
+mkdir -p "$CLAMAV_CURRENT_BACKUP_DIR/dropins"
 for d in    clamd@scan.service.d \
             clamav-freshclam.service.d \
             clamav-clamonacc.service.d \
@@ -871,7 +878,7 @@ for d in    clamd@scan.service.d \
             clamav-unofficial-sigs.timer.d; 
 do
     if [ -d "/etc/systemd/system/$d" ]; then
-        sudo tar -C /etc/systemd/system -cf - "$d" | tar -C "$CLAMAV_BACKUP_DIR/dropins" -xf -
+        sudo tar -C /etc/systemd/system -cf - "$d" | tar -C "$CLAMAV_CURRENT_BACKUP_DIR/dropins" -xf -
         sudo rm -rf "/etc/systemd/system/$d"
         echo "Removed stale drop-in dir $d (backed up)"
     fi
@@ -881,13 +888,13 @@ done
 # for f in /etc/sudoers.d/*clam*; 
 # do        
 #     [ -e "$f" ] || continue
-#     sudo cat "$f" | tee "$CLAMAV_BACKUP_DIR/dropins/$(basename "$f")" > /dev/null
+#     sudo cat "$f" | tee "$CLAMAV_CURRENT_BACKUP_DIR/dropins/$(basename "$f")" > /dev/null
 #     sudo rm -f -- "$f"; echo "Removed stale sudoers rule $f (backed up)"
 # done
 
 # `sudo find` lists the directory as root.
 while IFS= read -r -d '' f; do
-    sudo cat -- "$f" | tee "$CLAMAV_BACKUP_DIR/dropins/$(basename -- "$f")" > /dev/null
+    sudo cat -- "$f" | tee "$CLAMAV_CURRENT_BACKUP_DIR/dropins/$(basename -- "$f")" > /dev/null
     sudo rm -f -- "$f"
     echo "Removed stale sudoers rule $f (backed up)"
 done < <(sudo find /etc/sudoers.d -maxdepth 1 -type f -name '*clam*' -print0 2>/dev/null)
@@ -1891,7 +1898,7 @@ for p in '^/proc/' '^/sys/' '^/dev/' '^/run/' '^/var/quarantine/' '^/var/lib/cla
 done
 
 add_config_value "$SCAN_CONF" ExcludePath '^/etc/hosts$'
-add_config_value "$SCAN_CONF" ExcludePath "^$SCRIPT_DATA/hostsplay/"
+add_config_value "$SCAN_CONF" ExcludePath "^/home/nbhirud/nb/nb_script_data/hostsplay/"
 
 # Content Scanning Options
 # sudo sed -i 's|^#ScanPE.*|ScanPE yes|' "$SCAN_CONF"
@@ -2000,7 +2007,7 @@ set_config_value "$SCAN_CONF" AlertBrokenExecutables yes
 # # OnAccessIncludePath /home/$(whoami)/.cache/qBittorrent
 # # OnAccessIncludePath /home/$(whoami)/.cache/mozilla
 # # OnAccessIncludePath /home/$(whoami)/nb/Torrents
-# # OnAccessIncludePath /home/$(whoami)/nb/nb_script_downloads
+# # OnAccessIncludePath $SCRIPT_DATA_DOWNLOADS
 # # OnAccessIncludePath /home/$(whoami)/nb/Downloads
 # # OnAccessIncludePath /home/$(whoami)/Downloads
 # # OnAccessIncludePath /home/$(whoami)/.thunderbird/
@@ -2018,7 +2025,7 @@ set_config_value "$SCAN_CONF" AlertBrokenExecutables yes
 # OnAccessIncludePath "${HOME_DIR}"/.cache/qBittorrent
 # OnAccessIncludePath "${HOME_DIR}"/.cache/mozilla
 # OnAccessIncludePath "${HOME_DIR}"/nb/Torrents
-# OnAccessIncludePath "${HOME_DIR}"/nb/nb_script_downloads
+# OnAccessIncludePath "$SCRIPT_DATA_DOWNLOADS"
 # OnAccessIncludePath "${HOME_DIR}"/nb/Downloads
 # OnAccessIncludePath "${HOME_DIR}"/.cache/
 # OnAccessIncludePath "${HOME_DIR}"/.thunderbird/
@@ -2052,7 +2059,7 @@ add_config_value "$SCAN_CONF" OnAccessExcludeUname $CLAM_USER
 # add_config_value "$SCAN_CONF" OnAccessIncludePath "${HOME_DIR}"/nb/Downloads
 
 # Monitor a dedicated directory for downloaded scripts and files.
-# add_config_value "$SCAN_CONF" OnAccessIncludePath "${HOME_DIR}"/nb/nb_script_downloads
+# add_config_value "$SCAN_CONF" OnAccessIncludePath "${SCRIPT_DATA_DOWNLOADS}"
 
 # Scan Torrent downloads
 # add_config_value "$SCAN_CONF" OnAccessIncludePath "${HOME_DIR}"/nb/Torrents
@@ -3491,13 +3498,25 @@ case "$ENGINE" in
     clamscan)
         # Standalone scanner: loads its OWN copy of the signatures, ignores scan.conf, so the flags
         # that matter are repeated here. nice/ionice really work because THIS process does the reading.
-        nice -n 19 ionice -c 3 clamscan -r --infected --cross-fs=yes \
+            # --exclude-dir="^/home/[^/]+/\.config/(VSCodium|Code|libreoffice)" \
+            # --exclude-dir="^/home/[^/]+/\.cache/JetBrains" \
+            # --exclude-dir="^/home/[^/]+/\.local/share/JetBrains" \
+            # --exclude-dir="^/home/[^/]+/\.cargo" \
+            # --exclude-dir="^/home/[^/]+/\.config/(librewolf|BraveSoftware)" \
+            # --exclude-dir="^/home/[^/]+/\.var/app/com\.brave\.Browser" \
+            # --exclude-dir="^/home/[^/]+/\.local/share/torbrowser" \
+            # --exclude-dir="^/home/[^/]+/\.npm" \
+            # --exclude-dir="^/root/\.npm" \
+            # --exclude-dir="^/home/[^/]+/.*\.venv" \
+            # --exclude-dir="^/home/[^/]+/.*/node_modules" \
+            # --exclude-dir="^/opt" \
+            # --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
+            # --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
+        nice -n 19 ionice -c 3 clamscan -r --infected --recursive --cross-fs=yes \
             --detect-pua=yes --alert-broken=yes \
             --exclude='^/etc/hosts$' \
             --log="$LOGFILE" \
-            --exclude-dir='/nb_script_data/hostsplay(/|$)' \
-            --exclude-dir='^/home/[^/]+/[.]local/share/containers(/|$)' \
-            --exclude-dir='^/home/[^/]+/[.]local/share/kio(/|$)' \
+            --exclude-dir='/home/nbhirud/nb/nb_script_data/hostsplay(/|$)' \
             "${ROOTS[@]}" || SCAN_STATUS=$?
         ;;
     *)
@@ -3952,7 +3971,7 @@ CFGCHK=$(mktemp -d)
 sudo cat "$SCAN_CONF"  | tee "$CFGCHK/clamd.conf"     > /dev/null
 sudo cat "$FRESH_CONF" | tee "$CFGCHK/freshclam.conf" > /dev/null
 if clamconf -c "$CFGCHK" 2>&1 | grep -E '^ERROR'; then
-    echo "Config error above. Originals: $CLAMAV_BACKUP_DIR" >&2; rm -rf "$CFGCHK"; exit 1
+    echo "Config error above. Originals: $CLAMAV_CURRENT_BACKUP_DIR" >&2; rm -rf "$CFGCHK"; exit 1
 fi
 rm -rf "$CFGCHK"
 

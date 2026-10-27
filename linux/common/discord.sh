@@ -20,8 +20,14 @@ set -euo pipefail
 
 
 VENCORD_DOWNLOAD_PAGE_URL="https://vencord.dev/download/vesktop/amd64/rpm"
-TEMP_DIR="/home/nbhirud/nb/nb_script_downloads/Discord"
 
+SCRIPT_DATA_DOWNLOADS="${SCRIPT_DATA}/downloads"
+
+VENCORD_DOWNLOADS_DIR_BASE="${SCRIPT_DATA_DOWNLOADS}/vencord"
+VENCORD_CURRENT_DOWNLOADS_DIR="${VENCORD_DOWNLOADS_DIR_BASE}/vencord_${FILENAME_TIMESTAMP}"
+
+mkdir -p "${VENCORD_CURRENT_DOWNLOADS_DIR}"
+chown "${REAL_USER}":"${REAL_USER}" "${VENCORD_DOWNLOADS_DIR_BASE}" "${VENCORD_CURRENT_DOWNLOADS_DIR}"
 
 # Follow the HTTP redirect to get the direct GitHub release RPM URL
 DOWNLOAD_URL=$(curl -sIL "$VENCORD_DOWNLOAD_PAGE_URL" | grep -i "^location:" | tail -n 1 | tr -d '\r' | awk '{print $2}')
@@ -33,7 +39,7 @@ fi
 
 # RPM_FILENAME=$(basename "$DOWNLOAD_URL") # filename too long
 RPM_FILENAME="vencord.rpm"
-OUTPUT_RPM="$TEMP_DIR/$RPM_FILENAME"
+OUTPUT_RPM="$VENCORD_CURRENT_DOWNLOADS_DIR/$RPM_FILENAME"
 
 echo "Resolved URL: $DOWNLOAD_URL"
 echo "Downloading package to $OUTPUT_RPM"

@@ -6,7 +6,7 @@
 # echo $DESKTOP_SESSION
 # echo $GDMSESSION
 
-# TODO - Make it foolproof. Currently only tested with Gnome
+# TODO - Make it foolproof. Currently only tested with Gnome and KDE
 
 desktop=""
 
