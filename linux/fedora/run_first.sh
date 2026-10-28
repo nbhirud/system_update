@@ -394,8 +394,17 @@ sudo dnf install gstreamer1-plugin-openh264 mozilla-openh264
 
 echo "************************ Enabling flatpak flathub ************************"
 ### Enable flatpak flathub
+# https://docs.fedoraproject.org/en-US/quick-docs/flathub-flatpak-applications/
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 # flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+
+
+echo "************************ Enabling AppMan/AM ************************"
+# https://docs.fedoraproject.org/en-US/quick-docs/appimage/
+# https://appimage.github.io/apps/
+curl -s -Lo ./AM-INSTALLER https://raw.githubusercontent.com/ivan-hc/AM/main/AM-INSTALLER && chmod a+x ./AM-INSTALLER && ./AM-INSTALLER && rm ./AM-INSTALLER
+
 
 #######################################
 
