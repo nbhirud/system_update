@@ -551,24 +551,29 @@ fi
 
 #######################################
 # Some configs
+# TODO something similar for Element, Telegram, etc
 
-if [ "$DESKTOP" = "gnome" ] || [ "$DESKTOP" = "cosmic" ];
+if [ "$DESKTOP" = "${DESKTOP_GNOME}" ] || [ "$DESKTOP" = "${DESKTOP_COSMIC}" ];
 then
   sudo flatpak override --env=SIGNAL_PASSWORD_STORE=gnome-libsecret org.signal.Signal
-  # Do something similar for Element, Telegram, etc
+  
   # sudo flatpak override --password-store=gnome-libsecret im.riot.Riot
 
 
-elif  [ "$DESKTOP" = "kde" ]
+elif  [ "$DESKTOP" = "${DESKTOP_KDE}" ]
 then
   sudo flatpak override --env=SIGNAL_PASSWORD_STORE=kwallet6 org.signal.Signal
-  # sudo flatpak override --env=password-store=kwallet6 im.riot.Riot
-  flatpak override --user im.riot.Riot \
-  --talk-name=org.kde.kwalletd6 \
-  --talk-name=org.freedesktop.secrets
   
-  # To enable drag ang drop, etc
-  sudo flatpak override --user --filesystem=home com.rtosta.zapzap
+  if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ];
+  then
+    # sudo flatpak override --env=password-store=kwallet6 im.riot.Riot
+    flatpak override --user im.riot.Riot \
+    --talk-name=org.kde.kwalletd6 \
+    --talk-name=org.freedesktop.secrets
+    
+    # To enable drag ang drop, etc
+    sudo flatpak override --user --filesystem=home com.rtosta.zapzap
+  fi
 
 fi
 
