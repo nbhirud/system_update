@@ -348,17 +348,6 @@ sudo dnf install -y git flatpak
 # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
 
 
-# echo "************************ Edit your Tor config ************************"
-# echo "************************ TODO - Don't forget to change the TODO1 options in Tor config. ************************"
-# sudo tee /etc/tor/torrc << 'EOF'
-# RunAsDaemon 1
-# BridgeRelay 1
-
-# # Replace "TODO1" with a Tor port of your choice.  This port must be externally
-# # reachable.  Avoid port 9001 because it's commonly associated with Tor and
-# # censors may be scanning the Internet for this port.
-# ORPort TODO1
-# EOF
 
 #######################################
 
