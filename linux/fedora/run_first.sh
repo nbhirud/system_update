@@ -282,6 +282,26 @@ echo "************************ SYSUPDATE_CODE_BASE_DIR = $SYSUPDATE_CODE_BASE_DI
 # echo "************************ RUN_FIRST_LOCATION = $RUN_FIRST_DIR ************************" # https://stackoverflow.com/a/246128
 sleep 5s
 
+
+# Rename the active wired connection if we are on Ethernet and a new name was provided
+if [ "$IS_ETHERNET" = true ] && [ -n "$NEW_ETHERNET_NAME" ]; then
+    # Apply the new name if a profile was successfully found
+    if [ -n "$CURRENT_ETHERNET_NAME" ]; then
+        echo "************************ Renaming active ethernet connection from $CURRENT_ETHERNET_NAME to $NEW_ETHERNET_NAME ************************"
+        nmcli connection modify "$CURRENT_ETHERNET_NAME" connection.id "$NEW_ETHERNET_NAME"
+        
+        sleep 5s
+    fi
+fi
+
+# Verify
+if [ "$IS_ETHERNET" = true ] && [ -n "$NEW_ETHERNET_NAME" ]; then
+    TMP_ETHERNET_NAME=$(nmcli -t -f TYPE,CONNECTION device | awk -F: '$1=="ethernet" {print $2; exit}')
+    echo "Verification: Now connected to: $TMP_ETHERNET_NAME"
+fi
+
+
+
 echo "************************ Updating /etc/dnf/dnf.conf ************************"
 
 # Configurations to dnf
