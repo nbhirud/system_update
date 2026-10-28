@@ -386,6 +386,9 @@ sudo dnf update -y @multimedia --setopt="install_weak_deps=False" --exclude=Pack
 echo "************************ Configuring Codecs ************************"
 ### Codecs - https://docs.fedoraproject.org/en-US/quick-docs/installing-plugins-for-playing-movies-and-music/
 sudo dnf group install -y multimedia
+sudo dnf install gstreamer1-plugin-openh264 mozilla-openh264
+
+# https://docs.fedoraproject.org/en-US/quick-docs/how-to-troubleshoot-sound-problems/
 
 #######################################
 
