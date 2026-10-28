@@ -347,16 +347,6 @@ sudo dnf install -y git flatpak
 
 # Note: flatpak and git may not come already installed on some flavors like xfce, etc.
 
-# Set codium as the default text editor
-xdg-mime default codium.desktop text/plain
-# Set brave as the default browser - TODO
-# Set thunderbird/ProtonMail as the default email client - TODO
-# Set KDEConnect/GSConnect as the default Phone numbers handler - TODO
-# Set VLC as the default video player - TODO
-# Set Okular as the default PDF viewer - TODO
-# Set Alacritty as the default terminal emulator - TODO
-# Set OSM as the default Map - TODO
-
 echo "************************ Adding docker browser repo (not installing) ************************"
 # https://docs.docker.com/engine/install/fedora/
 sudo dnf -y install dnf-plugins-core
@@ -667,7 +657,21 @@ sh $SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh
 
 sudo sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEXTDNS_DEVICE_ID
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag_stuff.sh $SETUP_TYPE $DESKTOP
+
+######################################
+# MIME defaults
+######################################
+
+# Set codium as the default text editor
+xdg-mime default codium.desktop text/plain
+# Set brave as the default browser - TODO
+# Set thunderbird/ProtonMail as the default email client - TODO
+# Set KDEConnect/GSConnect as the default Phone numbers handler - TODO
+# Set VLC as the default video player - TODO
+# Set Okular as the default PDF viewer - TODO
+# Set Alacritty as the default terminal emulator - TODO
+# Set OSM as the default Map - TODO
+
 
 ######################################
 # Start up apps
