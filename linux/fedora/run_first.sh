@@ -116,8 +116,10 @@ GIT_USER_EMAIL=""  # "<GITHUB PRIVATE EMAIL>@users.noreply.github.com"
 NEXTDNS_ID=""  
 NEXTDNS_DEVICE_ID="$HOSTNAME"
 
-# Not in use yet
-PC_TYPE="paranoid" # public or private or paranoid
+# Decide whether to install specific applications:
+HAS_TORRENT_CLIENT=false  # qBittorrent
+HAS_KODI=false
+
 
 # provide a default with ${VAR:-default} so the reference is always defined:
 # echo "Deploying to ${ENVIRONMENT:-staging}"
@@ -244,8 +246,10 @@ echo "************************ Create directories ************************"
 # TODO - use this downloads dir for downloads of ProtonAG installers, etc
 # TODO - Use this backup fir for backup of configs, etc before replacing or editing like .zshrc
 
-mkdir -p $SCRIPT_DATA $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $SCRIPT_LOGS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
-sudo chown $USER:$USER $SCRIPT_DATA $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $SCRIPT_LOGS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
+mkdir -p $SCRIPT_DATA_DIR $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $SCRIPT_LOGS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
+sudo chown $USER:$USER $SCRIPT_DATA_DIR $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $SCRIPT_LOGS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
+
+# sudo install -d -o "$REAL_USER" -g "$REAL_USER" -m 750 "$SCRIPT_DATA_DIR"
 
 echo "************************ Identify Desktop Environment ************************"
 DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
