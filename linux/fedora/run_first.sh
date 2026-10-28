@@ -410,8 +410,13 @@ curl -s -Lo ./AM-INSTALLER https://raw.githubusercontent.com/ivan-hc/AM/main/AM-
 
 # Change default downloads dir:
 
-if [ "$DESKTOP" = "gnome" ]; then
+if [ "$DESKTOP" = "${DESKTOP_GNOME}" ]; then
   echo "************************ Changing default downloads directory ************************"
+  
+  # File where default dirs are stored: 
+  # cat ~/.config/user-dirs.dirs
+  # echo "$(xdg-user-dir DESKTOP)" "$(xdg-user-dir DOCUMENTS)" "$(xdg-user-dir PICTURES)"
+
   xdg-user-dirs-update --set DOWNLOAD "$DOWNLOADS_DIR" # Gnome specific
 
   echo "************************ Enable Minimize or Maximize Window Buttons ************************"
