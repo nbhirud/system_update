@@ -427,14 +427,6 @@ echo "************************ Rename pc ************************"
 # https://docs.fedoraproject.org/en-US/quick-docs/changing-hostname/
 sudo hostnamectl set-hostname $HOSTNAME
 
-#######################################
-
-echo "************************ Update hosts file ************************"
-sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/hosts.sh
-
-echo "************************ Setup nerd fonts ************************"
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/fonts.sh
-
 ######################################
 
 echo "************************ Install and configure more dnf packages ************************"
@@ -588,27 +580,115 @@ fi
 # fi
 
 
-if [ "$SETUP_TYPE" = "full" ];
-then
-  # https://joplinapp.org/help/install/
-  wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash
-fi
+# if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}"" ];
+# then
+#   # https://joplinapp.org/help/install/
+#   wget -O - https://raw.githubusercontent.com/laurent22/joplin/dev/Joplin_install_and_update.sh | bash
+# fi
 
 #######################################
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/zsh_orig.sh $DISTRO $SETUP_TYPE $DESKTOP $FILENAME_TIMESTAMP
+if [ "$SETUP_TYPE" = "${SETUP_TYPE_MINIMAL}" ]; 
+then
+  
+  echo "Removing all optional stuff and even stuff like libreoffice - TBD"
+  # TBD
+  # sh "$SYSUPDATE_CODE_BASE_DIR"/linux/fedora/remove_stuff.sh
+  
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/alacritty_orig.sh
+fi
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/bleachbit.sh
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh $GIT_USER_EMAIL
+# sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/vscodium_orig.sh
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/vscodium.sh
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/librewolf_browser.sh
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/brave_browser.sh
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/tor_browser.sh
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/fonts.sh
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zsh_orig.sh "$DISTRO" $SETUP_TYPE "$DESKTOP" "$FILENAME_TIMESTAMP"
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/alacritty_orig.sh
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/bleachbit.sh
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/git.sh "$GIT_USER_EMAIL"
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/syncthing.sh
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/avahi.sh
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mpv.sh
+# sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cron_jobs.sh
+sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/dns.sh "$NEXTDNS_ID" "$NEXTDNS_DEVICE_ID"
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/proton_ag.sh --setup-type "$SETUP_TYPE" --desktop "$DESKTOP"
+# bash linux/security_os_level/proton_ag.sh --setup-type full --desktop kde
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/syncthing.sh
+# sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh
+# sudo DEBUG=1 sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh
 
-sh $SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh
+ sudo DEBUG=1 sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh \
+    --pc-type="${PC_TYPE}" \
+    --real-user="${REAL_USER}" \
+    --torrent-client="${HAS_TORRENT_CLIENT}" \
+    --kodi="${HAS_KODI}" \
+    --backup-dir="${SCRIPT_BACKUPS_DIR}" \
+    --timestamp="${FILENAME_TIMESTAMP}"
 
-sudo sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEXTDNS_DEVICE_ID
+# # If any of those variables might occasionally be empty/unset in the caller script and you only want to pass them when they actually contain a value, you can build an argument array dynamically:
+# # Build argument array dynamically to omit empty variables
+# CLAMAV_ARGS=()
+
+# [ -n "${PC_TYPE:-}" ] && CLAMAV_ARGS+=("--pc-type=${PC_TYPE}")
+# [ -n "${REAL_USER:-}" ] && CLAMAV_ARGS+=("--real-user=${REAL_USER}")
+# [ -n "${HAS_TORRENT_CLIENT:-}" ] && CLAMAV_ARGS+=("--torrent-client=${HAS_TORRENT_CLIENT}")
+# [ -n "${HAS_KODI:-}" ] && CLAMAV_ARGS+=("--kodi=${HAS_KODI}")
+# [ -n "${SCRIPT_BACKUPS_DIR:-}" ] && CLAMAV_ARGS+=("--backup-dir=${SCRIPT_BACKUPS_DIR}")
+# [ -n "${FILENAME_TIMESTAMP:-}" ] && CLAMAV_ARGS+=("--timestamp=${FILENAME_TIMESTAMP}")
+
+# # Execute the script with the constructed arguments
+#  sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh "${CLAMAV_ARGS[@]}"
+
+
+# Be sure to run the following after: clamav
+sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/hosts.sh
+
+
+# Be sure to run the following after: firewalld
+# sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/fail2ban.sh
+
+
+if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ];
+then
+  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/bash.sh
+  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/aws.sh
+  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zoom.sh
+  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/jetbrains_toolbox.sh
+  
+  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/docker.sh
+  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/neovim_lazyvim.sh
+  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/i2p.sh
+
+  # Be sure to run the following after: zsh, alacritty, neovim
+  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/tmux_zellij.sh
+  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/yazi.sh
+  
+  # Be sure to run the following after: clamav
+  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mullvad_browser.sh
+  
+
+  if [ "$DESKTOP" = "${DESKTOP_GNOME}" ]
+  then
+    sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/gsconnect_kde_connect.sh
+  fi
+
+fi
+
+# Also, it is best to setup firewalld at the end so it finds all installed services/packages to check before setting up
+# Be sure to run the following after: zsh
+# sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld.sh "$FILENAME_TIMESTAMP" "$SCRIPT_BACKUPS_DIR" $PRIVACY_LEVEL
+sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld.sh \
+    --filename-timestamp "$FILENAME_TIMESTAMP" \
+    --script-backups-dir "$SCRIPT_BACKUPS_DIR" \
+    --sysupdate-code-base-dir "$SYSUPDATE_CODE_BASE_DIR" \
+    --home-lan-subnet "$HOME_LAN_SUBNET" \
+    --privacy-level "$PRIVACY_LEVEL" \
+    --desktop "$DESKTOP" \
+    --home-dir "$HOME_DIR" \
+    --real-user "$REAL_USER"
 
 
 ######################################
