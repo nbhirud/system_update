@@ -484,39 +484,43 @@ fi
 
 
 echo "************************ Install and configure more flatpak packages ************************"
-flatpak install -y flathub org.signal.Signal it.mijorus.gearlever com.github.tchx84.Flatseal io.github.amit9838.mousam
-# com.brave.Browser
+flatpak install -y flathub org.signal.Signal com.github.tchx84.Flatseal it.mijorus.gearlever
+# com.brave.Browser - use dnf package
+# it.mijorus.gearlever using AppMan/AM instead. Ok ok, install it till get used to AppMan/AM
 
 # TODO - check which brave is installed (flatpak vs dnf) and set following accordingly
 export CHROME_EXECUTABLE=/usr/bin/brave-browser
 # export CHROME_EXECUTABLE="flatpak run com.brave.Browser"
 
 
-if [ "$SETUP_TYPE" = "full" ];
+if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ];
 then
-  flatpak install -y com.rtosta.zapzap com.bitwarden.desktop org.telegram.desktop chat.simplex.simplex network.loki.Session io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay app.organicmaps.desktop net.rpdev.OpenTodoList im.riot.Riot org.localsend.localsend_app
-
-
+  flatpak install -y com.rtosta.zapzap org.telegram.desktop chat.simplex.simplex network.loki.Session io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Client app.grayjay.Grayjay app.organicmaps.desktop im.riot.Riot org.localsend.localsend_app com.sindresorhus.Caprine com.super_productivity.SuperProductivity
+  
+  # com.bitwarden.desktop
+  # io.github.hkdb.Aerion
+  # net.rpdev.OpenTodoList
 
 fi
 
-if [ "$DESKTOP" = "gnome" ]
+if [ "$DESKTOP" = "${DESKTOP_GNOME}" ]
 then
   flatpak install -y flathub com.mattjakeman.ExtensionManager
 
-  if [ "$SETUP_TYPE" = "full" ];
+  if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ];
   then
     flatpak install -y flathub org.gnome.Podcasts de.haeckerfelix.Shortwave 
     # org.gnome.Fractal
   fi
 
-elif  [ "$DESKTOP" = "kde" ]
+elif  [ "$DESKTOP" = "${DESKTOP_KDE}" ]
 then
   # flatpak install -y flathub
 
-  if [ "$SETUP_TYPE" = "full" ];
+  if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ];
   then
-    flatpak install -y flathub org.kde.kasts 
+    flatpak install -y flathub io.github.amit9838.mousam
+    # org.kde.kasts - install dnf package instead
     # org.kde.neochat
 
     # echo "Installing apps to try out on KDE - flatpak"
