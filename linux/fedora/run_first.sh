@@ -42,45 +42,137 @@ set -eux
 # https://docs.fedoraproject.org/en-US/quick-docs/troubleshooting-wayland-problems/
 
 #######################################
+
+
+# Do not run-as-root check
+# https://www.baeldung.com/linux/check-script-run-root
+if [ ${EUID:-0} -ne 0 ] || [ "$(id -u)" -ne 0 ]; then
+  echo "You are running as $(whoami)"
+else
+  echo "Please do not run as root (or with sudo). This may set up packages and create directories and files in root home. You are running as $(whoami)."
+  exit 1
+fi
+
+# Authenticate sudo up front. Does not execute anything as root. It simply asks sudo to authenticate you and refreshes the sudo credential.
+# sudo -v
+sudo -v || {
+    echo "ERROR: sudo authentication failed." >&2
+    exit 1
+}
+
 echo "************************ NOTE: The script will ask you to authenticate multiple times till the end. ************************"
 sleep 5s
 
-echo "************************ Setting User-Defined constants ************************"
 
-HOSTNAME=""
-GIT_USER_EMAIL=""
-NEXTDNS_ID=""
+echo "************************ Read only constants ************************"
+
+
+# EMULATED ENUM CLASS (Read-Only Constants)
+
+readonly PC_TYPE_DESKTOP="desktop"
+readonly PC_TYPE_LAPTOP="laptop"
+readonly PC_TYPE_HEADLESS_SERVER="server"
+
+readonly PRIVACY_HOME="home"
+readonly PRIVACY_PORTABLE="portable"
+readonly PRIVACY_PARANOID="paranoid"
+
+readonly SETUP_TYPE_FULL="full"
+readonly SETUP_TYPE_LIGHT="light"
+readonly SETUP_TYPE_MINIMAL="minimal"
+
+readonly DESKTOP_KDE="kde"
+readonly DESKTOP_GNOME="gnome"
+readonly DESKTOP_COSMIC="cosmic"
+
+# "${DESKTOP_COSMIC}"
+
+
+echo "************************ Setting User-Defined constants and flags ************************"
+
+
+PC_TYPE=""  # If not set, we identify using /linux/common/get_pc_type.sh
+# PC_TYPE - allowed values: desktop or laptop or server - "${PC_TYPE_DESKTOP}" or "${PC_TYPE_LAPTOP}" or "${PC_TYPE_HEADLESS_SERVER}"
+
+
+PRIVACY_LEVEL="${PRIVACY_PORTABLE}"
+# PRIVACY_LEVEL - allowed values: home, portable, paranoid - "${PRIVACY_HOME}" or "${PRIVACY_PORTABLE}" or "${PRIVACY_PARANOID}"
+# home - For devices that never leave home network. Higher level of trust.
+# portable - For devices such as laptops that can leave home network. Lower level of trust.
+# paranoid - For devices such as laptops that are meant to be used in public wifi at a library, airport, etc. Zero trust.
+
+# SETUP_TYPE="light" 
+SETUP_TYPE="${SETUP_TYPE_LIGHT}"
+# SETUP_TYPE - allowed values: full or light  or minimal - "${SETUP_TYPE_FULL}" or "${SETUP_TYPE_LIGHT}" or "${SETUP_TYPE_MINIMAL}"
+# Default is light
+# minimal - TBD - bare minimum, remove all optional stuff and even stuff like libreoffice, etc. and installs bare minimum things
+
+
+# Ignored if connected to wifi. Renames name of ethernet connection connected at the time of running the script. Use with CONNECTION_TYPE inferred in next section
+NEW_ETHERNET_NAME="" # nbEthernet, etc
+
+HOSTNAME=""  # "nbPC"
+GIT_USER_EMAIL=""  # "<GITHUB PRIVATE EMAIL>@users.noreply.github.com"
+NEXTDNS_ID=""  
 NEXTDNS_DEVICE_ID="$HOSTNAME"
 
 # Not in use yet
 PC_TYPE="paranoid" # public or private or paranoid
 
-# Default is light
-# minimal removes stuff like libreoffice, etc. and installs bare minimum things
-SETUP_TYPE="light" # full or light (or minimal - TBD - bare minimum, remove all optional stuff)
+# provide a default with ${VAR:-default} so the reference is always defined:
+# echo "Deploying to ${ENVIRONMENT:-staging}"
+
+MEDIA_PC=false # grayjay, freetube, kodi, spotify, etc # TODO
+CONFERENCING_APPS=false # zoom, proton meet, etc
+
+INSTALL_XYZ=true
 
 
-echo "************************ Setting User-Defined Flags ************************"
+echo "************************ Setting Inferred constants and flags ************************"
 
-MEDIA_PC="" # TODO
-INSTALL_XYZ="yes"
+# TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
 
+# HOME_LAN_SUBNET=""
+# Automatically detect the local LAN subnet (e.g., 192.168.1.0/24)
+HOME_LAN_SUBNET=$(python3 -c '
+import subprocess, ipaddress
+try:
+    route = subprocess.check_output(["ip", "-o", "-4", "route", "show", "to", "default"], text=True)
+    iface = route.split()[4]
+    addr_info = subprocess.check_output(["ip", "-o", "-4", "addr", "show", "dev", iface], text=True)
+    cidr = addr_info.split()[3]
+    # Calculate the proper network base address (e.g., .0/24 instead of host IP; normalizes host IPs to base subnet)
+    print(ipaddress.ip_network(cidr, strict=False))
+except Exception:
+    print("192.168.1.0/24") # Safe fallback if network lookup fails
+' 2>/dev/null)
 
+# Fallback explicit override if desired
+HOME_LAN_SUBNET="${HOME_LAN_SUBNET:-192.168.1.0/24}"
+readonly HOME_LAN_SUBNET
 
-echo "************************ Verifying User-Defined constants and flags ************************"
+echo "************************ Identify the real user (non root) running the script/logged in ************************"
+# REAL_USER=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/get_real_user.sh)
 
-if [ "$GIT_USER_EMAIL" = "" ]; then
-  echo "Warning - GIT_USER_EMAIL not provided."
-  sleep 5s
+# 1. Check SUDO_USER first, but make sure it isn't 'root'
+if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+    REAL_USER="$SUDO_USER"
+# 2. Fall back to the owner of the controlling terminal (tty)
+elif [ -t 0 ] && [ -n "$(logname 2>/dev/null)" ] && [ "$(logname)" != "root" ]; then
+    REAL_USER="$(logname)"
+# 3. Fall back to the active desktop/graphical session user (UID >= 1000)
+else
+    REAL_USER=$(loginctl list-sessions --no-legend 2>/dev/null | awk '{print $3}' | while read -r u; do id -u "$u" &>/dev/null && [ "$(id -u "$u")" -ge 1000 ] && echo "$u" && break; done)
 fi
 
-if [ "$HOSTNAME" = "" ] || [ "$SETUP_TYPE" = "" ] || [ "$PC_TYPE" = "" ] || [ "$NEXTDNS_ID" = "" ] || [ "$NEXTDNS_DEVICE_ID" = "" ]; then
-  echo "Please set User-Defined constants and run again"
-  exit 1
-fi
+# Fallback to current user if all checks fail
+REAL_USER="${REAL_USER:-$USER}"
 
-echo "************************ Setting INFERRED literals and constants ************************"
-HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+echo "************************ Setting Directories ************************"
+
+# HOME_DIR=$(getent passwd $USER | cut -d: -f6)
+HOME_DIR=$(getent passwd "$REAL_USER" | cut -d: -f6)
 NBDIR="$HOME_DIR/nb"
 CODEPROJECTS_DIR="$NBDIR/CodeProjects"
 SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
@@ -96,15 +188,56 @@ PUBLIC_DIR="$NBDIR/Public"
 TEMPLATES_DIR="$NBDIR/Templates"
 PROJECTS_DIR="$NBDIR/Projects"
 
-SCRIPT_DATA="$NBDIR/nb_script_data"
-SCRIPT_BACKUPS_DIR="$SCRIPT_DATA/backups"
-SCRIPT_DOWNLOADS_DIR="$SCRIPT_DATA/downloads"
-SCRIPT_LOGS_DIR="$SCRIPT_DATA/logs" 
+SCRIPT_DATA_DIR="$NBDIR/nb_script_data"
+SCRIPT_BACKUPS_DIR="$SCRIPT_DATA_DIR/backups"
+SCRIPT_DOWNLOADS_DIR="$SCRIPT_DATA_DIR/downloads"
+SCRIPT_LOGS_DIR="$SCRIPT_DATA_DIR/logs"
 
-FILENAME_TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
 
-echo "************************ Setting Inferred flags ************************"
+echo "************************ Verifying User-Defined constants and flags ************************"
 
+IS_ETHERNET=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_is_ethernet.sh)
+
+if [ "$GIT_USER_EMAIL" = "" ]; then
+  echo "Warning - GIT_USER_EMAIL not provided."
+  sleep 5s
+fi
+
+if [ "$PC_TYPE" = "" ]; then
+  PC_TYPE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_pc_type.sh)
+fi
+
+
+if [ "$PRIVACY_LEVEL" = "" ]; then
+
+  # case "${PC_TYPE:-}" in
+  #   laptop)  PRIVACY_LEVEL="paranoid" ;;
+  #   desktop) PRIVACY_LEVEL="home" ;;
+  #   server)  PRIVACY_LEVEL="home" ;;
+  #   "")      PRIVACY_LEVEL="portable" ;;
+  # #    *)       PRIVACY_LEVEL="home" ;; # Safe fallback for unknown inputs
+  # esac
+
+
+  # Clean conditional checks using the constant
+  case "$PC_TYPE" in
+      "$PC_TYPE_LAPTOP")                                    PRIVACY_LEVEL="$PRIVACY_PARANOID" ;;
+      "$PC_TYPE_TYPE_DESKTOP"|"$PC_TYPE_HEADLESS_SERVER")   PRIVACY_LEVEL="$PRIVACY_HOME" ;;
+      "")                                                   PRIVACY_LEVEL="$PRIVACY_PORTABLE" ;;
+
+      *)
+          echo "ERROR: Unknown PC_TYPE." >&2
+          exit 1
+          ;;
+  esac
+
+fi
+
+
+if [ "$HOSTNAME" = "" ] || [ "$SETUP_TYPE" = "" ] || [ "$PC_TYPE" = "" ] || [ "$PRIVACY_LEVEL" = "" ] || [ "$NEXTDNS_ID" = "" ] || [ "$NEXTDNS_DEVICE_ID" = "" ]; then
+  echo "Please set User-Defined constants and run again"
+  exit 1
+fi
 
 
 echo "************************ Create directories ************************"
