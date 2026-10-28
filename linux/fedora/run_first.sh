@@ -1,7 +1,26 @@
 #!/bin/sh
 
 # https://www.baeldung.com/linux/set-command
+# https://linuxize.com/post/bash-set-command/
 set -eux
+# set -e: Exit on Error - tells bash to exit immediately if any command returns a non-zero status. It stops a script from continuing past a failure.
+# set -u: Treat Unset Variables as Errors - makes bash exit when you reference a variable that has not been set.
+
+# set -x: Trace Each Command - prints every command to standard error before it runs, with the expanded values of any variables. Because tracing is noisy, it is common to enable it only around the section you are debugging with set -x and then turn it off again with set +x.
+
+# set -o pipefail: Catch Failures in a Pipeline - By default, a pipeline returns the exit status of its last command, so a failure earlier in the pipe is hidden. set -o pipefail changes this so the pipeline returns the status of the rightmost command that failed, or 0 if every command succeeded. Combined with set -e, it makes a failed first stage actually stop the script.
+
+# set -euo pipefail: This enables exit-on-error, unset-variable checking, and pipeline failure detection in one line. Add x as set -euxo pipefail while debugging, then remove it. This pattern is the foundation of what is often called "bash strict mode".
+
+# Table of most common options used in scripts (There are more like -C, -f, -a, -u)
+# <Option>          <Long form>	      <Effect>
+# set -e	          set -o errexit	  Exit immediately on a command failure
+# set -u	          set -o nounset	  Error when an unset variable is used
+# set -x	          set -o xtrace	    Print each command before running it
+# set -o pipefail	  set -o pipefail	  Fail a pipeline if any command in it fails
+# set +e	          set +o errexit	  Disable an option (plus instead of dash), commonly used for a block of code.
+# set -o		                          List all options and their state
+# set -- a b c		                    Set the positional parameters
 
 #######################################
 
@@ -9,6 +28,18 @@ set -eux
 # 1. Don't have to manually type each command and make some mistakes
 # 2. Don't have to enter credentials lot of times, just once in the beginning is enough
 # 3. Save time
+
+
+#######################################
+
+# https://docs.fedoraproject.org/en-US/quick-docs/upgrading-fedora-new-release/
+# https://docs.fedoraproject.org/en-US/quick-docs/switching-desktop-environments/
+# https://docs.fedoraproject.org/en-US/quick-docs/systemd-understanding-and-administering/
+# https://docs.fedoraproject.org/en-US/quick-docs/debug-systemd-problems/
+# https://docs.fedoraproject.org/en-US/quick-docs/viewing-logs/
+# https://docs.fedoraproject.org/en-US/quick-docs/kernel-overview/
+# https://docs.fedoraproject.org/en-US/quick-docs/virtualization-an-overview/
+# https://docs.fedoraproject.org/en-US/quick-docs/troubleshooting-wayland-problems/
 
 #######################################
 echo "************************ NOTE: The script will ask you to authenticate multiple times till the end. ************************"
