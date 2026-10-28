@@ -447,104 +447,40 @@ sudo dnf install -y gh fzf fastfetch
 # nautilus-python - research what this can be used for
 
 
-if [ "$SETUP_TYPE" = "full" ];
+if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ]; 
 then
-  sudo dnf install -y htop keepassxc timeshift qbittorrent vlc thunderbird
+  sudo dnf install -y ksystemlog htop keepassxc timeshift qbittorrent vlc 
+  # thunderbird
+  # ksystemlog - UI to view/filter system logs
+  
 
 fi
 
 
-if [ "$DESKTOP" = "gnome" ]
+if [ "$DESKTOP" = "${DESKTOP_GNOME}" ]
 then
   sudo dnf install -y gnome-tweaks
 
-  if [ "$SETUP_TYPE" = "full" ];
+  if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ];
   then
     sudo dnf install -y gparted liferea quiterss
   fi
 
-elif  [ "$DESKTOP" = "kde" ]
+elif  [ "$DESKTOP" = "${DESKTOP_KDE}" ]
 then
-  sudo dnf install -y kde-gtk-config plasma-browser-integration
-  echo "Use pre-installed KDE Partition Manager instead of gparted"
-  echo "Use pre-installed Kasts instead of Gnome Podcasts"
-  echo "Use pre-installed Akregator instead of liferea and quiterss"
+  sudo dnf install -y kde-gtk-config plasma-browser-integration kasts
 
   echo "Installing apps to try out on KDE - dnf"
   sudo dnf install -y kalarm kbackup
 
+  echo "Use pre-installed KDE Partition Manager instead of gparted"
+  echo "Use pre-installed Kasts instead of Gnome Podcasts"
+  echo "Use pre-installed Akregator instead of liferea and quiterss"
+
   # TODO manually: https://community.kde.org/Dolphin/FAQ/Freeze
-  
-  # try these file managers:
-
-  # Thunar:
-  sudo dnf install -y thunar thunar-archive-plugin thunar-volman tumbler
-
-  # yazi
-  # https://yazi-rs.github.io/docs/installation
-  # https://yazi-rs.github.io/docs/configuration/overview/
-  sudo dnf copr enable -y lihaohong/yazi
-  sudo dnf install -y yazi ffmpegthumbnailer ImageMagick poppler fd-find ripgrep fzf zoxide
-
-  # alternative using crgo
-  # cargo install --locked yazi-fm yazi-cli
-
-  # config: ~/.config/yazi/config.toml
-  #   yazi.toml - General configuration.
-  #   keymap.toml - Keybindings configuration.
-  #   theme.toml - Color scheme configuration.
-  sudo tee -a ~/.config/yazi/config.toml <<'YAZI_EOF'
-[manager]
-ratio = [1, 3, 4]         # Panel ratio: sidebar | file_list | preview
-show_hidden = true        # Show hidden files by default (you'll like this)
-sort_by = "alphabetical"  # Or "natural", "mtime", "size"
-sort_reverse = false
-
-[opener]
-edit = [
-	{ run = '${EDITOR:-nvim} "$@"', desc = "Edit with $EDITOR" },
-	{ run = 'yq "$@"', for = "unix", orphan = true, block = false }
-]
-open = [
-	{ run = 'xdg-open "$@"', desc = "Open", for = "linux" },
-	{ run = 'open "$@"', desc = "Open", for = "mac" },
-	{ run = 'start "" "$@"', desc = "Open", for = "windows" }
-]
-reveal = [
-	{ run = 'xdg-open "$(dirname "$1")"', desc = "Reveal", for = "linux" }
-]
-
-[preview]
-max_width = 200
-max_height = 100
-cache_dir = "/tmp/yazi-cache"  # Make sure this exists
-sixel = true                   # Enable sixel fallback for non-Kitty terminals
-
-[plugin]
-# Enable plugins
-fetchers = [
-	{ name = "*", cmd = "file", args = ["--mime-type", "-b"] }
-]
-YAZI_EOF
-
-  # install yazi plugins:
-  # Official plugin manager
-  ya pkg add yazi-rs/plugins:git          # Git status display
-  # ya pkg add yazi-rs/plugins:full-border  # Pretty borders
-  # ya pkg add yazi-rs/plugins:history      # Directory history (like ranger's)
-  # Community plugins
-  # ya pkg add S1mba/yazi-git-status        # Enhanced Git integration
-  ya pkg add yazi-rs/plugins:diff         # File diff preview
-  # List installed: ya pkg list
-  # Also added changes to 1. .zshrc, and 2. neovim setup
-
-  # krusader
-  sudo dnf install -y krusader p7zip p7zip-plugins
-
   # kate - nah
 
 fi
-
 
 
 echo "************************ Install and configure more flatpak packages ************************"
