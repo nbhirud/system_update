@@ -318,6 +318,8 @@ echo "************************ Updating /etc/dnf/dnf.conf **********************
 
 # Configure DNF settings
 # https://www.man7.org/linux/man-pages/man5/dnf.conf.5.html
+# https://docs.fedoraproject.org/en-US/quick-docs/dnf/
+# https://docs.fedoraproject.org/en-US/quick-docs/fedora-repositories/
 sudo tee /etc/dnf/dnf.conf <<EOL
 # see "man dnf.conf" for defaults and possible options
 
@@ -330,6 +332,8 @@ color=always
 
 EOL
 
+# https://docs.fedoraproject.org/en-US/quick-docs/installing-chromium-or-google-chrome-browsers/
+sudo dnf install fedora-workstation-repositories
 
 # echo "************************ Adding helium copr repo ************************"
 # https://helium.computer/download#all-downloads
