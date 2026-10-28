@@ -252,12 +252,12 @@ sudo chown $USER:$USER $SCRIPT_DATA_DIR $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DI
 # sudo install -d -o "$REAL_USER" -g "$REAL_USER" -m 750 "$SCRIPT_DATA_DIR"
 
 echo "************************ Identify Desktop Environment ************************"
-DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/check_desktop_env.sh)
+DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh)
 echo "Desktop Environment is $DESKTOP"
 
 if [ "$DESKTOP" = "" ]; 
 then
-  echo "Desktop not identified. Fix check_desktop_env.sh and run again"
+  echo "Desktop not identified. Fix get_desktop_env.sh and run again"
   exit 1
 else
   echo "Desktop is $DESKTOP"
