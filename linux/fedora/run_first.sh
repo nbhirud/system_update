@@ -369,6 +369,7 @@ echo "************************ Enabling RPM Fusion ************************"
 # curl https://rpmfusion.org/Configuration | grep "Fedora with dnf" | grep "sudo dnf install https"
 
 ### Configuration of Repositories - https://rpmfusion.org/Configuration
+# https://docs.fedoraproject.org/en-US/quick-docs/rpmfusion-setup/
 
 sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-"$(rpm -E %fedora)".noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-"$(rpm -E %fedora)".noarch.rpm # use bash, not zsh (done above)
 
@@ -378,6 +379,7 @@ sudo dnf update -y @core
 
 echo "************************ Configuring Multimedia on Fedora ************************"
 ### Multimedia on Fedora - https://rpmfusion.org/Howto/Multimedia
+
 sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
 sudo dnf update -y @multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin
 
@@ -405,6 +407,7 @@ if [ "$DESKTOP" = "gnome" ]; then
 fi
 
 echo "************************ Rename pc ************************"
+# https://docs.fedoraproject.org/en-US/quick-docs/changing-hostname/
 sudo hostnamectl set-hostname $HOSTNAME
 
 #######################################
@@ -572,15 +575,18 @@ fi
 
 
 
-echo "Installing apps to try out on KDE - curl/wget | sh"
-curl -f https://zed.dev/install.sh | sh
+### echo "Installing apps to try out on KDE - curl/wget | sh"
+
+# ZED IDE
+# curl -f https://zed.dev/install.sh | sh
 
 
 
 # com.protonvpn.www me.proton.Mail me.proton.Pass # installing using official instructions via script
 # flatpak install -y flathub ca.desrt.dconf-editor com.spotify.Client
 # Facebook messenger (deprecated) - com.sindresorhus.Caprine
-# element matrix client - im.riot.Riot - too heavy, so install Fractal (or Fluffychat)
+# element matrix client - im.riot.Riot - 
+# install Fractal (or Fluffychat) - other matrix clients
 # im.fluffychat.Fluffychat
 # org.gnome.Fractal - prefer on Gnome
 # io.github.kolunmi.Bazaar - an alternative software store from flatpak/flathub
@@ -672,12 +678,6 @@ xdg-mime default codium.desktop text/plain
 # /usr/bin/akregator > /dev/null 2>&1 &
 # sleep 5
 # qdbus org.kde.akregator /akregator /akregator/MainWindow_1 hide
-
-
-
-
-
-
 
 
 
