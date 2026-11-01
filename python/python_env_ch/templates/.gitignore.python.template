@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Environments and local secrets
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Tests and tools
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ty/
+.coverage
+.coverage.*
+htmlcov/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Editor workspace state (adjust if your team commits shared settings)
+.idea/
+.vscode/

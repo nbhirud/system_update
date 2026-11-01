@@ -1,0 +1,33 @@
+# Use for projects standardized on Black + Flake8 + isort instead of Ruff.
+# Add black, flake8, isort, mypy (if used), and pip-audit to this project's dev dependency group.
+# Keep exact tool versions in the project's uv.lock.
+repos:
+  - repo: local
+    hooks:
+      - id: black
+        name: Black format check
+        entry: uv run --locked --group dev black --check
+        language: system
+        types_or: [python, pyi]
+      - id: flake8
+        name: Flake8 lint
+        entry: uv run --locked --group dev flake8
+        language: system
+        types_or: [python, pyi]
+      - id: isort
+        name: isort import order
+        entry: uv run --locked --group dev isort --check-only
+        language: system
+        types_or: [python, pyi]
+      - id: mypy
+        name: mypy type check
+        entry: uv run --locked --group dev mypy
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: pip-audit
+        name: Audit locked project environment for known vulnerabilities
+        entry: uv run --locked --group dev pip-audit
+        language: system
+        pass_filenames: false
+        always_run: true

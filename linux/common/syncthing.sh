@@ -267,6 +267,40 @@ systemctl --user enable --now syncthing.service
 # Debugging and Testing
 ##################################################
 
+# # Check status
+# systemctl --user status syncthing
+
+# # Check journalctl logs
+# journalctl --user -u syncthing.service -e --no-pager
+
+# # Syncthing requires port 8384 for the web GUI and 22000 for synchronization. If another instance or process is holding them, it will crash immediately. Check if anything is already bound to those ports:
+# ss -tulpn | grep -E '8384|22000'
+
+# # Test Running Syncthing Manually. Stop the systemd service and run Syncthing directly in your terminal to see the immediate stdout/stderr output:
+# systemctl --user stop syncthing
+# syncthing serve --no-browser --no-restart
+
+# # If the database files are owned by root or have incorrect permissions (often caused by previously running the service via sudo), Syncthing will fail to start. Fix ownership back to your user:
+# chown -R $(whoami):$(whoami) ~/.config/syncthing ~/.local/state/syncthing
+
+# # Check if a stray instance of Syncthing is already running under your user and terminate it:
+# pkill -u nbhirud -f syncthing
+
+# # To check the currently set IP:
+# grep -A 2 '<gui ' ~/.local/state/syncthing/config.xml
+
+# # Here is a safe sed command that automatically creates a timestamped backup of your configuration file before performing the replacement in-place.
+# # Then replaces the IP address. Note: make sure to use correct IP (default is that of localhost)
+# TODO - Make this generic so that the IP to search does not have to be hardcoded. It should place the correct new IP no matter what exists right now.
+# sed -i.bak 's|<address>192\.168\.0\.66:8384</address>|<address>192.168.1.66:8384</address>|g' ~/.local/state/syncthing/config.xml
+
+# # Verify that the change was successfully applied and inspect the diff against your automatic backup (config.xml.bak):
+# git diff ~/.local/state/syncthing/config.xml.bak ~/.local/state/syncthing/config.xml
+
+# # Reset any failed systemd states and start the service:
+# systemctl --user reset-failed syncthing.service
+# systemctl --user start syncthing.service
+
 ### Is Syncthing running?
 # systemctl --user status syncthing
 # systemctl --user enable --now syncthing

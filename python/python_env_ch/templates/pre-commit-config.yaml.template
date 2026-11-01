@@ -1,0 +1,27 @@
+# Keep tool versions in this project's dependency group and uv.lock.
+# Run: uv sync --locked --group dev && uv run --locked --group dev pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: Ruff lint
+        entry: uv run --locked --group dev ruff check
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: Ruff format check
+        entry: uv run --locked --group dev ruff format --check
+        language: system
+        types_or: [python, pyi]
+      - id: basedpyright
+        name: basedpyright type check
+        entry: uv run --locked --group dev basedpyright
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: pip-audit
+        name: Audit locked project environment for known vulnerabilities
+        entry: uv run --locked --group dev pip-audit
+        language: system
+        pass_filenames: false
+        always_run: true

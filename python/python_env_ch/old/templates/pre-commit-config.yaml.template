@@ -1,0 +1,30 @@
+# uv-first template. Run `uv lock` before `pre-commit install`.
+# This intentionally uses local/system hooks so the project lockfile controls tool versions.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: Ruff lint
+        entry: uv run --locked --group dev ruff check
+        language: system
+        types_or: [python, pyi]
+
+      - id: ruff-format
+        name: Ruff format check
+        entry: uv run --locked --group dev ruff format --check
+        language: system
+        types_or: [python, pyi]
+
+      - id: basedpyright
+        name: basedpyright type check
+        entry: uv run --locked --group dev basedpyright
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: pip-audit
+        name: Audit project environment dependencies
+        entry: uv run --locked --group dev pip-audit
+        language: system
+        pass_filenames: false
+        always_run: true

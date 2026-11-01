@@ -1,0 +1,37 @@
+# =============================================================================
+# .envrc — direnv configuration for a uv-managed Python project
+# =============================================================================
+# Opt-in: after creating or editing this file run:
+#   direnv allow
+#
+# This activates the in-project .venv and keeps dependencies in sync.
+# Safe for Poetry / requirements.txt projects too (uv can consume them).
+# =============================================================================
+
+# Use the project-local virtual environment
+export UV_PROJECT_ENVIRONMENT="$PWD/.venv"
+
+# Create .venv if missing (uses .python-version / pyproject requires-python)
+if [[ ! -d .venv ]]; then
+  echo "direnv: creating .venv with uv…"
+  uv venv
+fi
+
+# Keep environment in sync with lockfile when present
+if [[ -f uv.lock ]]; then
+  # --frozen fails if lock is out of date (good for reproducibility)
+  # Fall back to plain sync if frozen fails (e.g. first run after lock change)
+  uv sync --frozen 2>/dev/null || uv sync
+elif [[ -f pyproject.toml ]]; then
+  uv sync
+elif [[ -f requirements.txt ]]; then
+  # Legacy requirements.txt projects
+  uv pip install -r requirements.txt
+fi
+
+# Put the venv on PATH (direnv-preferred way — no need to source activate)
+PATH_add .venv/bin
+export VIRTUAL_ENV="$PWD/.venv"
+
+# Optional: load secrets from .env (never commit .env)
+# dotenv_if_exists .env

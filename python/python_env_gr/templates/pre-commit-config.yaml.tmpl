@@ -1,0 +1,59 @@
+# =============================================================================
+# .pre-commit-config.yaml — recommended baseline for uv + ruff projects
+# =============================================================================
+# Install hooks once per clone:
+#   pre-commit install
+#   # or: uv run pre-commit install
+#
+# Update hook versions periodically:
+#   pre-commit autoupdate
+# =============================================================================
+
+repos:
+  # --- Ruff: lint + format (replaces black / isort / flake8 for most cases) ---
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.0
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  # --- Standard hygiene hooks ---
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: detect-private-key
+
+  # --- uv lockfile hygiene (only if the project uses uv.lock) ---
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.9.0
+    hooks:
+      - id: uv-lock
+
+  # --- Dependency vulnerability scan (pip-audit) ---
+  # Network required; skip on pre-commit.ci if needed
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.9.0
+    hooks:
+      - id: pip-audit
+        args: ["--progress-spinner", "off"]
+        # For requirements.txt projects use: args: ["-r", "requirements.txt"]
+        # For pure uv projects, auditing the environment is often enough
+
+  # Optional: enable mypy or ty in projects that want them as commit gates.
+  # Prefer running them via `uv run mypy` / `uv run ty check` in CI for speed.
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.15.0
+  #   hooks:
+  #     - id: mypy
+  #       additional_dependencies: []
+
+ci:
+  # pre-commit.ci cannot make network calls for pip-audit
+  skip: [pip-audit]
