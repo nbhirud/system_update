@@ -1,0 +1,8 @@
+# Review this file before approving it with: direnv allow
+# This template intentionally has no secrets and does not auto-approve itself.
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONUNBUFFERED=1
+# uv-managed projects create a local .venv. direnv does not install dependencies.
+if [[ -f .venv/bin/activate ]]; then
+  source .venv/bin/activate
+fi

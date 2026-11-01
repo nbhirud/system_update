@@ -1,0 +1,10 @@
+# direnv executes this file only after you explicitly approve it with `direnv allow`.
+# Review every .envrc before approving it; it is executable shell code.
+# This template only activates an existing project-local virtual environment.
+if [[ -f .venv/bin/activate ]]; then
+  source .venv/bin/activate
+fi
+
+# Put non-secret project-specific environment variables here if appropriate.
+# Prefer a secret manager or securely permissioned local file for credentials.
+# export APP_ENV=development

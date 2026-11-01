@@ -1,0 +1,30 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.pyright/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local environments and package/build outputs
+.venv/
+venv/
+env/
+dist/
+build/
+*.egg-info/
+
+# Local secrets/configuration. Commit .env.example with placeholders only.
+.env
+.env.*
+!.env.example
+!.envrc.example
+
+# Jupyter / marimo artifacts (commit notebooks intentionally when useful)
+.ipynb_checkpoints/
+
+# Local editor and OS files
+.DS_Store
