@@ -17,23 +17,31 @@
 #
 # Both file locations honour XDG_CONFIG_HOME / XDG_DATA_HOME.
 
-_MIMEAPPS_PY="$(dirname "${BASH_SOURCE[0]}")/helper_mimeapps.py"
-_mimeapps_main_file()       { printf '%s\n' "${XDG_CONFIG_HOME:-$HOME/.config}/mimeapps.list"; }
-_mimeapps_deprecated_file() { printf '%s\n' "${XDG_DATA_HOME:-$HOME/.local/share}/applications/mimeapps.list"; }
 
-mimeapps_set_default() {
-    local desktop_id="$1"; shift
-    python3 "$_MIMEAPPS_PY" set-default --desktop-id "$desktop_id" --mime-types "$@" \
-        --file "$(_mimeapps_main_file)" --clean-file "$(_mimeapps_deprecated_file)"
-}
+# Sourcing Guard Rails - uses a safety guard (HELPER_XYZ_LOADED) to prevent issues if it gets sourced multiple times.
+if [[ -z "${HELPER_MIMEAPPS_LOADED:-}" ]]; then
+    HELPER_MIMEAPPS_LOADED=1
 
-mimeapps_forget() {
-    python3 "$_MIMEAPPS_PY" forget --mime-types "$@" \
-        --file "$(_mimeapps_main_file)" --file "$(_mimeapps_deprecated_file)"
-}
 
-mimeapps_check_default() {
-    local desktop_id="$1"; shift
-    python3 "$_MIMEAPPS_PY" check --desktop-id "$desktop_id" --mime-types "$@" \
-        --file "$(_mimeapps_main_file)" --file "$(_mimeapps_deprecated_file)"
-}
+    _MIMEAPPS_PY="$(dirname "${BASH_SOURCE[0]}")/helper_mimeapps.py"
+    _mimeapps_main_file()       { printf '%s\n' "${XDG_CONFIG_HOME:-$HOME/.config}/mimeapps.list"; }
+    _mimeapps_deprecated_file() { printf '%s\n' "${XDG_DATA_HOME:-$HOME/.local/share}/applications/mimeapps.list"; }
+
+    mimeapps_set_default() {
+        local desktop_id="$1"; shift
+        python3 "$_MIMEAPPS_PY" set-default --desktop-id "$desktop_id" --mime-types "$@" \
+            --file "$(_mimeapps_main_file)" --clean-file "$(_mimeapps_deprecated_file)"
+    }
+
+    mimeapps_forget() {
+        python3 "$_MIMEAPPS_PY" forget --mime-types "$@" \
+            --file "$(_mimeapps_main_file)" --file "$(_mimeapps_deprecated_file)"
+    }
+
+    mimeapps_check_default() {
+        local desktop_id="$1"; shift
+        python3 "$_MIMEAPPS_PY" check --desktop-id "$desktop_id" --mime-types "$@" \
+            --file "$(_mimeapps_main_file)" --file "$(_mimeapps_deprecated_file)"
+    }
+
+fi

@@ -17,19 +17,24 @@
 # error in bash, so the block below is guarded: sourcing this file twice (for example
 # from a helper that is itself sourced by the main script) is harmless.
 
+
+# Sourcing Guard Rails - uses a safety guard (HELPER_XYZ_LOADED) to prevent issues if it gets sourced multiple times.
 if [[ -z "${HELPER_LOGGING_LOADED:-}" ]]; then
     HELPER_LOGGING_LOADED=1
+    
     readonly GREEN='\033[0;32m'
     readonly YELLOW='\033[1;33m'
     readonly RED='\033[0;31m'
     readonly NC='\033[0m' # No Color
     readonly BLUE='\033[0;34m'
     readonly CYAN='\033[0;36m'
-fi
 
-log_header() { echo -e "\n${CYAN}==================== $* ====================${NC}\n"; }
-log_info() { echo -e "${BLUE}[INFO] $* ${NC}"; }
-log_success() { echo -e "${GREEN}[✓] $* ${NC}"; }
-log_warn() { echo -e "${YELLOW}[!] $* ${NC}"; }
-log_error() { echo -e "${RED}[✗] $* ${NC}" >&2; }
-log_die() { echo -e "${RED}[✗] $* ${NC}" >&2; exit 1; }
+
+    log_header() { echo -e "\n${CYAN}==================== $* ====================${NC}\n"; }
+    log_info() { echo -e "${BLUE}[INFO] $* ${NC}"; }
+    log_success() { echo -e "${GREEN}[✓] $* ${NC}"; }
+    log_warn() { echo -e "${YELLOW}[!] $* ${NC}"; }
+    log_error() { echo -e "${RED}[✗] $* ${NC}" >&2; }
+    log_die() { echo -e "${RED}[✗] $* ${NC}" >&2; exit 1; }
+
+fi

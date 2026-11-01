@@ -16,22 +16,29 @@
 # Why: user-level configuration (dotfiles, ~/.local/bin) created by root is owned by
 # root; the desktop session then cannot update or delete it.
 
-ensure_real_user() {
-    if [[ "$(id -un)" == "$REAL_USER" ]]; then
-        return 0
-    fi
-    if [[ $EUID -ne 0 ]]; then
-        log_die "Running as '$(id -un)' but REAL_USER is '${REAL_USER}'. Run as ${REAL_USER}."
-    fi
-    if [[ "$REAL_USER" == "root" ]]; then
-        log_die "Run this script as a normal user (or via sudo from one); not as a direct root login."
-    fi
-    local uid
-    uid="$(id -u "$REAL_USER")"
-    log_info "Re-running as ${REAL_USER} (script started as root via sudo)"
-    exec runuser -u "$REAL_USER" -- env \
-        HOME="$HOME_DIR" USER="$REAL_USER" LOGNAME="$REAL_USER" \
-        REAL_USER="$REAL_USER" FILENAME_TIMESTAMP="${FILENAME_TIMESTAMP:-}" \
-        XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/${uid}}" \
-        "$0" "$@"
-}
+
+# Sourcing Guard Rails - uses a safety guard (HELPER_XYZ_LOADED) to prevent issues if it gets sourced multiple times.
+if [[ -z "${HELPER_RUN_AS_USER_LOADED:-}" ]]; then
+    HELPER_RUN_AS_USER_LOADED=1
+
+    ensure_real_user() {
+        if [[ "$(id -un)" == "$REAL_USER" ]]; then
+            return 0
+        fi
+        if [[ $EUID -ne 0 ]]; then
+            log_die "Running as '$(id -un)' but REAL_USER is '${REAL_USER}'. Run as ${REAL_USER}."
+        fi
+        if [[ "$REAL_USER" == "root" ]]; then
+            log_die "Run this script as a normal user (or via sudo from one); not as a direct root login."
+        fi
+        local uid
+        uid="$(id -u "$REAL_USER")"
+        log_info "Re-running as ${REAL_USER} (script started as root via sudo)"
+        exec runuser -u "$REAL_USER" -- env \
+            HOME="$HOME_DIR" USER="$REAL_USER" LOGNAME="$REAL_USER" \
+            REAL_USER="$REAL_USER" FILENAME_TIMESTAMP="${FILENAME_TIMESTAMP:-}" \
+            XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/${uid}}" \
+            "$0" "$@"
+    }
+
+fi
