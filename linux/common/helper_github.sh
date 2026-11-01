@@ -16,16 +16,23 @@
 #   Prints the raw-content URL of <path> at <ref> (a tag, a commit, or HEAD for the
 #   default branch).
 
-github_latest_tag() {
-    local repo="$1" final
-    final="$(curl --proto '=https' --tlsv1.2 -fsSL --retry 2 --connect-timeout 15 --max-time 30 \
-                  -o /dev/null -w '%{url_effective}' "https://github.com/${repo}/releases/latest" 2>/dev/null || true)"
-    if [[ "$final" == */releases/tag/* ]]; then
-        printf '%s\n' "${final##*/}"
-    fi
-    return 0
-}
 
-github_raw_url() {
-    printf 'https://raw.githubusercontent.com/%s/%s/%s\n' "$1" "$2" "$3"
-}
+# Sourcing Guard Rails - uses a safety guard (HELPER_XYZ_LOADED) to prevent issues if it gets sourced multiple times.
+if [[ -z "${HELPER_GITHUB_LOADED:-}" ]]; then
+    HELPER_GITHUB_LOADED=1
+
+    github_latest_tag() {
+        local repo="$1" final
+        final="$(curl --proto '=https' --tlsv1.2 -fsSL --retry 2 --connect-timeout 15 --max-time 30 \
+                    -o /dev/null -w '%{url_effective}' "https://github.com/${repo}/releases/latest" 2>/dev/null || true)"
+        if [[ "$final" == */releases/tag/* ]]; then
+            printf '%s\n' "${final##*/}"
+        fi
+        return 0
+    }
+
+    github_raw_url() {
+        printf 'https://raw.githubusercontent.com/%s/%s/%s\n' "$1" "$2" "$3"
+    }
+
+fi
