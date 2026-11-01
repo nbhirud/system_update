@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "************************ Identify the real user (non root) running the script/logged in ************************"
+# echo "************************ Identify the real user (non root) running the script/logged in ************************"
 
 # Get the actual user's home when runing a script with sudo
 # USER_HOME=$(eval echo ~${SUDO_USER})

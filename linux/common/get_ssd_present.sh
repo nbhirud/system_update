@@ -19,7 +19,9 @@ set -euo pipefail
 
 
 # 2. REAL_USER (defaults to SUDO_USER or current user)
-REAL_USER="${REAL_USER:-${SUDO_USER:-$USER}}"
+# REAL_USER="${REAL_USER:-${SUDO_USER:-$USER}}"
+here=$(dirname "$0")
+REAL_USER="${REAL_USER:-$(sh "$here/get_real_user.sh")}"
 
 HOME_DIR="$(getent passwd "$REAL_USER" | cut -d: -f6)"
 NBDIR="$HOME_DIR/nb"
