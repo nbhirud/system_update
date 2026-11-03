@@ -12,8 +12,9 @@ set -eux
 
 
 DATE_VAR=$(date +%Y-%m-%d)
-mkdir Fedora__$DATE_VAR
-cd Fedora__$DATE_VAR
+BACKUP_DIR="/home/nbhirud/nb/Fedora_Backup_${DATE_VAR}"
+mkdir -p "${BACKUP_DIR}"
+cd "${BACKUP_DIR}"
 
 # https://stackoverflow.com/questions/17066250/create-timestamp-variable-in-bash-script
 dnf list > "dnf_list_$(date +%Y-%m-%d_%H-%M-%S).txt"
@@ -35,34 +36,34 @@ flatpak list > "flatpak_list_$(date +%Y-%m-%d_%H-%M-%S).txt"
 # Also include any personal folders you may have created
 # TODO - make a list
 
-# Review each next time you actually plan to format the system:
-.bash_logout
-.bash_profile
-.bashrc
-.config
-Desktop
-Documents
-Downloads
-.fontconfig
-.gitconfig
-.local # Check what to keep. Delete nerd fonts dir
-Music
-nb
-.oh-my-zsh
-Pictures
-.pki # Do I need this?
-Public
-Templates
-.var # Check what to keep.
-Videos
-.vscode-oss
-.zcompdump
-.zcompdump-fedora-5.9
-.zcompdump-fedora-5.9.zwc
-.zcompdump-nbFedora-5.9
-.zcompdump-nbFedora-5.9.zwc
-.zsh_history
-.zshrc       
+# # Review each next time you actually plan to format the system:
+# .bash_logout
+# .bash_profile
+# .bashrc
+# .config
+# Desktop
+# Documents
+# Downloads
+# .fontconfig
+# .gitconfig
+# .local # Check what to keep. Delete nerd fonts dir
+# Music
+# nb
+# .oh-my-zsh
+# Pictures
+# .pki # Do I need this?
+# Public
+# Templates
+# .var # Check what to keep.
+# Videos
+# .vscode-oss
+# .zcompdump
+# .zcompdump-fedora-5.9
+# .zcompdump-fedora-5.9.zwc
+# .zcompdump-nbFedora-5.9
+# .zcompdump-nbFedora-5.9.zwc
+# .zsh_history
+# .zshrc       
 
 ### Backup the following directory, and delete things you don't need
 # TODO - make a list
