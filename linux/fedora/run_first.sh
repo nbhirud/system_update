@@ -665,6 +665,9 @@ then
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/aws.sh
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zoom.sh
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/jetbrains_toolbox.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mullvad_browser.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/waterfox.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cromite.sh
   
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/docker.sh
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/neovim_lazyvim.sh
@@ -673,9 +676,6 @@ then
   # Be sure to run the following after: zsh, alacritty, neovim
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/tmux_zellij.sh
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/yazi.sh
-  
-  # Be sure to run the following after: clamav
-  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mullvad_browser.sh
   
 
   if [ "$DESKTOP" = "${DESKTOP_GNOME}" ]
