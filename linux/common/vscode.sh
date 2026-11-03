@@ -11,3 +11,14 @@ sudo dnf install code # or code-insiders
 
 
 # xdg-mime default code.desktop text/plain
+
+
+# Extensions to install:
+# Gemini Code Assist by Google
+# Github Actions by Github
+# Github Pull Reguests by Github
+# AWS Toolkit by amazonwebservices
+# Gitlab by Gitlab
+# Gemini CLI Companion by Google
+# Colab by Google
+
