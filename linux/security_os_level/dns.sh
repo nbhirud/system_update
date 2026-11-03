@@ -123,6 +123,11 @@ sudo systemctl restart systemd-resolved
 # 5. Clear any entries in additional DNS fields so no third-party fallback (like Google 8.8.8.8) is present.
 # 6. Click Save.
 
+# Internet / WAN DNS (Network -> Internet -> Additional Settings -> DNS Address): 
+#   Controls DNS queries made by the router itself (e.g., checking for firmware updates, time synchronization via NTP, TP-Link Cloud services).
+
+# DHCP / LAN DNS: Controls DNS queries made by connected client devices (e.g., phones, laptops, smart TVs).
+
 SCRIPT_PATH="/usr/local/bin/update-nextdns-ip.sh"
 
 # Ensure target directory exists
@@ -213,3 +218,22 @@ echo "########## DNS-over-TLS/QUIC ##########"
 echo "${NEXTDNS_DEVICE_ID}_RouterName-$NEXTDNS_ID.dns.nextdns.io"
 echo "${NEXTDNS_DEVICE_ID}_AndroidDeviceName-$NEXTDNS_ID.dns.nextdns.io"
 echo "${NEXTDNS_DEVICE_ID}Waydroid-$NEXTDNS_ID.dns.nextdns.io"
+
+
+
+############ 
+# setup to run the NextDNS Linked IP update URL as a simple system-wide cron job - # TODO - This section is untested.
+############
+
+# Note: Before setting this up, 
+# 1. Go to router's admin panel
+# 2. Advanced → Network → DHCP Server (or LAN).
+# 3. Find the Primary DNS and Secondary DNS fields under the DHCP settings.
+# 4. Enter your two custom NextDNS IPv4 addresses.
+# 5. Clear any entries in additional DNS fields so no third-party fallback (like Google 8.8.8.8) is present.
+# 6. Click Save.
+
+# Internet / WAN DNS (Network -> Internet -> Additional Settings -> DNS Address): 
+#   Controls DNS queries made by the router itself (e.g., checking for firmware updates, time synchronization via NTP, TP-Link Cloud services).
+
+# DHCP / LAN DNS: Controls DNS queries made by connected client devices (e.g., phones, laptops, smart TVs).
