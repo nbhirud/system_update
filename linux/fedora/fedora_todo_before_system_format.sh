@@ -94,3 +94,8 @@ Videos
 # https://forum.qbittorrent.org/viewtopic.php?t=9292
 # /home/nbhirud/.local/share/qBittorrent
 # /home/nbhirud/.config/qBittorrent
+
+##########
+
+# Baclup following directorues and files:
+# ~/.config/autostart

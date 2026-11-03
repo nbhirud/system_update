@@ -6,6 +6,7 @@ set -eux
 
 sudo dnf install -y git
 mkdir -p ~/nb/CodeProjects
+sudo chown -R $REAL_USER:$REAL_USER ~/nb ~/nb/CodeProjects
 cd ~/nb/CodeProjects
 git clone https://github.com/nbhirud/system_update.git
 
