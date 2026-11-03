@@ -1,8 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 
 # https://www.baeldung.com/linux/set-command
 # https://linuxize.com/post/bash-set-command/
 set -eux
+# set -Eeuo pipefail
 # set -e: Exit on Error - tells bash to exit immediately if any command returns a non-zero status. It stops a script from continuing past a failure.
 # set -u: Treat Unset Variables as Errors - makes bash exit when you reference a variable that has not been set.
 
@@ -155,7 +156,7 @@ HOME_LAN_SUBNET="${HOME_LAN_SUBNET:-192.168.1.0/24}"
 readonly HOME_LAN_SUBNET
 
 echo "************************ Identify the real user (non root) running the script/logged in ************************"
-# REAL_USER=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/get_real_user.sh)
+# REAL_USER=$(bash $SYSUPDATE_CODE_BASE_DIR/linux/common/get_real_user.sh)
 
 # 1. Check SUDO_USER first, but make sure it isn't 'root'
 if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
@@ -198,7 +199,7 @@ SCRIPT_LOGS_DIR="$SCRIPT_DATA_DIR/logs"
 
 echo "************************ Verifying User-Defined constants and flags ************************"
 
-IS_ETHERNET=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_is_ethernet.sh)
+IS_ETHERNET=$(bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_is_ethernet.sh)
 
 if [ "$GIT_USER_EMAIL" = "" ]; then
   echo "Warning - GIT_USER_EMAIL not provided."
@@ -206,7 +207,7 @@ if [ "$GIT_USER_EMAIL" = "" ]; then
 fi
 
 if [ "$PC_TYPE" = "" ]; then
-  PC_TYPE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_pc_type.sh)
+  PC_TYPE=$(bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_pc_type.sh)
 fi
 
 
@@ -224,7 +225,7 @@ if [ "$PRIVACY_LEVEL" = "" ]; then
   # Clean conditional checks using the constant
   case "$PC_TYPE" in
       "$PC_TYPE_LAPTOP")                                    PRIVACY_LEVEL="$PRIVACY_PARANOID" ;;
-      "$PC_TYPE_TYPE_DESKTOP"|"$PC_TYPE_HEADLESS_SERVER")   PRIVACY_LEVEL="$PRIVACY_HOME" ;;
+      "$PC_TYPE_DESKTOP"|"$PC_TYPE_HEADLESS_SERVER")   PRIVACY_LEVEL="$PRIVACY_HOME" ;;
       "")                                                   PRIVACY_LEVEL="$PRIVACY_PORTABLE" ;;
 
       *)
@@ -247,12 +248,12 @@ echo "************************ Create directories ************************"
 # TODO - Use this backup fir for backup of configs, etc before replacing or editing like .zshrc
 
 mkdir -p $SCRIPT_DATA_DIR $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $SCRIPT_LOGS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
-sudo chown $USER:$USER $SCRIPT_DATA_DIR $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $SCRIPT_LOGS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
+sudo chown -R $REAL_USER:$REAL_USER $SCRIPT_DATA_DIR $SCRIPT_BACKUPS_DIR $SCRIPT_DOWNLOADS_DIR $SCRIPT_LOGS_DIR $DESKTOP_DIR $DOCUMENTS_DIR $DOWNLOADS_DIR $VIDEOS_DIR $PICTURES_DIR $MUSIC_DIR $PUBLIC_DIR $TEMPLATES_DIR $PROJECTS_DIR
 
 # sudo install -d -o "$REAL_USER" -g "$REAL_USER" -m 750 "$SCRIPT_DATA_DIR"
 
 echo "************************ Identify Desktop Environment ************************"
-DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh)
+DESKTOP=$(bash $SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh)
 echo "Desktop Environment is $DESKTOP"
 
 if [ "$DESKTOP" = "" ]; 
@@ -265,7 +266,7 @@ fi
 
 echo "************************ Identify Distro ************************"
 # Useful in cases where the common/security/etc scripts need them when they support multiple distros
-DISTRO=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/get_distro_name.sh)
+DISTRO=$(bash $SYSUPDATE_CODE_BASE_DIR/linux/common/get_distro_name.sh)
 
 if [ "$DISTRO" = "" ];
 then
@@ -593,34 +594,41 @@ then
   
   echo "Removing all optional stuff and even stuff like libreoffice - TBD"
   # TBD
-  # sh "$SYSUPDATE_CODE_BASE_DIR"/linux/fedora/remove_stuff.sh
+  # bash "$SYSUPDATE_CODE_BASE_DIR"/linux/fedora/remove_stuff.sh
   
 
 fi
 
 
-# sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/vscodium_orig.sh
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/vscodium.sh
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/librewolf_browser.sh
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/brave_browser.sh
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/tor_browser.sh
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/fonts.sh
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zsh_orig.sh "$DISTRO" $SETUP_TYPE "$DESKTOP" "$FILENAME_TIMESTAMP"
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/alacritty_orig.sh
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/bleachbit.sh
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/git.sh "$GIT_USER_EMAIL"
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/syncthing.sh
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/avahi.sh
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mpv.sh
-# sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cron_jobs.sh
-sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/dns.sh "$NEXTDNS_ID" "$NEXTDNS_DEVICE_ID"
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/proton_ag.sh --setup-type "$SETUP_TYPE" --desktop "$DESKTOP"
+# bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/vscodium_orig.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/vscodium.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/librewolf_browser.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/brave_browser.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/tor_browser.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/fonts.sh
+
+# bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zsh_orig.sh "$DISTRO" $SETUP_TYPE "$DESKTOP" "$FILENAME_TIMESTAMP"
+sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zsh.sh
+sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/omz.sh
+sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cli_tools.sh
+sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/starship.sh
+sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/atuin.sh
+
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/alacritty_orig.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/bleachbit.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/git.sh "$GIT_USER_EMAIL"
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/syncthing.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/avahi.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mpv.sh
+# bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cron_jobs.sh
+sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/dns.sh "$NEXTDNS_ID" "$NEXTDNS_DEVICE_ID"
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/proton_ag.sh --setup-type "$SETUP_TYPE" --desktop "$DESKTOP"
 # bash linux/security_os_level/proton_ag.sh --setup-type full --desktop kde
 
-# sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh
-# sudo DEBUG=1 sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh
+# sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh
+# sudo DEBUG=1 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh
 
- sudo DEBUG=1 sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh \
+ sudo DEBUG=1 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh \
     --pc-type="${PC_TYPE}" \
     --real-user="${REAL_USER}" \
     --torrent-client="${HAS_TORRENT_CLIENT}" \
@@ -640,47 +648,47 @@ sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/proton_ag.sh --setup-type 
 # [ -n "${FILENAME_TIMESTAMP:-}" ] && CLAMAV_ARGS+=("--timestamp=${FILENAME_TIMESTAMP}")
 
 # # Execute the script with the constructed arguments
-#  sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh "${CLAMAV_ARGS[@]}"
+#  sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh "${CLAMAV_ARGS[@]}"
 
 
 # Be sure to run the following after: clamav
-sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/hosts.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/hosts.sh
 
 
 # Be sure to run the following after: firewalld
-# sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/fail2ban.sh
+# bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/fail2ban.sh
 
 
 if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ];
 then
-  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/bash.sh
-  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/aws.sh
-  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zoom.sh
-  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/jetbrains_toolbox.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/bash.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/aws.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zoom.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/jetbrains_toolbox.sh
   
-  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/docker.sh
-  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/neovim_lazyvim.sh
-  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/i2p.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/docker.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/neovim_lazyvim.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/i2p.sh
 
   # Be sure to run the following after: zsh, alacritty, neovim
-  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/tmux_zellij.sh
-  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/yazi.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/tmux_zellij.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/yazi.sh
   
   # Be sure to run the following after: clamav
-  sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mullvad_browser.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mullvad_browser.sh
   
 
   if [ "$DESKTOP" = "${DESKTOP_GNOME}" ]
   then
-    sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/gsconnect_kde_connect.sh
+    bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/gsconnect_kde_connect.sh
   fi
 
 fi
 
 # Also, it is best to setup firewalld at the end so it finds all installed services/packages to check before setting up
 # Be sure to run the following after: zsh
-# sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld.sh "$FILENAME_TIMESTAMP" "$SCRIPT_BACKUPS_DIR" $PRIVACY_LEVEL
-sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld.sh \
+# sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld.sh "$FILENAME_TIMESTAMP" "$SCRIPT_BACKUPS_DIR" $PRIVACY_LEVEL
+sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld.sh \
     --filename-timestamp "$FILENAME_TIMESTAMP" \
     --script-backups-dir "$SCRIPT_BACKUPS_DIR" \
     --sysupdate-code-base-dir "$SYSUPDATE_CODE_BASE_DIR" \

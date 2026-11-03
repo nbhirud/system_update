@@ -30,3 +30,37 @@ sudo dnf remove -y neochat kolourpaint khelpcenter mullvad-browser
 sudo dnf remove -y kmahjongg kmines kpat
 
 
+
+
+#!/bin/bash
+# Comprehensive KDE Plasma Performance Optimization Script
+
+echo "Applying full KDE Plasma performance optimizations..."
+
+# 1. Disable Baloo File Indexing completely
+balooctl6 disable 2>/dev/null || balooctl disable 2>/dev/null
+
+# 2. Disable heavy visual effects (blur, contrast, animations)
+kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled false
+kwriteconfig6 --file kwinrc --group Plugins --key backgroundContrastEnabled false
+kwriteconfig6 --file kwinrc --group Plugins --key slideEnabled false
+
+# 3. Optimize rendering performance and compositor latency for integrated graphics
+kwriteconfig6 --file kwinrc --group Compositing --key ScaleMethod 1
+kwriteconfig6 --file kwinrc --group Compositing --key Latency 3
+
+# 4. Reload KWin configuration dynamically
+if command -v qdbus-qt6 &>/dev/null; then
+    qdbus-qt6 org.kde.KWin /KWin org.kde.KWin.reconfigure
+elif command -v qdbus &>/dev/null; then
+    qdbus org.kde.KWin /KWin org.kde.KWin.reconfigure
+else
+    dbus-send --session --dest=org.kde.KWin /KWin org.kde.KWin.reconfigure
+fi
+
+echo -e "\n[✓] All optimizations applied successfully!"
+
+# Verification check
+echo -e "\nVerifying active configuration:"
+kreadconfig6 --file kwinrc --group Plugins --key blurEnabled | xargs echo "blurEnabled:"
+grep -E "ScaleMethod|Latency" ~/.config/kwinrc
