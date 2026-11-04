@@ -575,7 +575,7 @@ then
     --talk-name=org.freedesktop.secrets
     
     # To enable drag ang drop, etc
-    sudo flatpak override --user --filesystem=home com.rtosta.zapzap
+    flatpak override --user --filesystem=home com.rtosta.zapzap
   fi
 
 fi
