@@ -103,6 +103,7 @@ sudo systemctl restart systemd-resolved
 
 ####################################
 
+sleep 20
 
 echo "hosts - done"
 

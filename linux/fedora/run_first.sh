@@ -673,9 +673,9 @@ if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ];
 then
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/bash.sh
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/aws.sh
-  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zoom.sh
-  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/jetbrains_toolbox.sh
-  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mullvad_browser.sh
+  # bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zoom.sh
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/jetbrains_toolbox.sh # TODO - close the app automatically. Right now one has to quit it to proceed
+  sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mullvad_browser.sh
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/waterfox.sh
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cromite.sh
   
@@ -774,7 +774,7 @@ xdg-mime default codium.desktop text/plain
 #######################################
 
 echo "************************ Update and upgrade everything ************************"
-# sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y
+sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y
 
 # Following was a failed attempt into opening alacritty via ptyxis and then removing ptyxis from alacritty
 # alacritty -e zsh -c "sudo dnf update -y && sudo dnf upgrade --refresh -y && sudo dnf remove -y ptyxis; exec zsh"
