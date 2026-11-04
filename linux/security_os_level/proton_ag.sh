@@ -535,16 +535,45 @@ backup_existing_state() {
 # Proton VPN (dnf repository method)
 #######################################################
 install_proton_vpn() {
-  local root="https://repo.protonvpn.com/fedora-${FEDORA_RELEASE_VERSION}-stable"
-  local base="$root/protonvpn-stable-release"
-  local index="$MANIFEST_DIR/protonvpn_index.html" rpm_name
+
+  # local root="https://repo.protonvpn.com/fedora-${FEDORA_RELEASE_VERSION}-stable"
+  # local base="$root/protonvpn-stable-release"
+  # local index="$MANIFEST_DIR/protonvpn_index.html" rpm_name
+
+  # log_step "Proton VPN"
+  # fetch "$base/" "$index" 120 \
+  #     || { fail "cannot read $base/ (does Proton publish a repo for Fedora $FEDORA_RELEASE_VERSION yet?)"; return 1; }
+
+  # # Token extraction + version sort; see DESIGN NOTE 5.  The strict pattern
+  # # also guarantees the name is safe to use as a file name.
+
+
+
+
+
+
+
+  local v="$FEDORA_RELEASE_VERSION"
+  local root="" base="" index="$MANIFEST_DIR/protonvpn_index.html" rpm_name found_v=""
 
   log_step "Proton VPN"
-  fetch "$base/" "$index" 120 \
-    || { fail "cannot read $base/ (does Proton publish a repo for Fedora $FEDORA_RELEASE_VERSION yet?)"; return 1; }
 
-  # Token extraction + version sort; see DESIGN NOTE 5.  The strict pattern
-  # also guarantees the name is safe to use as a file name.
+  # Fallback loop: try current Fedora release down to 40 if a 404 occurs
+  while (( v >= 40 )); do
+    root="https://repo.protonvpn.com/fedora-${v}-stable"
+    base="$root/protonvpn-stable-release"
+    if fetch "$base/" "$index" 30; then
+      found_v="$v"
+      if (( found_v != FEDORA_RELEASE_VERSION )); then
+        log_warn "Proton repo for Fedora $FEDORA_RELEASE_VERSION not published yet; using Fedora $found_v fallback."
+      fi
+      break
+    fi
+    v=$(( v - 1 ))
+  done
+
+  [[ -n "$found_v" ]] || { fail "cannot read Proton repository index for Fedora $FEDORA_RELEASE_VERSION or recent fallbacks"; return 1; }
+
   rpm_name="$(grep -oE 'protonvpn-stable-release-[0-9][0-9.]*-[0-9]+\.noarch\.rpm' "$index" | sort -Vu | tail -n1)"
   [[ -n "$rpm_name" ]] || { fail "no protonvpn-stable-release RPM found in the repo index"; return 1; }
   log_info "bootstrap package: $rpm_name"
