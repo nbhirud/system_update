@@ -1007,7 +1007,8 @@ fi
 # Create project files - Python
 cat > "$PYPROJECT_TOML" <<'EOT'
 [project]
-name = "my-project"
+# name = "my-project"
+name = "nb-py-template"
 version = "0.1.0"
 description = "Add your description"
 requires-python = ">=3.12"
@@ -1105,7 +1106,10 @@ pre-commit init-templatedir "$GIT_TEMPLATE_DIR_ALL"
 mkdir -p "$GIT_TEMPLATE_DIR_PY"
 cd "$GIT_TEMPLATE_DIR_PY"
 
-uv init --name "my-project" --python 3.15
+# uv init --name "my-project" --python 3.15
+# uv add --dev ruff pytest pytest-cov pre-commit
+
+uv init --name "nb-py-template" --python 3.15 --no-workspace
 uv add --dev ruff pytest pytest-cov pre-commit
 
 cp "$PRE_COMMIT_YAML_PY" "$GIT_TEMPLATE_DIR_PY/.pre-commit-config.yaml" 
