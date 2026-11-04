@@ -8,7 +8,7 @@ set -eux
 # Download package-signing-key from here:
 # https://zoom.us/linux/download/pubkey?version=6-7-5
 
-sudo rpm --import package-signing-key-6-7-5.pub
+# sudo rpm --import package-signing-key-6-7-5.pub
 
-sudo dnf install -y zoom_x86_64.rpm
+# sudo dnf install -y zoom_x86_64.rpm
 

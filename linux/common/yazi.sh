@@ -13,11 +13,14 @@ sudo dnf install -y yazi ffmpegthumbnailer ImageMagick poppler fd-find ripgrep f
 # alternative using crgo
 # cargo install --locked yazi-fm yazi-cli
 
+mkdir -p ~/.config/yazi
+
 # config: ~/.config/yazi/config.toml
 #   yazi.toml - General configuration.
 #   keymap.toml - Keybindings configuration.
 #   theme.toml - Color scheme configuration.
-sudo tee -a ~/.config/yazi/config.toml <<'YAZI_EOF'
+# sudo tee -a ~/.config/yazi/config.toml <<'YAZI_EOF'
+tee ~/.config/yazi/config.toml <<'YAZI_EOF'
 [manager]
 ratio = [1, 3, 4]         # Panel ratio: sidebar | file_list | preview
 show_hidden = true        # Show hidden files by default (you'll like this)
@@ -26,16 +29,16 @@ sort_reverse = false
 
 [opener]
 edit = [
-	{ run = '${EDITOR:-nvim} "$@"', desc = "Edit with $EDITOR" },
-	{ run = 'yq "$@"', for = "unix", orphan = true, block = false }
+    { run = '${EDITOR:-nvim} "$@"', desc = "Edit with $EDITOR" },
+    { run = 'yq "$@"', for = "unix", orphan = true, block = false }
 ]
 open = [
-	{ run = 'xdg-open "$@"', desc = "Open", for = "linux" },
-	{ run = 'open "$@"', desc = "Open", for = "mac" },
-	{ run = 'start "" "$@"', desc = "Open", for = "windows" }
+    { run = 'xdg-open "$@"', desc = "Open", for = "linux" },
+    { run = 'open "$@"', desc = "Open", for = "mac" },
+    { run = 'start "" "$@"', desc = "Open", for = "windows" }
 ]
 reveal = [
-	{ run = 'xdg-open "$(dirname "$1")"', desc = "Reveal", for = "linux" }
+    { run = 'xdg-open "$(dirname "$1")"', desc = "Reveal", for = "linux" }
 ]
 
 [preview]
@@ -47,7 +50,7 @@ sixel = true                   # Enable sixel fallback for non-Kitty terminals
 [plugin]
 # Enable plugins
 fetchers = [
-	{ name = "*", cmd = "file", args = ["--mime-type", "-b"] }
+    { name = "*", cmd = "file", args = ["--mime-type", "-b"] }
 ]
 YAZI_EOF
 

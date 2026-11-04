@@ -76,15 +76,29 @@ install_packages() {
     # Check for zellij
     if ! command -v zellij &> /dev/null; then
         log_info "Installing zellij via DNF..."
+        sudo dnf copr enable -y varlad/zellij
         sudo dnf install -y zellij
+
+        # # Install via Cargo
+        # sudo dnf install -y cargo rust
+        # cargo install zellij
+
+        # # Official way: https://zellij.dev/
+        # bash <(curl -L https://zellij.dev/launch)
+
+        zellij --version
+
     else
         log_info "zellij is already installed."
     fi
 
     # Ensure Nerd Fonts are available (re-run fc-cache just in case)
     log_info "Refreshing font cache..."
-    sudo dnf install -y ttf-powerline-symbols || true
+    # sudo dnf install -y ttf-powerline-symbols || true
+    sudo dnf install -y powerline-fonts || true
     fc-cache -fv > /dev/null 2>&1
+
+    fc-list | grep -i powerline
 }
 
 backup_existing() {
