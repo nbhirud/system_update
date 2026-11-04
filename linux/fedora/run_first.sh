@@ -713,6 +713,8 @@ sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld.sh \
 # MIME defaults
 ######################################
 
+sudo ln -sf /usr/lib64/qt6/bin/qtpaths /usr/local/bin/qtpaths
+
 # Set codium as the default text editor
 xdg-mime default codium.desktop text/plain
 # Set brave as the default browser - TODO
