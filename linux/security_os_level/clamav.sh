@@ -1460,10 +1460,16 @@ apply_dropin_or_rollback() {
     sudo tee "$dir/$name" > /dev/null        # drop-in content comes from the heredoc
     sudo systemctl daemon-reload
     sudo systemctl restart "$unit"
+    
+    # Give clamd a brief moment to initialize its worker pool before health-checking
+    if [[ "$unit" == "clamd@scan.service" ]]; then
+        sleep 10
+    fi
+
     if ! bash -c "$health"; then
         echo "WARN: $unit failed its health check with $name: rolling back" >&2
-        sudo rm -f "$dir/$name"; 
-        sudo systemctl daemon-reload; 
+        sudo rm -f "$dir/$name"
+        sudo systemctl daemon-reload
         sudo systemctl restart "$unit"
         return 1
     fi
@@ -2948,6 +2954,8 @@ sudo tee /etc/systemd/system/clamd@scan.service.d/override.conf > /dev/null <<EO
 CPUWeight=50
 Restart=on-failure
 RestartSec=10
+TimeoutStartSec=300
+TimeoutStopSec=30
 # NoNewPrivileges=yes
 # ProtectSystem=full
 # ProtectHome=read-only
@@ -3130,7 +3138,8 @@ sudo freshclam --config-file="$FRESH_CONF"
 
 # clamd (est. 5.8 -> about 4.8). PrivateNetwork is the big one: clamd only needs a file-path socket, so it gets no network at all.
 # The health check connects from the HOST namespace, which also proves the socket is still reachable.
-apply_dropin_or_rollback clamd@scan.service 20-hardening.conf "sudo clamdscan --config-file=$SCAN_CONF --ping 60:3" <<'EOF' || echo "WARN: clamd hardening not applied"
+# apply_dropin_or_rollback clamd@scan.service 20-hardening.conf "sudo clamdscan --config-file=$SCAN_CONF --ping 60:3" <<'EOF' || echo "WARN: clamd hardening not applied"
+apply_dropin_or_rollback clamd@scan.service 20-hardening.conf "sudo clamdscan --config-file=$SCAN_CONF --ping 300:5" <<'EOF' || echo "WARN: clamd hardening not applied"
 [Service]
 ProtectSystem=full
 ProtectHome=yes
