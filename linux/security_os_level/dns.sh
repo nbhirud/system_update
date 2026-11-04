@@ -14,30 +14,48 @@ set -eux
 # NEXTDNS_ID="<YOUR_NEXTDNS_ID>"   # Replace with your NextDNS ID
 # NEXTDNS_DEVICE_ID="<YOUR_NEXTDNS_DEVICE_ID>" # Replace with your NextDNS device ID to uniquely identify the device
 
-# Anything assigned here will be disregarded. Pass these instead to the script as:
-# sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEXTDNS_DEVICE_ID
-NEXTDNS_ID="" # Do not initialize here
-NEXTDNS_DEVICE_ID="" # Do not initialize here
+# # Anything assigned here will be disregarded. Pass these instead to the script as:
+# # sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEXTDNS_DEVICE_ID
+# NEXTDNS_ID="" # Do not initialize here
+# NEXTDNS_DEVICE_ID="" # Do not initialize here
 
-# Making sure nothing was manually initialized above
-if [ "$NEXTDNS_DEVICE_ID" != "" ] || [ "$NEXTDNS_ID" != "" ]; then
-  echo "Found hardcoded NEXTDNS_DEVICE_ID = $NEXTDNS_DEVICE_ID and NEXTDNS_ID = $NEXTDNS_ID in dns.sh. These will be ignored. "
-  sleep 30s
-fi
+# # Making sure nothing was manually initialized above
+# if [ "$NEXTDNS_DEVICE_ID" != "" ] || [ "$NEXTDNS_ID" != "" ]; then
+#   echo "Found hardcoded NEXTDNS_DEVICE_ID = $NEXTDNS_DEVICE_ID and NEXTDNS_ID = $NEXTDNS_ID in dns.sh. These will be ignored. "
+#   sleep 30s
+# fi
 
-if [[ -z $1 ]] && [[ -z $2 ]];
-then 
-  echo "NEXTDNS_ID and/or NEXTDNS_DEVICE_ID not passed as input. Need to pass both"
-  exit 1
+# if [[ -z $1 ]] && [[ -z $2 ]];
+# then 
+#   echo "NEXTDNS_ID and/or NEXTDNS_DEVICE_ID not passed as input. Need to pass both"
+#   exit 1
   
-else
-  echo "NEXTDNS_ID and/or NEXTDNS_DEVICE_ID are provided. Proceeding."
-  NEXTDNS_ID=$1
-  NEXTDNS_DEVICE_ID=$2
-  echo "Inputs provided: NEXTDNS_DEVICE_ID = $NEXTDNS_DEVICE_ID and NEXTDNS_ID = $NEXTDNS_ID"
+# else
+#   echo "NEXTDNS_ID and/or NEXTDNS_DEVICE_ID are provided. Proceeding."
+#   NEXTDNS_ID=$1
+#   NEXTDNS_DEVICE_ID=$2
+#   echo "Inputs provided: NEXTDNS_DEVICE_ID = $NEXTDNS_DEVICE_ID and NEXTDNS_ID = $NEXTDNS_ID"
 
+# fi
+
+# Named Options Initialization
+NEXTDNS_ID=""
+NEXTDNS_DEVICE_ID=""
+NEXTDNS_URL=""
+
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        --nextdns-id) NEXTDNS_ID="$2"; shift 2 ;;
+        --nextdns-device-id) NEXTDNS_DEVICE_ID="$2"; shift 2 ;;
+        --nextdns-url) NEXTDNS_URL="$2"; shift 2 ;;
+        *) echo "Unknown parameter: $1" >&2; exit 1 ;;
+    esac
+done
+
+if [ -z "$NEXTDNS_ID" ] || [ -z "$NEXTDNS_DEVICE_ID" ]; then
+    echo "ERROR: --nextdns-id and --nextdns-device-id are required named options." >&2
+    exit 1
 fi
-
 
 # Redundant checks. Remove this later if nothing gets caught here after multiple tests.
 if [ "$NEXTDNS_ID" = "" ] || [ "$NEXTDNS_DEVICE_ID" = "" ]; then
@@ -134,13 +152,32 @@ SCRIPT_PATH="/usr/local/bin/update-nextdns-ip.sh"
 mkdir -p "$(dirname "$SCRIPT_PATH")"
 
 # Prompt user for the NextDNS DDNS / Update URL
-read -rp "Enter your NextDNS DDNS Update URL (from Dashboard -> Linked IP): " NEXTDNS_URL
+# read -rp "Enter your NextDNS DDNS Update URL (from Dashboard -> Linked IP): " NEXTDNS_URL
 
-# Basic validation of the entered URL
-if [[ -z "$NEXTDNS_URL" || ! "$NEXTDNS_URL" =~ ^https://link-ip\.nextdns\.io/ ]]; then
-    echo "ERROR: Invalid URL. It should start with 'https://link-ip.nextdns.io/'" >&2
-    exit 1
+# # Basic validation of the entered URL
+# if [[ -z "$NEXTDNS_URL" || ! "$NEXTDNS_URL" =~ ^https://link-ip\.nextdns\.io/ ]]; then
+#     echo "ERROR: Invalid URL. It should start with 'https://link-ip.nextdns.io/'" >&2
+#     exit 1
+# fi
+
+# Prompt user for the NextDNS DDNS / Update URL only if not passed and running interactively
+if [ -z "$NEXTDNS_URL" ]; then
+    if [ -t 0 ]; then
+        read -rp "Enter your NextDNS DDNS Update URL (from Dashboard -> Linked IP): " NEXTDNS_URL
+    else
+        echo "WARNING: --nextdns-url not provided in non-interactive mode. Skipping DDNS cron updater setup."
+    fi
 fi
+
+# Only proceed with script creation if URL is present
+if [ -n "$NEXTDNS_URL" ]; then
+    if [[ ! "$NEXTDNS_URL" =~ ^https://link-ip\.nextdns\.io/ ]]; then
+        echo "ERROR: Invalid URL. It should start with 'https://link-ip.nextdns.io/'" >&2
+        exit 1
+    fi
+    # ... rest of your script generation and crontab logic ...
+fi
+
 
 
 # Create the executable updater script

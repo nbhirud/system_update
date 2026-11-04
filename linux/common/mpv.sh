@@ -553,6 +553,14 @@ install_packages() {
         rpmfusion+=("https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${DISTRO_VERSION}.noarch.rpm")
     fi
     if (( ${#rpmfusion[@]} )); then
+        log_info "Pre-importing official RPM Fusion GPG keys securely..."
+        sudo dnf install -y distribution-gpg-keys >/dev/null 2>&1 || true
+        for _key in /usr/share/distribution-gpg-keys/rpmfusion/RPM-GPG-KEY-rpmfusion-*-fedora-*; do
+            if [[ -f "$_key" ]]; then
+                sudo rpmkeys --import "$_key" 2>/dev/null || true
+            fi
+        done
+
         log_info "Enabling RPM Fusion: $(array_join_space "${rpmfusion[@]}")"
         sudo dnf install -y "${rpmfusion[@]}"
     fi
