@@ -79,7 +79,7 @@ padding = { x = 8, y = 8 }
 dynamic_title = true # Title bar shows current file path
 
 # Dynamic sizing based on RAM
-scrolling = { history = $SCROLLBACK_LINES, multiplier = 3 }
+# scrolling = { history = $SCROLLBACK_LINES, multiplier = 3 } # invalid option
 
 # Hardware Acceleration Hint
 option_as_alt = "OnlyLeft"
@@ -95,7 +95,7 @@ size = $FONT_SIZE
 # size = 12.0
 
 # Enable live reload for rapid iteration
-live_config_reload = true
+# live_config_reload = true # invalid option
 
 [colors.primary]
 background = "#282a36" # Dracula Base
@@ -143,9 +143,9 @@ cyan = "#a4ffff"
 white = "#ffffff"
 
 [bell]
-animation = "None"
+animation = "Ease"
 command = "None"
-visual = "None"
+# visual = "None" # invalid option
 
 # Mouse binding for efficiency
 [mouse]
