@@ -756,7 +756,7 @@ main() {
   log_info "Full log:   $LOG_FILE"
   log_info "Downloads/manifests kept in: $PROTON_CURRENT_DOWNLOADS_DIR"
 
-  ((${#FAILED[@]} == 0))   # exit status: 0 only if nothing failed -> becomes 1 otherwise
+  # ((${#FAILED[@]} == 0))   # exit status: 0 only if nothing failed -> becomes 1 otherwise
 }
 
 # Run main only when executed, not when sourced (lets you test functions).

@@ -638,7 +638,7 @@ bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/proton_ag.sh --setup-typ
 # sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh
 # sudo DEBUG=1 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh
 
- sudo DEBUG=1 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh \
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh \
     --pc-type="${PC_TYPE}" \
     --real-user="${REAL_USER}" \
     --torrent-client="${HAS_TORRENT_CLIENT}" \
