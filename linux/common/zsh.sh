@@ -201,6 +201,11 @@ alias nbuvupdate="uv self update"
 alias gearlever='flatpak run it.mijorus.gearlever'
 # flatpak run it.mijorus.gearlever --update <name of appimage> # updates 1 appimage at a time
 
+############################
+# PATH:
+############################
+
+export PATH="$HOME/.npm-global/bin:$PATH"
 
 ############################
 # Enable tor:

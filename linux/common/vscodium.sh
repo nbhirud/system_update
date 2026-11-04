@@ -4,6 +4,7 @@
 # Target: Nik's Environment (Fedora, Wayland, Ruff/UV, JetBrains Nerd Font)
 # ==============================================================================
 
+# set -eux
 set -euo pipefail
 
 # --- Configuration ---
@@ -33,19 +34,24 @@ mkdir -p "$USER_CONFIG_DIR" "$SNIPPETS_DIR" "$CODEPROJECTS_DIR"
 ###############################################################################
 
 # Extensions tailored for Git, Python (Ruff/UV), Rust, Markdown
+# Check all available extensions here: https://open-vsx.org/
+
 EXTENSIONS=(
     ## Python
     "ms-python.python"              # Core Python
-    "ms-python.vscode-pylance"      # Python Intellisense
+    # "ms-python.vscode-pylance"      # Python Intellisense - not FOSS. unavailable for vscodium
+    # maybe jedi? (alternative to pylance) - jedi vs basedpyright?
     "ms-python.debugpy"             # Python Debugger
     "charliermarsh.ruff"            # Ruff Linter/Formatter
     "detachhead.basedpyright"       # python languageServer - open-source alternative to Pylance
+    # "ms-pyright.pyright"
     "the0807.uv-toolkit"
     # "ms-python.black-formatter"     # Black (fallback if needed, though Ruff is preferred)
+    # "meta.pyrefly"
+    "ms-python.vscode-python-envs"
     
     # Rust
     "rust-lang.rust-analyzer"       # Rust Core
-
 
     # TOML
     "tamasfe.even-better-toml"      # TOML support (for pyproject.toml, Cargo.toml)
@@ -54,6 +60,7 @@ EXTENSIONS=(
     "eamodio.gitlens"               # Git Superpowers
     "mhutchie.git-graph"
     "github.vscode-github-actions"
+    "github.vscode-pull-request-github"
 
     # Shell
     "mkhl.shfmt"
@@ -67,25 +74,46 @@ EXTENSIONS=(
     "esbenp.prettier-vscode"        # Generic Formatter
 
     # Quality of life
-    usernamehw.errorlens
-    gruntfuggly.todo-tree
-    fill-labs.dependi
+    "oderwat.indent-rainbow"
+    "usernamehw.errorlens"
+    "gruntfuggly.todo-tree"
+    "fill-labs.dependi" # Check if this is needed
 
     # LSP
     jnoortheen.nix-ide
 
     # Misc
-    "ms-vscode-remote.remote-ssh"   # Remote SSH
+    # "ms-vscode-remote.remote-ssh"   # Remote SSH  - not FOSS. unavailable for vscodium
+    "jeanp413.open-remote-ssh"      # FOSS replacement for ms-vscode-remote.remote-ssh
     "oderwat.indent-rainbow"        # Visual aid for indentation
     "redhat.vscode-yaml"            # YAML support
     "ms-azuretools.vscode-docker"   # Docker integration
     "editorconfig.editorconfig"
+    "ms-vscode.makefile-tools"
+    "streetsidesoftware.code-spell-checker"
 
     # String Manipulation and tools
     "marclipovsky.string-manipulation"
     "qcz.text-power-tools"
     "carlocardella.vscode-texttoolbox"
     
+
+    # DevOps
+    "amazonwebservices.aws-iac-vscode"
+    "docker.docker"
+    "hashicorp.terraform"
+    "ms-azuretools.vscode-containers"
+    "ms-kubernetes-tools.vscode-kubernetes-tools"
+    "redhat.ansible"
+
+
+    # Flutter
+    "dart-code.dart-code"
+    "dart-code.flutter"
+
+    # LLM Integration
+    # "saoudrizwan.claude-dev" # Cline
+
 )
 
 
@@ -135,7 +163,7 @@ run_user() {
 # ROOT CHECK
 ###############################################################################
 
-require_root
+# require_root
 
 
 ###############################################################################
@@ -144,6 +172,7 @@ require_root
 
 log_header "Installing development tooling"
 
+# sudo dnf install -y --skip-unavailable \
 sudo dnf install -y \
     git \
     git-lfs \
@@ -191,12 +220,16 @@ sudo dnf install -y \
 
 log_header "Installing uv + Python tooling"
 
+# Installs to ~/.local/bin correctly under your user account
 curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+
 uv self update
 
 uv tool install pre-commit
 uv tool install ruff
 uv tool install basedpyright
+# uv tool install shfmt-py
 uv tool upgrade --all
 
 # run_user "
@@ -222,12 +255,28 @@ uv tool upgrade --all
 # RUST TOOLCHAIN
 ###############################################################################
 
-log_header "Configuring Rust"
+log_header "Installing and Configuring Rust"
 
-run_user "
+# Install rustup via official script if not already present
+if ! command -v rustup &> /dev/null; then
+    log_info "Installing rustup..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+fi
+
+# Source the cargo environment for the current script session
+source "$HOME/.cargo/env"
+
+log_info "Adding Rust components..."
     rustup default stable
     rustup component add rustfmt clippy rust-src
-"
+#
+# run_user "
+#     rustup default stable
+#     rustup component add rustfmt clippy rust-src
+# "
+
+rustc --version && cargo --version
+
 
 ###############################################################################
 # MARKDOWN TOOLING
@@ -235,10 +284,14 @@ run_user "
 
 log_header "Installing markdown tooling"
 
+mkdir -p ~/.npm-global
+npm config set prefix "$HOME/.npm-global"
+
 npm install -g \
     markdownlint-cli \
     prettier
 
+markdownlint --version && prettier --version
 
 ###############################################################################
 # 
@@ -276,21 +329,30 @@ log_info "Adding official VSCodium repository..."
 sudo rpm --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
 # sudo rpm --import https://download.vscodium.com/public.key
 
+
+
+log_header "Adding repository and installing VSCodium"
+
+sudo rm -f /etc/yum.repos.d/vscodium.repo
+sudo rpm --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
+
 sudo tee /etc/yum.repos.d/vscodium.repo <<'EOF'
 [gitlab.com_paulcarroty_vscodium_repo]
 name=gitlab.com_paulcarroty_vscodium_repo
-baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/
 # baseurl=https://download.vscodium.com/rpms/
+baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/
 enabled=1
 gpgcheck=1
 repo_gpgcheck=1
-gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
 # gpgkey=https://download.vscodium.com/public.key
+gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
 metadata_expire=1h
 EOF
 
 log_info "Installing VSCodium..."
 sudo dnf install -y codium
+
+
 
 ###############################################################################
 # Wayland / GPU/ electron / etc stuff
@@ -328,24 +390,45 @@ fi
 
 #########################
 
-log "Configuring native Wayland support"
+log_info "Configuring native Wayland support"
 
 mkdir -p /etc/profile.d
 
-cat >/etc/profile.d/codium-wayland.sh <<'EOF'
+sudo cat >/etc/profile.d/codium-wayland.sh <<'EOF'
 export ELECTRON_OZONE_PLATFORM_HINT=auto
 EOF
 
-mkdir -p /usr/local/share/applications
-# mkdir -p /usr/share/applications
+log_info "Configuring native Wayland support"
 
-sed \
-    's|^Exec=/usr/share/codium/codium %F|Exec=/usr/share/codium/codium --enable-features=UseOzonePlatform --ozone-platform=wayland %F|' \
-    /usr/share/applications/codium.desktop \
-    >/usr/local/share/applications/codium.desktop
+sudo mkdir -p /etc/profile.d
 
-log "Configuring shell environment"
-cat >/etc/profile.d/editor.sh <<'EOF'
+sudo tee /etc/profile.d/codium-wayland.sh > /dev/null <<'EOF'
+export ELECTRON_OZONE_PLATFORM_HINT=auto
+EOF
+
+
+# mkdir -p /usr/local/share/applications
+# # mkdir -p /usr/share/applications
+
+# sed \
+#     's|^Exec=/usr/share/codium/codium %F|Exec=/usr/share/codium/codium --enable-features=UseOzonePlatform --ozone-platform=wayland %F|' \
+#     /usr/share/applications/codium.desktop \
+#     >/usr/local/share/applications/codium.desktop
+
+sudo mkdir -p /usr/local/share/applications
+
+sed 's|^Exec=/usr/share/codium/codium %F|Exec=/usr/share/codium/codium --enable-features=UseOzonePlatform --ozone-platform=wayland %F|' \
+    /usr/share/applications/codium.desktop | sudo tee /usr/local/share/applications/codium.desktop > /dev/null
+
+# log_info "Configuring shell environment"
+# cat >/etc/profile.d/editor.sh <<'EOF'
+# export EDITOR=codium
+# export VISUAL=codium
+# EOF
+
+log_info "Configuring shell environment"
+
+sudo tee /etc/profile.d/editor.sh > /dev/null <<'EOF'
 export EDITOR=codium
 export VISUAL=codium
 EOF
@@ -361,8 +444,89 @@ log_info "Applying hardware optimizations..."
 
 
 # Create a local override for the .desktop file to inject GPU flags
-LOCAL_DESKTOP_FILE="$HOME/.local/share/applications/codium.desktop"
-sudo cp /usr/share/applications/codium.desktop "$LOCAL_DESKTOP_FILE"
+LOCAL_DESKTOP_FILE="$HOME/.local/share/applications/vscodium.desktop"
+sudo cp /usr/share/applications/vscodium.desktop "$LOCAL_DESKTOP_FILE"
+
+
+
+
+log_info "Configuring native Wayland support"
+
+# Dynamically locate any installed VSCodium or Codium desktop file
+DESKTOP_SRC=$(find /usr/share/applications -maxdepth 1 \( -name "*codium*.desktop" -o -name "*vscodium*.desktop" \) | head -n 1)
+
+# If no desktop file was placed by the package, create a standard one
+if [ -z "$DESKTOP_SRC" ] || [ ! -f "$DESKTOP_SRC" ]; then
+    log_info "Generating standard VSCodium desktop entry..."
+    DESKTOP_SRC="/tmp/codium.desktop"
+
+    # Remove any stale root-owned file from previous runs
+    sudo rm -f "$DESKTOP_SRC"
+
+    tee "$DESKTOP_SRC" > /dev/null << 'EOF'
+[Desktop Entry]
+Name=VSCodium
+Comment=Code Editing. Redefined.
+GenericName=Text Editor
+Exec=/usr/bin/codium %F
+Icon=vscodium
+Type=Application
+StartupNotify=false
+Categories=Utility;TextEditor;Development;IDE;
+MimeType=text/plain;inode/directory;application/x-code-workspace;
+EOF
+fi
+
+# Ensure filename is explicitly set
+DESKTOP_FILENAME=$(basename "$DESKTOP_SRC")
+if [ -z "$DESKTOP_FILENAME" ]; then
+    DESKTOP_FILENAME="codium.desktop"
+fi
+
+# 1. System-wide override in /usr/local/share/applications/
+sudo mkdir -p /usr/local/share/applications
+if [ "$HAS_NVIDIA" = true ]; then
+    sed \
+        "s|^Exec=.*codium %F|Exec=/usr/bin/codium --enable-features=UseOzonePlatform --ozone-platform=wayland --ignore-gpu-blocklist %F|" \
+        "$DESKTOP_SRC" \
+        | sudo tee "/usr/local/share/applications/$DESKTOP_FILENAME" > /dev/null
+    log_info "Applied NVIDIA Wayland flags system-wide."
+else
+    sed \
+        "s|^Exec=.*codium %F|Exec=/usr/bin/codium --enable-features=UseOzonePlatform --ozone-platform=wayland %F|" \
+        "$DESKTOP_SRC" \
+        | sudo tee "/usr/local/share/applications/$DESKTOP_FILENAME" > /dev/null
+    log_info "Applied Intel/AMD Wayland flags system-wide."
+fi
+
+# # 2. User-local override in ~/.local/share/applications/
+# mkdir -p "$HOME/.local/share/applications"
+# cp "/usr/local/share/applications/$DESKTOP_FILENAME" "$HOME/.local/share/applications/$DESKTOP_FILENAME"
+
+
+# 2. User-local override in ~/.local/share/applications/
+mkdir -p "$HOME/.local/share/applications"
+LOCAL_DESKTOP_FILE="$HOME/.local/share/applications/$DESKTOP_FILENAME"
+cp "/usr/local/share/applications/$DESKTOP_FILENAME" "$LOCAL_DESKTOP_FILE"
+
+
+2. User-local override in ~/.local/share/applications/
+mkdir -p "$HOME/.local/share/applications"
+
+Explicitly assign the variable to satisfy set -u with a safe fallback
+LOCAL_DESKTOP_FILE="$HOME/.local/share/applications/${DESKTOP_FILENAME:-codium.desktop}"
+TARGET_SYSTEM_FILE="/usr/local/share/applications/${DESKTOP_FILENAME:-codium.desktop}"
+
+if [ -f "$TARGET_SYSTEM_FILE" ]; then
+    cp "$TARGET_SYSTEM_FILE" "$LOCAL_DESKTOP_FILE"
+    log_info "Copied desktop entry to local user directory."
+else
+    log_error "System desktop file not found at $TARGET_SYSTEM_FILE"
+    exit 1
+fi
+
+
+
 
 # Inject GPU flags into the Exec line
 if [ "$HAS_NVIDIA" = true ]; then
@@ -427,15 +591,13 @@ run_user "
 ###############################################################################
 
 log_header "Installing VSCodium extensions"
-
 for ext in "${EXTENSIONS[@]}"; do
     log_info "Installing $ext..."
     codium --install-extension "$ext" --force
     # run_user "codium --install-extension $ext || true"
 done
 
-
-
+codium --list-extensions
 
 ###############################################################################
 # USER SETTINGS
@@ -448,8 +610,9 @@ mkdir -p "$REAL_HOME/.config/VSCodium/User"
 
 # Create settings.json
 # Note: We configure Ruff as the primary formatter/linter for Python
+# # cat << 'EOF' > "$HOME/.config/VSCodium/User/settings.json"
 # cat << 'EOF' > "$SETTINGS_FILE"
-cat > "$SETTINGS_FILE" <<EOF
+cat > "$SETTINGS_FILE" <<'EOF'
 {
     // --- Core & UI ---
     // "workbench.colorTheme": "Default Dark Modern", 
@@ -761,7 +924,7 @@ fi
 
 # Create a sample .pre-commit-config.yaml (you can customize per project) - All purpose
 if [ ! -f "$PRE_COMMIT_YAML_ALL" ]; then
-    cat > "$PRE_COMMIT_YAML_ALL <<'EOF'
+    cat > "$PRE_COMMIT_YAML_ALL" <<'EOF'
 # .pre-commit-config.yaml
 # Best for: Git + Python (Ruff/uv) + Rust + Markdown + Shell
 
@@ -940,7 +1103,7 @@ pre-commit init-templatedir "$GIT_TEMPLATE_DIR_ALL"
 mkdir -p "$GIT_TEMPLATE_DIR_PY"
 cd "$GIT_TEMPLATE_DIR_PY"
 
-uv init --name "my-project" --python 3.12
+uv init --name "my-project" --python 3.15
 uv add --dev ruff pytest pytest-cov pre-commit
 
 cp "$PRE_COMMIT_YAML_PY" "$GIT_TEMPLATE_DIR_PY/.pre-commit-config.yaml" 
