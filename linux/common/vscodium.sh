@@ -626,8 +626,8 @@ cat > "$SETTINGS_FILE" <<'EOF'
 {
     // --- Core & UI ---
     // "workbench.colorTheme": "Default Dark Modern", 
-    "workbench.colorTheme": "Default Dark+",
-    "workbench.iconTheme": "vscode-icons",
+    //"workbench.colorTheme": "Default Dark+",
+    //"workbench.iconTheme": "vscode-icons",
 
     "editor.fontFamily": "'JetBrains Mono Nerd Font', 'Noto Sans Mono', 'Droid Sans Mono', monospace",
     "editor.fontLigatures": true,
@@ -645,7 +645,6 @@ cat > "$SETTINGS_FILE" <<'EOF'
     "workbench.editor.enablePreview": false,
     "workbench.activityBar.visible": true,
     // "workbench.activityBar.location": "hidden",
-    "workbench.statusBar.visible": true,
     "workbench.list.smoothScrolling": true,
     "workbench.tree.indent": 18,
     "workbench.tree.renderIndentGuides": "always",
@@ -654,8 +653,8 @@ cat > "$SETTINGS_FILE" <<'EOF'
     "workbench.panel.opensMaximized": "never",
     "workbench.sideBar.location": "left",
     "workbench.startupEditor": "none",
-    "workbench.preferredDarkColorTheme": "Default Dark+",
-    "workbench.preferredLightColorTheme": "Default Light+",
+    //"workbench.preferredDarkColorTheme": "Default Dark+",
+    //"workbench.preferredLightColorTheme": "Default Light+",
     "workbench.preferredHighContrastColorTheme": "Default High Contrast",
     "workbench.preferredHighContrastLightColorTheme": "Default High Contrast Light",
     "window.titleBarStyle": "custom",  // Better integration with KDE Plasma Wayland
@@ -715,9 +714,12 @@ cat > "$SETTINGS_FILE" <<'EOF'
     // "ruff.nativeServer": "on",
     "ruff.nativeServer": true,
     // "python.languageServer": "Pylance",
-    "basedpyright.analysis.typeCheckingMode": "basic",
+    //"basedpyright.analysis.typeCheckingMode": "basic",
+    "basedpyright.analysis.typeCheckingMode": "recommended"
     "basedpyright.analysis.diagnosticMode": "workspace",
-    "python.languageServer": "basedpyright",
+    //"python.languageServer": "Jedi",
+    //"python.languageServer": "None",
+    "python.languageServer": "Default",
     "ruff.importStrategy": "fromEnvironment",
     "ruff.path": ["uv", "run", "ruff"], // Executes ruff via uv natively if available
 
@@ -791,7 +793,7 @@ cat > "$SETTINGS_FILE" <<'EOF'
     "files.autoSaveDelay": 1000,
     "files.insertFinalNewline": true,
     "files.trimTrailingWhitespace": true,
-    "files.eol": "\\n",
+    "files.eol": "\n",
     "files.encoding": "utf8",
     "search.useIgnoreFiles": true,
     "search.useGlobalIgnoreFiles": true,
@@ -859,7 +861,7 @@ cat > "$SETTINGS_FILE" <<'EOF'
     "diffEditor.accessibilityPageSize": 10,
     "diffEditor.accessibilitySupport": "on",
     "diffEditor.diffAlgorithm": "advanced",
-    "diffEditor.experimental.advanced": true
+    "diffEditor.experimental.advanced": true,
 
     // --- Terminal ---
     "terminal.integrated.shell.linux": "/bin/zsh",
