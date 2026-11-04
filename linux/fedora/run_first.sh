@@ -353,13 +353,23 @@ sudo dnf install -y git flatpak
 #######################################
 
 echo "************************ Removing packages ************************"
-# remove stuff
-sudo dnf remove -y totem yelp gnome-tour gnome-connections firefox
-# remove the gnome terminal ptyxis as we have installed
 
-sudo rm -r /opt/firefox
-rm ~/.local/share/applications/firefox.desktop
-rm -r ~/.mozilla
+# Remove packages
+sudo dnf remove -y totem yelp gnome-tour gnome-connections firefox ptyxis
+
+# Clean up files and directories with existence checks
+[ -d /opt/firefox ] && sudo rm -rf /opt/firefox
+[ -f ~/.local/share/applications/firefox.desktop ] && rm -f ~/.local/share/applications/firefox.desktop
+[ -d ~/.mozilla ] && rm -rf ~/.mozilla
+
+# Clean up residual files and directories for removed apps
+for dir in ~/.config/totem ~/.local/share/totem \
+           ~/.config/gnome-connections ~/.local/share/gnome-connections \
+           ~/.config/gnome-tour \
+           ~/.cache/yelp ~/.local/share/yelp \
+           ~/.config/ptyxis ~/.local/share/org.gnome.Ptyxis ~/.cache/ptyxis; do
+    [ -d "$dir" ] && rm -rf "$dir"
+done
 
 #######################################
 
