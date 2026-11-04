@@ -132,6 +132,7 @@ NC='\033[0m'
 log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+log_success() { echo -e "${GREEN}[INFO]${NC} $1"; }
 
 log_header() {
     echo
@@ -186,7 +187,6 @@ sudo dnf install -y \
     fzf \
     bat \
     ShellCheck \
-    shfmt \
     npm \
     gcc \
     make \
@@ -200,6 +200,7 @@ sudo dnf install -y \
     openssl-devel 
 
 # dnf install -y \
+    # shfmt \ # In older Fedora versions (up to Fedora 44), shfmt was available directly in the official repositories as an RPM subpackage. In newer Fedora releases (such as Fedora 45), the package was dropped or retired from the official mirrors because its upstream Go dependencies evolved and its maintainer status became orphaned. So the RPM no longer exists in the newer repository metadata.
         # gcc-c++ \
         # wl-clipboard \
     # xclip \
@@ -229,7 +230,7 @@ uv self update
 uv tool install pre-commit
 uv tool install ruff
 uv tool install basedpyright
-# uv tool install shfmt-py
+uv tool install shfmt-py
 uv tool upgrade --all
 
 # run_user "
@@ -319,35 +320,62 @@ fi
 ###############################################################################
 log_header "Adding repository and installing VSCodium"
 
+#######################################
 # --- Step 1: Install Official Repository ---
-log_info "Cleaning up old third-party repo..."
+# log_info "Cleaning up old third-party repo..."
+# sudo rm -f /etc/yum.repos.d/vscodium.repo
+
+
+# log_info "Adding official VSCodium repository..."
+# # Official repo is more reliable than the GitLab mirror
+# # sudo rpm --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg
+# # sudo rpm --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
+# sudo rpm --import https://download.vscodium.com/public.key
+# # sudo curl -fsSL -o /etc/yum.repos.d/vscodium.repo https://repo.vscodium.dev/vscodium.repo
+# # sudo dnf upgrade --refresh
+
+# sudo tee /etc/yum.repos.d/vscodium.repo <<'EOF'
+# [gitlab.com_paulcarroty_vscodium_repo]
+# name=gitlab.com_paulcarroty_vscodium_repo
+# # baseurl=https://download.vscodium.com/rpms/
+# baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/
+# enabled=1
+# gpgcheck=1
+# repo_gpgcheck=1
+# gpgkey=https://download.vscodium.com/public.key
+# # gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
+# metadata_expire=1h
+# EOF
+#######################################
+
+log_info "Cleaning up old VSCodium repository..."
+
 sudo rm -f /etc/yum.repos.d/vscodium.repo
 
 log_info "Adding official VSCodium repository..."
-# Official repo is more reliable than the GitLab mirror
-# sudo rpm --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/-/raw/master/pub.gpg
-sudo rpm --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
-# sudo rpm --import https://download.vscodium.com/public.key
+
+# Download the repository configuration maintained at repo.vscodium.dev.
+# This replaces the older GitLab-based repository configuration.
+sudo curl --fail --silent --show-error --location \
+    --output /etc/yum.repos.d/vscodium.repo \
+    https://repo.vscodium.dev/vscodium.repo
+
+# Validate the downloaded repository configuration.
+if ! sudo test -s /etc/yum.repos.d/vscodium.repo; then
+    log_error "VSCodium repository configuration is missing or empty."
+    exit 1
+fi
+
+if ! grep -q '^\[.*\]' /etc/yum.repos.d/vscodium.repo; then
+    log_error "Invalid VSCodium repository configuration."
+    sudo rm -f /etc/yum.repos.d/vscodium.repo
+    exit 1
+fi
+
+log_success "VSCodium repository configured successfully."
+#######################################
 
 
-
-log_header "Adding repository and installing VSCodium"
-
-sudo rm -f /etc/yum.repos.d/vscodium.repo
-sudo rpm --import https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
-
-sudo tee /etc/yum.repos.d/vscodium.repo <<'EOF'
-[gitlab.com_paulcarroty_vscodium_repo]
-name=gitlab.com_paulcarroty_vscodium_repo
-# baseurl=https://download.vscodium.com/rpms/
-baseurl=https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/rpms/
-enabled=1
-gpgcheck=1
-repo_gpgcheck=1
-# gpgkey=https://download.vscodium.com/public.key
-gpgkey=https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg
-metadata_expire=1h
-EOF
 
 log_info "Installing VSCodium..."
 sudo dnf install -y codium
@@ -392,42 +420,20 @@ fi
 
 log_info "Configuring native Wayland support"
 
-mkdir -p /etc/profile.d
-
-sudo cat >/etc/profile.d/codium-wayland.sh <<'EOF'
-export ELECTRON_OZONE_PLATFORM_HINT=auto
-EOF
-
-log_info "Configuring native Wayland support"
-
+# Configure native Wayland environment variable globally
 sudo mkdir -p /etc/profile.d
-
 sudo tee /etc/profile.d/codium-wayland.sh > /dev/null <<'EOF'
 export ELECTRON_OZONE_PLATFORM_HINT=auto
 EOF
 
-
-# mkdir -p /usr/local/share/applications
-# # mkdir -p /usr/share/applications
-
-# sed \
-#     's|^Exec=/usr/share/codium/codium %F|Exec=/usr/share/codium/codium --enable-features=UseOzonePlatform --ozone-platform=wayland %F|' \
-#     /usr/share/applications/codium.desktop \
-#     >/usr/local/share/applications/codium.desktop
-
+# Modify and override the desktop entry for Wayland/Ozone support
 sudo mkdir -p /usr/local/share/applications
 
-sed 's|^Exec=/usr/share/codium/codium %F|Exec=/usr/share/codium/codium --enable-features=UseOzonePlatform --ozone-platform=wayland %F|' \
-    /usr/share/applications/codium.desktop | sudo tee /usr/local/share/applications/codium.desktop > /dev/null
+# sed 's|^Exec=/usr/share/codium/codium %F|Exec=/usr/share/codium/codium --enable-features=UseOzonePlatform --ozone-platform=wayland %F|' \
+#     /usr/share/applications/codium.desktop | sudo tee /usr/local/share/applications/codium.desktop > /dev/null
 
-# log_info "Configuring shell environment"
-# cat >/etc/profile.d/editor.sh <<'EOF'
-# export EDITOR=codium
-# export VISUAL=codium
-# EOF
 
 log_info "Configuring shell environment"
-
 sudo tee /etc/profile.d/editor.sh > /dev/null <<'EOF'
 export EDITOR=codium
 export VISUAL=codium
@@ -445,7 +451,9 @@ log_info "Applying hardware optimizations..."
 
 # Create a local override for the .desktop file to inject GPU flags
 LOCAL_DESKTOP_FILE="$HOME/.local/share/applications/vscodium.desktop"
-sudo cp /usr/share/applications/vscodium.desktop "$LOCAL_DESKTOP_FILE"
+# sudo cp /usr/share/applications/vscodium.desktop "$LOCAL_DESKTOP_FILE"
+
+DESKTOP_SRC=$(find /usr/share/applications -maxdepth 1 -name '*codium*.desktop' | head -n1); [[ -n "$DESKTOP_SRC" ]] && cp "$DESKTOP_SRC" "$LOCAL_DESKTOP_FILE" || true
 
 
 
@@ -510,10 +518,10 @@ LOCAL_DESKTOP_FILE="$HOME/.local/share/applications/$DESKTOP_FILENAME"
 cp "/usr/local/share/applications/$DESKTOP_FILENAME" "$LOCAL_DESKTOP_FILE"
 
 
-2. User-local override in ~/.local/share/applications/
+# 2. User-local override in ~/.local/share/applications/
 mkdir -p "$HOME/.local/share/applications"
 
-Explicitly assign the variable to satisfy set -u with a safe fallback
+# Explicitly assign the variable to satisfy set -u with a safe fallback
 LOCAL_DESKTOP_FILE="$HOME/.local/share/applications/${DESKTOP_FILENAME:-codium.desktop}"
 TARGET_SYSTEM_FILE="/usr/local/share/applications/${DESKTOP_FILENAME:-codium.desktop}"
 
@@ -531,11 +539,13 @@ fi
 # Inject GPU flags into the Exec line
 if [ "$HAS_NVIDIA" = true ]; then
     # NVIDIA on Wayland needs specific flags to avoid flickering/black screens
-    sed -i 's|^Exec=codium %F|Exec=codium --enable-features=UseOzonePlatform --ozone-platform=wayland --ignore-gpu-blocklist %F|' "$LOCAL_DESKTOP_FILE"
+    # sed -i 's|^Exec=codium %F|Exec=codium --enable-features=UseOzonePlatform --ozone-platform=wayland --ignore-gpu-blocklist %F|' "$LOCAL_DESKTOP_FILE"
+    sed -i -E 's|^Exec=([^ ]*codium) |Exec=\1 --enable-features=UseOzonePlatform --ozone-platform=wayland --ignore-gpu-blocklist |' "$LOCAL_DESKTOP_FILE"
     log_info "Applied NVIDIA Wayland flags."
 else
     # Intel/AMD standard Wayland flags
-    sed -i 's|^Exec=codium %F|Exec=codium --enable-features=UseOzonePlatform --ozone-platform=wayland %F|' "$LOCAL_DESKTOP_FILE"
+    # sed -i 's|^Exec=codium %F|Exec=codium --enable-features=UseOzonePlatform --ozone-platform=wayland %F|' "$LOCAL_DESKTOP_FILE"
+    sed -i -E 's|^Exec=([^ ]*codium) |Exec=\1 --enable-features=UseOzonePlatform --ozone-platform=wayland |' "$LOCAL_DESKTOP_FILE"
     log_info "Applied Intel/AMD Wayland flags."
 fi
 
@@ -751,36 +761,29 @@ cat > "$SETTINGS_FILE" <<'EOF'
     "markdown.extension.toc.unorderedList.marker": "-",
     "[markdown]": {
         "editor.wordWrap": "on",
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-        // "editor.defaultFormatter": "yzhang.markdown-all-in-one",
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.quickSuggestions": true,
-        //"editor.quickSuggestions": {
-        //    "comments": "off",
-        //    "strings": "off",
-        //    "other": "on"
-        //},
+        
     },
 
     "markdownlint.config": {
         "MD013": false
     },
 
-    "files.associations": {
+        "files.associations": {
         "*.env": "shellscript",
         "*.service": "ini",
         "*.timer": "ini"
-    }
-}
+    },
     
     // --- Editor Behavior ---
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.codeActionsOnSave": {
-        "source.fixAll": "explicit"
+        "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
         "source.organizeImports": "explicit",
         "source.fixAll.eslint": "explicit",
         "source.fixAll.ruff": "explicit"
-        
     },
     
     // "files.autoSave": "onFocusChange",
@@ -823,7 +826,7 @@ cat > "$SETTINGS_FILE" <<'EOF'
     "editor.renderLineHighlight": "line",
     "editor.guides.bracketPairs": true,
     "editor.guides.bracketPairsHorizontal": "active",
-    "editor.bracketPairColorization": true,
+    "editor.bracketPairColorization.enabled": true,
     "editor.guides.highlightActiveIndentation": true,
     "editor.guides.highlightActiveBracketPair": true,
     "editor.guides.indentation": true,
@@ -841,7 +844,6 @@ cat > "$SETTINGS_FILE" <<'EOF'
     "editor.suggest.snippetsPreventQuickSuggestions": false,
     "editor.parameterHints.enabled": true,
     "editor.parameterHints.cycle": true,
-    "editor.codeActionsOnSave": {"source.organizeImports": "explicit"},
     
     "diffEditor.ignoreTrimWhitespace": false,
     "diffEditor.renderSideBySide": true,
