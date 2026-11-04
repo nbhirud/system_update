@@ -82,7 +82,7 @@ dynamic_title = true # Title bar shows current file path
 # scrolling = { history = $SCROLLBACK_LINES, multiplier = 3 } # invalid option
 
 # Hardware Acceleration Hint
-option_as_alt = "OnlyLeft"
+# option_as_alt = "OnlyLeft" # macOS-Only Setting
 
 [font]
 # Your preferred Nerd Font
@@ -181,54 +181,60 @@ xdg-mime default org.alacritty.Alacritty.desktop x-terminal-emulator
 
 # Result: Now, every time you open Alacritty, you drop straight into your persistent tmux session. Close the window? Session keeps running in the background. Reopen? You are right back where you left off.
 
-sudo tee -a ~/.zshrc <<'ZSHRC_EOF'
+# # sudo tee -a ~/.zshrc <<'ZSHRC_EOF'
+# if ! grep -q "tmux attach -t main" "$HOME/.zshrc" 2>/dev/null; then
+#     tee -a "$HOME/.zshrc" <<'ZSHRC_EOF'
 
 
-#################################################################
-# tmux
-#################################################################
+# #################################################################
+# # tmux
+# #################################################################
 
-# Only attach/start tmux if we are in an interactive shell and NOT already inside tmux
-if [[ -z "$TMUX" ]] && [ -t 1 ]; then
-    # Start or attach a session named "main"
-    # -a attaches if it exists, creates new if not
-    exec tmux attach -t main || tmux new -s main
-fi
+# # Only attach/start tmux if we are in an interactive shell and NOT already inside tmux
+# if [[ -z "$TMUX" ]] && [ -t 1 ]; then
+#     # Start or attach a session named "main"
+#     # -a attaches if it exists, creates new if not
+#     # exec tmux attach -t main || tmux new -s main
+#     tmux attach -t main || tmux new -s main
+# fi
 
-ZSHRC_EOF
+# ZSHRC_EOF
+
+# fi
+
 
 #####################################
 
 # By default, copying from Neovim inside tmux won't copy to your system clipboard on Wayland. We need to bridge tmux to wl-clipboard.
 
 #  Install Dependencies
-sudo dnf install wl-clipboard
+# sudo dnf install wl-clipboard
 
 
 
 # Configure Tmux (~/.tmux.conf)
 # Add these lines to enable OSC 52 (the escape sequence that tells Alacritty to push text to the system clipboard).
 
-sudo tee -a ~/.tmux.conf <<'TMUX_EOF'
+# sudo tee -a ~/.tmux.conf <<'TMUX_EOF'
 
-# Set terminal type for better color support
-set -g default-terminal "tmux-256color"
+# # Set terminal type for better color support
+# set -g default-terminal "tmux-256color"
 
-# Enable OSC 52 clipboard support
-set -g set-clipboard on
-set -as terminal-features ",osc52"
+# # Enable OSC 52 clipboard support
+# set -g set-clipboard on
+# set -as terminal-features ",osc52"
 
-# Map Copy Mode to use wl-copy for Wayland
-# This replaces the standard paste-buffer logic for the 'y' key in copy mode
-bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel "wl-copy -n"
-bind -T copy-mode send-keys -X copy-pipe-and-cancel "wl-copy -n"
+# # Map Copy Mode to use wl-copy for Wayland
+# # This replaces the standard paste-buffer logic for the 'y' key in copy mode
+# bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel "wl-copy -n"
+# bind -T copy-mode send-keys -X copy-pipe-and-cancel "wl-copy -n"
 
-# Optional: Allow pasting directly with mouse (middle click)
-bind M paste-buffer
+# # Optional: Allow pasting directly with mouse (middle click)
+# bind M paste-buffer
 
-# Reload tmux config: tmux source-file ~/.tmux.conf
+# # Reload tmux config: tmux source-file ~/.tmux.conf
 
-TMUX_EOF
+# TMUX_EOF
 
 
 # NeoVim

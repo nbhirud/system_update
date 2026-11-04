@@ -64,11 +64,14 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 # --- 1. PREREQUISITES ---
 install_packages() {
     log_info "Checking and installing packages..."
+
+    sudo dnf install -y wl-clipboard git zsh curl unzip
     
     # Check for tmux
     if ! command -v tmux &> /dev/null; then
         log_info "Installing tmux via DNF..."
-        sudo dnf install -y tmux git zsh curl unzip
+        # sudo dnf install -y tmux git zsh curl unzip
+        sudo dnf install -y tmux
     else
         log_info "tmux is already installed."
     fi
@@ -169,6 +172,8 @@ set-window-option -g pane-base-index 1
 # Clipboard integration (Copy/Paste with system clipboard)
 bind-key -T copy-mode-vi y copy-pipe-and-cancel 'xclip -selection clipboard'
 bind-key -T copy-mode-vi Y copy-pipe-and-cancel 'xclip -selection clipboard'
+bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel "wl-copy -n"
+bind -T copy-mode send-keys -X copy-pipe-and-cancel "wl-copy -n"
 unbind C-b
 bind-key s split-window -h
 bind-key v split-window -v
@@ -208,10 +213,15 @@ bind-key | split-window -h
 bind-key - split-window -v
 
 # Navigation: C-a + Arrows
-bind-key -n C-A-Up select-pane -U
-bind-key -n C-A-Down select-pane -D
-bind-key -n C-A-Left select-pane -L
-bind-key -n C-A-Right select-pane -R
+# bind-key -n C-A-Up select-pane -U
+# bind-key -n C-A-Down select-pane -D
+# bind-key -n C-A-Left select-pane -L
+# bind-key -n C-A-Right select-pane -R
+bind -n C-M-Up select-pane -U
+bind -n C-M-Down select-pane -D
+bind -n C-M-Left select-pane -L
+bind -n C-M-Right select-pane -R
+
 
 # Resize panes: C-a + Shift+Arrows
 bind-key -n S-Up resize-pane -U 5
@@ -236,7 +246,7 @@ set -g @theme_color_cyan '#8abeb7'
 
 # --- PRIVACY & SECURITY ---
 # Disable logging of sensitive data in session logs
-set -g activity-monitor-timeout 0
+# set -g activity-monitor-timeout 0 # unsupported in modern Tmux versions and throws an error
 set -g visual-activity off
 set -g visual-silence off
 
@@ -310,6 +320,12 @@ if [ -z "$TMUX" ] && [ -n "$PS1" ]; then
         tmux new-session -A -s main
     fi
 fi
+
+# if [[ -z "$TMUX" ]] && [ -t 1 ]; then
+#     tmux attach -t main || tmux new -s main
+# fi
+
+
 EOF
         log_info "Auto-attach added. You may need to restart your shell."
     else
