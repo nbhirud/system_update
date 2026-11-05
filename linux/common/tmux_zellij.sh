@@ -170,10 +170,10 @@ set-option -g base-index 1
 set-window-option -g pane-base-index 1
 
 # Clipboard integration (Copy/Paste with system clipboard)
-bind-key -T copy-mode-vi y copy-pipe-and-cancel 'xclip -selection clipboard'
-bind-key -T copy-mode-vi Y copy-pipe-and-cancel 'xclip -selection clipboard'
-bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel "wl-copy -n"
-bind -T copy-mode send-keys -X copy-pipe-and-cancel "wl-copy -n"
+# bind-key -T copy-mode-vi y copy-pipe-and-cancel 'xclip -selection clipboard' # unknown command error: copy-pipe-and-cancel
+# bind-key -T copy-mode-vi Y copy-pipe-and-cancel 'xclip -selection clipboard' # unknown command error: copy-pipe-and-cancel
+# bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel "wl-copy -n"
+# bind -T copy-mode send-keys -X copy-pipe-and-cancel "wl-copy -n" # unknown key error: send-keys
 unbind C-b
 bind-key s split-window -h
 bind-key v split-window -v

@@ -112,10 +112,11 @@ SETUP_TYPE="${SETUP_TYPE_LIGHT}"
 # Ignored if connected to wifi. Renames name of ethernet connection connected at the time of running the script. Use with CONNECTION_TYPE inferred in next section
 NEW_ETHERNET_NAME="" # nbEthernet, etc
 
-HOSTNAME=""  # "nbPC"
+
+HOST_NAME=""  # "nbPC"
 GIT_USER_EMAIL=""  # "<GITHUB PRIVATE EMAIL>@users.noreply.github.com"
 NEXTDNS_ID=""  
-NEXTDNS_DEVICE_ID="$HOSTNAME"
+NEXTDNS_DEVICE_ID="$HOST_NAME"
 
 # Decide whether to install specific applications:
 HAS_TORRENT_CLIENT=false  # qBittorrent
@@ -199,6 +200,8 @@ SCRIPT_LOGS_DIR="$SCRIPT_DATA_DIR/logs"
 
 echo "************************ Verifying User-Defined constants and flags ************************"
 
+NEW_ETHERNET_NAME="${NEW_ETHERNET_NAME:-nbEthernet}"
+
 IS_ETHERNET=$(bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_is_ethernet.sh)
 
 if [ "$GIT_USER_EMAIL" = "" ]; then
@@ -237,7 +240,7 @@ if [ "$PRIVACY_LEVEL" = "" ]; then
 fi
 
 
-if [ "$HOSTNAME" = "" ] || [ "$SETUP_TYPE" = "" ] || [ "$PC_TYPE" = "" ] || [ "$PRIVACY_LEVEL" = "" ] || [ "$NEXTDNS_ID" = "" ] || [ "$NEXTDNS_DEVICE_ID" = "" ]; then
+if [ "$HOST_NAME" = "" ] || [ "$SETUP_TYPE" = "" ] || [ "$PC_TYPE" = "" ] || [ "$PRIVACY_LEVEL" = "" ] || [ "$NEXTDNS_ID" = "" ] || [ "$NEXTDNS_DEVICE_ID" = "" ]; then
   echo "Please set User-Defined constants and run again"
   exit 1
 fi
@@ -283,6 +286,12 @@ echo "************************ SYSUPDATE_CODE_BASE_DIR = $SYSUPDATE_CODE_BASE_DI
 # echo "************************ RUN_FIRST_LOCATION = $RUN_FIRST_DIR ************************" # https://stackoverflow.com/a/246128
 sleep 5s
 
+# Identify the currently active wired profile. No undefined CURRENT_ETHERNET_NAME.
+CURRENT_ETHERNET_NAME=""
+if command -v nmcli >/dev/null 2>&1; then
+    CURRENT_ETHERNET_NAME="$(nmcli -t -f NAME,TYPE connection show --active 2>/dev/null \
+        | awk -F: '$2 == "802-3-ethernet" {sub(/^[^:]*:/, ""); print; exit}')"
+fi
 
 # Rename the active wired connection if we are on Ethernet and a new name was provided
 if [ "$IS_ETHERNET" = true ] && [ -n "$NEW_ETHERNET_NAME" ]; then
@@ -294,6 +303,17 @@ if [ "$IS_ETHERNET" = true ] && [ -n "$NEW_ETHERNET_NAME" ]; then
         sleep 5s
     fi
 fi
+
+
+# if [ "$IS_ETHERNET" = true ] && [ -n "$NEW_ETHERNET_NAME" ]; then
+#     CURRENT_ETHERNET_NAME=$(nmcli -t -f TYPE,CONNECTION device | awk -F: '$1=="ethernet"{print $2; exit}')
+#     if [ -n "$CURRENT_ETHERNET_NAME" ]; then
+#         echo "Renaming ethernet: $CURRENT_ETHERNET_NAME → $NEW_ETHERNET_NAME"
+#         nmcli connection modify "$CURRENT_ETHERNET_NAME" connection.id "$NEW_ETHERNET_NAME"
+#     fi
+# fi
+
+
 
 # Verify
 if [ "$IS_ETHERNET" = true ] && [ -n "$NEW_ETHERNET_NAME" ]; then
@@ -436,7 +456,7 @@ fi
 
 echo "************************ Rename pc ************************"
 # https://docs.fedoraproject.org/en-US/quick-docs/changing-hostname/
-sudo hostnamectl set-hostname $HOSTNAME
+sudo hostnamectl set-hostname $HOST_NAME
 
 ######################################
 
@@ -609,14 +629,14 @@ then
 
 fi
 
-
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/fonts.sh
 # bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/vscodium_orig.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/vscodium.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/librewolf_browser.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/brave_browser.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/tor_browser.sh
-bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/fonts.sh
 
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/bash.sh
 # bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zsh_orig.sh "$DISTRO" $SETUP_TYPE "$DESKTOP" "$FILENAME_TIMESTAMP"
 sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zsh.sh
 sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/omz.sh
@@ -631,12 +651,12 @@ bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/syncthing.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/avahi.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mpv.sh
 # bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cron_jobs.sh
-sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/dns.sh "$NEXTDNS_ID" "$NEXTDNS_DEVICE_ID"
+sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/dns.sh --nextdns-id "$NEXTDNS_ID" --nextdns-device-id "$NEXTDNS_DEVICE_ID"
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/proton_ag.sh --setup-type "$SETUP_TYPE" --desktop "$DESKTOP"
 # bash linux/security_os_level/proton_ag.sh --setup-type full --desktop kde
 
 # sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh
-# sudo DEBUG=1 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh
+# sudo DEBUG=1 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh 
 
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh \
     --pc-type="${PC_TYPE}" \
@@ -671,7 +691,7 @@ bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/hosts.sh
 
 if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ];
 then
-  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/bash.sh
+
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/aws.sh
   # bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zoom.sh
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/jetbrains_toolbox.sh # TODO - close the app automatically. Right now one has to quit it to proceed
@@ -679,9 +699,8 @@ then
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/waterfox.sh
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cromite.sh
   
-  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/docker.sh
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/neovim_lazyvim.sh
-  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/i2p.sh
+  sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/i2p.sh
 
   # Be sure to run the following after: zsh, alacritty, neovim
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/tmux_zellij.sh
@@ -707,6 +726,13 @@ sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld.sh \
     --desktop "$DESKTOP" \
     --home-dir "$HOME_DIR" \
     --real-user "$REAL_USER"
+
+
+if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ];
+then
+  # Be sure to run the following after: firewalld
+  bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/docker.sh
+fi
 
 
 ######################################

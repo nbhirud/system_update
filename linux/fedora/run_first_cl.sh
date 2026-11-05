@@ -6,7 +6,8 @@
 # hostname and network privacy, early firewall, DNF configuration, full upgrade (reboot, then resume), snapshots,
 # repositories, hardware-specific codecs/GPU/memory/power/firmware, packages, Flatpak apps, desktop configuration,
 # application scripts, AppImages (AppMan), shell extras, MIME defaults, security hardening, automatic updates,
-# final snapshot, report and verification.
+# final snapshot, report and verification. Security stages: sysctl, module blacklist, telemetry, core dumps, key
+# permissions, conditional SSH hardening, auditd rules, journald limits, automatic updates, disk-health monitoring.
 #
 # USAGE-BEGIN
 # Fresh-install bootstrap for Fedora (KDE edition primarily; GNOME branches kept).
@@ -332,8 +333,8 @@ parse_options() {
 
 # Validate user input and fill sensible defaults. Runs after parsing and after inference.
 validate_user_variables() {
-  [ -n "${NEW_HOSTNAME}" ] || log_die "--hostname is mandatory."
-  [ -n "${NEXTDNS_ID}" ]   || log_die "--nextdns-id is mandatory."
+  prompt_required NEW_HOSTNAME "Hostname (--hostname)"
+  prompt_required NEXTDNS_ID "NextDNS configuration ID (--nextdns-id)"
   [[ "${NEW_HOSTNAME}" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$ ]] \
     || log_die "--hostname must be 1-63 letters, digits or hyphens (not starting/ending with a hyphen)."
   NEXTDNS_DEVICE_ID="${NEXTDNS_DEVICE_ID:-${NEW_HOSTNAME}}"
@@ -529,6 +530,18 @@ cleanup_on_exit() {
   [ -z "${SUDO_KEEPALIVE_PID:-}" ] || kill "${SUDO_KEEPALIVE_PID}" 2>/dev/null || true
 }
 
+# Ask for a mandatory value when it was not given as an option and a terminal is attached.
+# Without a terminal (cron, CI) a missing value is an error.
+prompt_required() {
+  local var="$1" label="$2" val=""
+  if [ -n "${!var}" ]; then return 0; fi
+  if [ -t 0 ]; then
+    read -r -p "${label}: " val
+    printf -v "${var}" '%s' "${val}"
+  fi
+  [ -n "${!var}" ] || log_die "${label} is mandatory (pass the option, or run from a terminal to be asked)."
+}
+
 print_usage() { sed -n '/^# USAGE-BEGIN/,/^# USAGE-END/p' "${BASH_SOURCE[0]}" | sed '1d;$d;s/^# \{0,1\}//'; }
 
 ##################################################################################
@@ -607,6 +620,24 @@ preflight() {
 
   have curl || sudo dnf install -y curl
   curl -fsSI --max-time 15 https://download.fedoraproject.org >/dev/null 2>&1 || log_die "No internet access (cannot reach download.fedoraproject.org)."
+}
+
+# Find every repo sub-script this file references and report the missing ones BEFORE anything is changed,
+# instead of discovering them half way through the run. The list is read from this file itself, so it
+# cannot drift from the calls below. (Some references are conditional on the profile; a warning is enough.)
+preflight_subscript_inventory() {
+  local f missing=0 self
+  self="$(readlink -f "${BASH_SOURCE[0]}")"
+  while read -r f; do
+    [ -f "${SYSUPDATE_CODE_BASE_DIR}/${f}" ] && continue
+    if [ "${f}" = "linux/fedora/remove_stuff.sh" ]; then
+      log_info "linux/fedora/remove_stuff.sh does not exist yet (work in progress); that stage will be skipped."
+      continue
+    fi
+    log_warn "Referenced sub-script not found: ${f}"
+    missing=$((missing + 1))
+  done < <(grep -oE 'linux/[a-z_]+/[A-Za-z0-9_]+\.sh' "${self}" | sort -u)
+  [ "${missing}" -eq 0 ] || log_warn "${missing} referenced sub-script(s) missing: those stages will FAIL and be retried on the next run."
 }
 
 # Non-fatal warnings about things this script cannot fix after installation.
@@ -702,7 +733,8 @@ step_backup() {
     /etc/dnf /etc/yum.repos.d /etc/pki/rpm-gpg \
     /etc/NetworkManager/conf.d /etc/NetworkManager/system-connections \
     /etc/sysctl.d /etc/sysctl.conf /etc/modprobe.d /etc/systemd/zram-generator.conf /etc/systemd/zram-generator.conf.d \
-    /etc/systemd/journald.conf /etc/systemd/journald.conf.d \
+    /etc/systemd/journald.conf /etc/systemd/journald.conf.d /etc/systemd/coredump.conf /etc/systemd/coredump.conf.d \
+    /etc/ssh /etc/audit \
     /etc/smartd.conf /etc/snapper/configs /etc/nb \
     /etc/systemd/system/nb-flatpak-update.service /etc/systemd/system/nb-flatpak-update.timer \
     /etc/systemd/system/nb-btrfs-scrub.service /etc/systemd/system/nb-btrfs-scrub.timer \
@@ -750,7 +782,8 @@ step_reset() {
     /etc/NetworkManager/conf.d/00-macrandomize.conf \
     /etc/sysctl.d/90-nb-hardening.conf /etc/sysctl.d/90-nb-zram.conf \
     /etc/modprobe.d/90-nb-blacklist.conf \
-    /etc/systemd/journald.conf.d/90-nb.conf \
+    /etc/systemd/journald.conf.d/90-nb.conf /etc/systemd/coredump.conf.d/90-nb.conf \
+    /etc/ssh/sshd_config.d/10-nb-hardening.conf /etc/audit/rules.d/90-nb.rules \
     /etc/systemd/zram-generator.conf \
     /etc/systemd/system/nb-flatpak-update.service /etc/systemd/system/nb-flatpak-update.timer \
     /etc/systemd/system/nb-btrfs-scrub.service /etc/systemd/system/nb-btrfs-scrub.timer \
@@ -1106,6 +1139,13 @@ vm.page-cluster=0
 EOF
   sudo sysctl --system >/dev/null
   log_success "zram: ${zsize}, zstd; applied fully after reboot."
+}
+
+# Periodic TRIM tells an SSD which blocks are free (keeps writes fast and wear even). Harmless elsewhere,
+# so it is only enabled when a fast disk is present.
+step_hw_storage() {
+  if [ "${SSD_PRESENT}" != true ]; then log_info "No SSD detected; fstrim.timer not enabled."; return 0; fi
+  sudo systemctl enable --now fstrim.timer
 }
 
 # Laptops: tuned (with the power-profiles-daemon-compatible tuned-ppd) is Fedora's default since 41.
@@ -1537,6 +1577,8 @@ net.core.bpf_jit_harden=2
 kernel.kexec_load_disabled=1
 dev.tty.ldisc_autoload=0
 vm.unprivileged_userfaultfd=0
+# Processes that change privileges (setuid) never write core dumps
+fs.suid_dumpable=0
 # Link and FIFO protections
 fs.protected_hardlinks=1
 fs.protected_symlinks=1
@@ -1580,6 +1622,82 @@ install hfs /bin/false
 install hfsplus /bin/false
 ${extra}
 EOF
+}
+
+# A crash dump is a copy of the process memory: passwords, tokens and keys can end up on disk.
+# Storage=none discards dumps; ProcessSizeMax=0 stops them from being generated at all.
+# To debug a crash with a core file, delete this drop-in (and run: sudo systemctl daemon-reload).
+step_sec_coredumps() {
+  write_root_file /etc/systemd/coredump.conf.d/90-nb.conf 644 <<'EOF'
+# Managed by run_first.sh
+[Coredump]
+Storage=none
+ProcessSizeMax=0
+EOF
+}
+
+# SSH and GPG refuse to use keys that other users can read; tightening also protects keys from other accounts.
+step_sec_user_perms() {
+  local d
+  for d in .ssh .gnupg; do
+    if [ -d "${HOME_DIR}/${d}" ]; then
+      chmod 700 "${HOME_DIR}/${d}"
+      find "${HOME_DIR}/${d}" -type f -exec chmod go-rwx {} +
+      log_success "Permissions tightened: ~/${d}"
+    fi
+  done
+}
+
+# Hardening for an SSH server, applied only when sshd is enabled. First match wins in sshd, and a drop-in
+# named 10-* is read before Fedora's own 50-redhat.conf, so these settings take precedence.
+# Password login is only disabled when the user already has an authorized key (otherwise: lock-out).
+step_sec_ssh() {
+  if ! systemctl is-enabled --quiet sshd 2>/dev/null; then log_info "sshd is not enabled; nothing to harden."; return 0; fi
+  local conf="/etc/ssh/sshd_config.d/10-nb-hardening.conf" auth=""
+  if [ -s "${HOME_DIR}/.ssh/authorized_keys" ]; then
+    auth=$'PasswordAuthentication no\nKbdInteractiveAuthentication no'
+  else
+    log_warn "sshd is enabled but ~/.ssh/authorized_keys is empty: password login stays ON to avoid a lock-out. Add a public key and re-run."
+  fi
+  write_root_file "${conf}" 644 <<EOF
+# Managed by run_first.sh
+PermitRootLogin no
+X11Forwarding no
+AllowAgentForwarding no
+MaxAuthTries 3
+LoginGraceTime 30
+${auth}
+EOF
+  if sudo sshd -t; then
+    sudo systemctl reload sshd
+  else
+    sudo rm -f "${conf}"
+    log_die "sshd rejected the hardening drop-in; it was removed."
+  fi
+}
+
+# Auditing: who changed accounts, sudo rules, SSH, firewall, SELinux and service definitions.
+# Targeted watches only (single files or directories, never recursive trees), so the log stays small.
+# Rules are generated only for paths that exist, and `-i` makes auditctl skip a rule that cannot load
+# instead of aborting the whole file. Lynis is an advisory scanner: run `sudo lynis audit system` when
+# needed and treat its suggestions as hints (not every one suits a desktop).
+step_sec_audit() {
+  sudo dnf install -y audit lynis
+  local rules="# Managed by run_first.sh\n-i\n" entry path perms key
+  for entry in \
+    "/etc/passwd:wa:identity" "/etc/shadow:wa:identity" "/etc/group:wa:identity" "/etc/gshadow:wa:identity" \
+    "/etc/sudoers:wa:sudoers" "/etc/sudoers.d/:wa:sudoers" \
+    "/etc/ssh/:wa:sshd" "/etc/firewalld/:wa:firewall" "/etc/selinux/:wa:selinux" \
+    "/etc/systemd/system/:wa:systemd_units" "/usr/lib/systemd/system/:wa:systemd_units" \
+    "/etc/clamd.d/:wa:clamav" "/etc/freshclam.conf:wa:clamav" "/etc/fail2ban/:wa:fail2ban" \
+    "/etc/dnf/:wa:package_config" "/etc/nb/:wa:nb_config" \
+    "/usr/bin/sudo:x:priv_exec" "/usr/bin/su:x:priv_exec" "/usr/bin/pkexec:x:priv_exec"; do
+    IFS=: read -r path perms key <<< "${entry}"
+    if [ -e "${path}" ]; then rules+="-w ${path} -p ${perms} -k ${key}\n"; fi
+  done
+  printf '%b' "${rules}" | write_root_file /etc/audit/rules.d/90-nb.rules 640
+  sudo systemctl enable --now auditd
+  sudo augenrules --load || log_warn "augenrules --load failed; rules apply after reboot."
 }
 
 # Crash reporting (ABRT) can upload crash data; the countme override is in step_dnf_config.
@@ -1801,6 +1919,12 @@ verify_setup() {
   check      "kernel.dmesg_restrict = 1"                   sysctl_is kernel.dmesg_restrict 1
   check      "kernel.unprivileged_bpf_disabled = 1"        bash -c '[ "$(sysctl -n kernel.unprivileged_bpf_disabled)" != 0 ]'
   check      "modprobe blacklist present"                  test -f /etc/modprobe.d/90-nb-blacklist.conf
+  check      "core dumps disabled (coredump drop-in)"      test -f /etc/systemd/coredump.conf.d/90-nb.conf
+  check_warn "auditd active"                               systemctl is-active --quiet auditd
+  check_warn "audit rules loaded"                          bash -c 'sudo auditctl -l | grep -q identity'
+  check_warn "lynis installed"                             rpm -q lynis
+  if [ "${SSD_PRESENT}" = true ]; then check_warn "fstrim.timer enabled" unit_enabled fstrim.timer; fi
+  if systemctl is-enabled --quiet sshd 2>/dev/null; then check "sshd hardening drop-in present" test -f /etc/ssh/sshd_config.d/10-nb-hardening.conf; fi
 
   check      "dnf5-automatic timer enabled"                unit_enabled dnf5-automatic.timer
   check      "Flatpak update timer enabled"                unit_enabled nb-flatpak-update.timer
@@ -1853,6 +1977,7 @@ main() {
     verify_setup
     return $?
   fi
+  preflight_subscript_inventory
 
   init_state
   log_info "Machine: ${CPU_MODEL}, ${CPU_CORES} cores, ${RAM_MB} MB (${RAM_PROFILE}), SSD=${SSD_PRESENT}, type=${PC_TYPE}, desktop=${DESKTOP}"
@@ -1884,6 +2009,7 @@ main() {
   run_step "hw:gpu-video"            step_hw_gpu_video
   run_step "hw:nvidia"               step_hw_nvidia
   run_step "hw:memory"               step_hw_memory
+  run_step "hw:storage"              step_hw_storage
   run_step "hw:power"                step_hw_power
   run_step "hw:firmware"             step_hw_firmware
   run_step "packages"                step_packages
@@ -1904,6 +2030,10 @@ main() {
   run_step "sec:sysctl"              step_sec_sysctl
   run_step "sec:modprobe"            step_sec_modprobe
   run_step "sec:telemetry"           step_sec_telemetry
+  run_step "sec:coredumps"           step_sec_coredumps
+  run_step "sec:user-perms"          step_sec_user_perms
+  run_step "sec:ssh"                 step_sec_ssh
+  run_step "sec:audit"               step_sec_audit
   run_step "sec:journald"            step_sec_journald
   run_step "sec:auto-updates"        step_sec_auto_updates
   if [ "${GUI}" = true ]; then run_step "sec:flatpak-timer" step_sec_flatpak_timer; fi
@@ -2005,6 +2135,14 @@ exit $?
 # - Calendar application choice; Thunderbird/Proton Mail as default mail client (set DEFAULT_MAIL_DESKTOP).
 # - Fedora Server (pc-type server) runs the headless profile; split a dedicated `core` layer out if it is deployed.
 # - Obsidian is an AppImage (AppMan); sync of its vault folder is configured in the Syncthing setup.
+# - Not done on purpose (each needs a decision first): AIDE (baseline database must be built and protected), USBGuard
+#   (a wrong policy locks out the keyboard), OpenSnitch (rules need per-machine tuning), an OpenSSH server (installing
+#   one widens exposure; step_sec_ssh only hardens an sshd that is already enabled), KDE settings export (konsave via
+#   pipx, or chezmoi), virtualization (separate script).
+# - Entropy check (entropy_avail > 1000) is not part of Verification: kernels since 5.18 report a constant 256,
+#   so the check would always warn.
+# - Core dumps are disabled (coredump drop-in, fs.suid_dumpable=0). Remove the drop-in to debug with core files.
+# - fstrim.timer is enabled only when an SSD is detected. auditd rules are generated for existing paths only.
 #
 # UNVERIFIED ITEMS (test in a Fedora 44 VM first)
 # - `dnf group install multimedia` with --setopt/--exclude under DNF5.
