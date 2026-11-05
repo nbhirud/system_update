@@ -160,23 +160,22 @@ mkdir -p "$(dirname "$SCRIPT_PATH")"
 #     exit 1
 # fi
 
-# Prompt user for the NextDNS DDNS / Update URL only if not passed and running interactively
-if [ -z "$NEXTDNS_URL" ]; then
-    if [ -t 0 ]; then
-        read -rp "Enter your NextDNS DDNS Update URL (from Dashboard -> Linked IP): " NEXTDNS_URL
-    else
-        echo "WARNING: --nextdns-url not provided in non-interactive mode. Skipping DDNS cron updater setup."
-    fi
-fi
+# # Prompt user for the NextDNS DDNS / Update URL only if not passed and running interactively
+# if [ -z "$NEXTDNS_URL" ]; then
+#     if [ -t 0 ]; then
+#         read -rp "Enter your NextDNS DDNS Update URL (from Dashboard -> Linked IP): " NEXTDNS_URL
+#     else
+#         echo "WARNING: --nextdns-url not provided in non-interactive mode. Skipping DDNS cron updater setup."
+#     fi
+# fi
 
 # Only proceed with script creation if URL is present
 if [ -n "$NEXTDNS_URL" ]; then
     if [[ ! "$NEXTDNS_URL" =~ ^https://link-ip\.nextdns\.io/ ]]; then
         echo "ERROR: Invalid URL. It should start with 'https://link-ip.nextdns.io/'" >&2
-        exit 1
+        # exit 1
     fi
     # ... rest of your script generation and crontab logic ...
-fi
 
 
 
@@ -240,6 +239,7 @@ fi
 # Verifying crontab configuration
 crontab -l | grep "$SCRIPT_PATH"
 
+fi
 ############
 
 

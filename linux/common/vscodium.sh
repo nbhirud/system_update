@@ -13,7 +13,7 @@ set -euo pipefail
 
 HOME_DIR=$(getent passwd $USER | cut -d: -f6)
 NBDIR="$HOME_DIR/nb"
-CODEPROJECTS_DIR="$NBDIR/CodeProjects"
+CODEPROJECTS_DIR="$NBDIR/CodeProjects" # TODO - also add CODEPROJECTS_DIR to trusted dir in vscodium
 # VSCODIUM_USER_DIR="$HOME/.config/VSCodium"
 VSCODIUM_USER_DIR="$HOME_DIR/.config/VSCodium"
 USER_CONFIG_DIR="$VSCODIUM_USER_DIR/User"

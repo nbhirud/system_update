@@ -292,11 +292,13 @@ require_cmd() {
 #   --tlsv1.2          minimum TLS version
 #   --retry ...        survive transient network errors
 download_file() {  # usage: download_file URL OUTPUT
+
     curl --fail --silent --show-error --location \
          --proto '=https' --proto-redir '=https' --tlsv1.2 \
-         --retry 3 --retry-delay 2 --retry-connrefused \
+         --retry 5 --retry-delay 5 --retry-connrefused \
          --connect-timeout 20 --max-time 1800 \
          --output "$2" "$1"
+
 }
 
 ##########################################################################
