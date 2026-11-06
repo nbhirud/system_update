@@ -111,6 +111,8 @@ umask 077
 # -----------------------------------------------------------------------------
 
 
+# TODO - Downloading the rpms, then scanning them, and then installing them; just to find that the same version is already installed is wasteful. Compare the version to ne installed derived from the version json file against the already installed version before downloading the rpm again.
+
 #######################################################
 # Colors and logging helpers
 #######################################################
