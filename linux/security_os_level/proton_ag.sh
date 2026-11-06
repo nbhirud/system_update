@@ -111,6 +111,8 @@ umask 077
 # -----------------------------------------------------------------------------
 
 
+# TODO - Downloading the rpms, then scanning them, and then installing them; just to find that the same version is already installed is wasteful. Compare the version to ne installed derived from the version json file against the already installed version before downloading the rpm again.
+
 #######################################################
 # Colors and logging helpers
 #######################################################
@@ -174,7 +176,8 @@ SETUP_TYPE="light"
 DESKTOP=""
 FILENAME_TIMESTAMP=""
 CHANNEL="stable"          # stable | beta | earlyaccess | alpha
-MIN_ROLLOUT="1"           # fraction 0..1, see DESIGN NOTE 3
+# MIN_ROLLOUT="1"           # fraction 0..1, see DESIGN NOTE 3
+MIN_ROLLOUT="0.1"
 DRY_RUN=0                 # 1 = resolve and print only; no download/install
 SKIP_INSTALL=0            # 1 = download + verify, but do not run dnf
 SCAN_MODE="auto"          # auto = use clamscan if installed | no
