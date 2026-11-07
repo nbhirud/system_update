@@ -102,8 +102,13 @@ infer_variables() {
   STARSHIP_CURRENT_BACKUP_DIR="${STARSHIP_BACKUP_DIR_BASE}/starship_${FILENAME_TIMESTAMP}"
   STARSHIP_CURRENT_DOWNLOADS_DIR="${STARSHIP_DOWNLOADS_DIR_BASE}/starship_${FILENAME_TIMESTAMP}"
   STARSHIP_CMD_TIMEOUT="500"
-  # Spinning disks make directory scans slower: give Starship more time before it gives up on a module.
-  if [[ "$SSD_PRESENT" == "true" ]]; then STARSHIP_SCAN_TIMEOUT="30"; else STARSHIP_SCAN_TIMEOUT="60"; fi
+  # scan_timeout = how long Starship may spend listing the CURRENT directory to look for trigger files (go.mod,
+  # requirements.txt, ...). Its default (30 ms) is too tight for a big or cold-cache directory such as ~ on an
+  # older PC: it then prints "[WARN] Scanning current directory timed out" on every prompt. The limit only matters
+  # in slow directories (a normal one is listed in about a millisecond), where the prompt can take up to this long.
+  # get_ssd_present is false when ANY spinning disk exists, so it errs on the generous side.
+  # if [[ "$SSD_PRESENT" == "true" ]]; then STARSHIP_SCAN_TIMEOUT="30"; else STARSHIP_SCAN_TIMEOUT="60"; fi
+  if [[ "$SSD_PRESENT" == "true" ]]; then STARSHIP_SCAN_TIMEOUT="100"; else STARSHIP_SCAN_TIMEOUT="300"; fi
 }
 
 #########################################################
@@ -364,8 +369,11 @@ exit $?
 # Health check:             bash starship.sh --verify-setup
 # Explain the prompt:       starship explain ; starship timings ; starship config
 # Verbose log:              STARSHIP_LOG=trace starship prompt
-# Slow in a huge repo:      raise scan_timeout/command_timeout at the top of ~/.config/starship.toml, or set
-#                           `disabled = true` under [git_status].
+# "Scanning current directory timed out" warning: raise scan_timeout at the top of ~/.config/starship.toml
+#                           (sed -i 's/^scan_timeout = .*/scan_timeout = 500/' ~/.config/starship.toml). A huge or cold-cache
+#                           directory (often ~) is the usual cause; check `ls -A ~ | wc -l`. To hide ALL Starship warnings
+#                           instead: export STARSHIP_LOG=error (also hides config warnings, so use it sparingly).
+# Slow in a huge repo:      raise command_timeout, or set `disabled = true` under [git_status].
 # Broken symbols/boxes:     the terminal font must be a Nerd Font (fonts.sh), e.g. JetBrainsMono Nerd Font.
 # Prompt is agnoster:       `command -v starship` is empty: run this script again and read the warnings.
 # Old system-wide copy:     `which -a starship`; the per-user one (~/.local/bin) wins because ~/.zshrc puts it first.
