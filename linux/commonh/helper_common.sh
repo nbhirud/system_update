@@ -21,7 +21,7 @@
 #   FILENAME_TIMESTAMP
 #
 # USAGE
-#   source "${SYSUPDATE_CODE_BASE_DIR}/linux/common/helper_common.sh"
+#   source "${SYSUPDATE_CODE_BASE_DIR}/linux/commonh/helper_common.sh"
 #   nb_require_root "$0" "$@"
 #   nb_parse_common_options "$@"
 
@@ -71,7 +71,7 @@ nb_require_root() {
 nb_require_functions() {
   local f
   for f in "$@"; do
-    declare -F "$f" >/dev/null 2>&1 || log_die "Helper function '${f}' is missing. A helper_*.sh file in ${SYSUPDATE_CODE_BASE_DIR}/linux/common is outdated: copy the latest helper files next to this script and re-run."
+    declare -F "$f" >/dev/null 2>&1 || log_die "Helper function '${f}' is missing. A helper_*.sh file in ${SYSUPDATE_CODE_BASE_DIR}/linux/commonh is outdated: copy the latest helper files next to this script and re-run."
   done
 }
 
@@ -116,16 +116,16 @@ nb_reject_remaining_args() {
 CPU_CORES="" RAM_MB="" RAM_PROFILE="" SSD_PRESENT="" PC_TYPE="" DESKTOP="" DISTRO="" CPU_MODEL=""
 
 nb_infer_system() {
-  local common="${SYSUPDATE_CODE_BASE_DIR}/linux/common"
-  [[ -d "$common" ]] || log_die "Helper directory not found: ${common} (set SYSUPDATE_CODE_BASE_DIR)"
-  CPU_CORES=$(sh "${common}/get_cpu_cores.sh")
-  RAM_MB=$(sh "${common}/get_ram_size.sh")
-  RAM_PROFILE=$(sh "${common}/get_ram_profile.sh")     # low | mid | high
-  SSD_PRESENT=$(sh "${common}/get_ssd_present.sh")     # true | false
-  PC_TYPE=$(sh "${common}/get_pc_type.sh")             # laptop | desktop | server
-  DESKTOP=$(sh "${common}/get_desktop_env.sh")         # kde | gnome | ...
-  DISTRO=$(sh "${common}/get_distro_name.sh")          # fedora | ...
-  CPU_MODEL=$(sh "${common}/get_cpu_model.sh")
+  local commong="${SYSUPDATE_CODE_BASE_DIR}/linux/commong"
+  [[ -d "$commong" ]] || log_die "Helper directory not found: ${commong} (set SYSUPDATE_CODE_BASE_DIR)"
+  CPU_CORES=$(sh "${commong}/get_cpu_cores.sh")
+  RAM_MB=$(sh "${commong}/get_ram_size.sh")
+  RAM_PROFILE=$(sh "${commong}/get_ram_profile.sh")     # low | mid | high
+  SSD_PRESENT=$(sh "${commong}/get_ssd_present.sh")     # true | false
+  PC_TYPE=$(sh "${commong}/get_pc_type.sh")             # laptop | desktop | server
+  DESKTOP=$(sh "${commong}/get_desktop_env.sh")         # kde | gnome | ...
+  DISTRO=$(sh "${commong}/get_distro_name.sh")          # fedora | ...
+  CPU_MODEL=$(sh "${commong}/get_cpu_model.sh")
   log_info "User=${REAL_USER}  Distro=${DISTRO}  Desktop=${DESKTOP}  PC=${PC_TYPE}  RAM=${RAM_MB}MB (${RAM_PROFILE})  CPU=${CPU_CORES}x ${CPU_MODEL}  SSD=${SSD_PRESENT}"
 }
 
