@@ -255,11 +255,11 @@ sudo dnf install codium
 
 #######################################################
 
-# Configure tor - linux/security_os_level/tor.sh
+# Configure tor - linux/security/tor.sh
 
 #######################################################
 
-# Configure firewall - linux/security_os_level/firewalld.sh
+# Configure firewall - linux/security/firewalld.sh
 
 #######################################################
 

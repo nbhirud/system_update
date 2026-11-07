@@ -398,7 +398,7 @@ esac
 # caused by a missing file late in the run.
 validate_child_script_inventory() {
     local common="$SYSUPDATE_CODE_BASE_DIR/linux/common"
-    local security="$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level"
+    local security="$SYSUPDATE_CODE_BASE_DIR/linux/security"
     local -a required=(
         "$security/dns.sh"
         "$security/clamav.sh"
@@ -1117,7 +1117,7 @@ run_existing_user_setup() {
 }
 
 run_existing_security_setup() {
-    local security="$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level"
+    local security="$SYSUPDATE_CODE_BASE_DIR/linux/security"
 
     # DNS and firewall scripts configure system state and are run with sudo.
     run_child_root "$security/dns.sh" "$NEXTDNS_ID" "$NEXTDNS_DEVICE_ID"
@@ -1189,7 +1189,7 @@ run_phase "Configure DNS, privacy, antivirus, and optional full-profile tools" r
 ###############################################################################
 
 configure_firewall() {
-    local firewall_script="$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/firewalld.sh"
+    local firewall_script="$SYSUPDATE_CODE_BASE_DIR/linux/security/firewalld.sh"
 
     if [[ ! -f "$firewall_script" ]]; then
         log_error "Firewall setup script not found: ${firewall_script}"

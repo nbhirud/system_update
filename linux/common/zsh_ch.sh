@@ -490,7 +490,7 @@ SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
 # uv, torsocks, Flatpak, BleachBit) before using them on a new machine.
 alias nbupdate='. torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && aws update && uv self update && omz update && . torsocks on'
 # Proton setup helper (kept as a comment; uncomment if this path/script applies):
-# alias nbupdateproton=". torsocks off && cd \"$SYSUPDATE_CODE_BASE_DIR\" && sh \"$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag.sh\" --setup-type full --desktop kde && cd \"$HOME\" && . torsocks on"
+# alias nbupdateproton=". torsocks off && cd \"$SYSUPDATE_CODE_BASE_DIR\" && sh \"$SYSUPDATE_CODE_BASE_DIR/linux/security/proton_ag.sh\" --setup-type full --desktop kde && cd \"$HOME\" && . torsocks on"
 alias nbupdateextra='sh "$SYSUPDATE_CODE_BASE_DIR/linux/fedora/update_all.sh" && nbupdate'
 
 # Fedora offline release upgrade documentation:

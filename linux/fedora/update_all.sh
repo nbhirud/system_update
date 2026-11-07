@@ -45,7 +45,7 @@ SETUP_TYPE="full" # full or light (or minimal - TBD - bare minimum, remove all o
 
 
 echo "************************ Update hosts ************************"
-sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/hosts.sh
+sh $SYSUPDATE_CODE_BASE_DIR/linux/security/hosts.sh
 
 
 echo "************************ Update bleachbit ************************"
@@ -103,8 +103,8 @@ for repo in "${REPOS[@]}"; do
 done
 
 echo "************************ Update proton_ag_stuff ************************"
-sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag.sh --setup-type $SETUP_TYPE --desktop $DESKTOP
-# bash linux/security_os_level/proton_ag.sh --setup-type full --desktop kde
+sh $SYSUPDATE_CODE_BASE_DIR/linux/security/proton_ag.sh --setup-type $SETUP_TYPE --desktop $DESKTOP
+# bash linux/security/proton_ag.sh --setup-type full --desktop kde
 
 # echo "************************ Update dnf packages ************************"
 # sudo dnf update -y

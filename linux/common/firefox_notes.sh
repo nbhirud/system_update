@@ -18,7 +18,7 @@
 # Ublock Origin - Enable relevant filters
 # https://github.com/mchangrh/yt-neuter - Add this filter to ublock origin
 
-# replace hosts file - check ../security_os_level/
+# replace hosts file - check ../security/
 
 
 ####################################### Privacy/youtube extensions - reference: https://www.youtube.com/watch?v=rteYHxcLCZk

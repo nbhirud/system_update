@@ -528,11 +528,11 @@ sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/avahi.sh"
 sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/mpv.sh"
 
 # NextDNS configuration handled via dns.sh module
-sudo sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/dns.sh" "$NEXTDNS_ID" "$NEXTDNS_DEVICE_ID"
-sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/proton_ag.sh" --setup-type "$SETUP_TYPE" --desktop "$DESKTOP"
+sudo sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security/dns.sh" "$NEXTDNS_ID" "$NEXTDNS_DEVICE_ID"
+sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security/proton_ag.sh" --setup-type "$SETUP_TYPE" --desktop "$DESKTOP"
 
 # Security & ClamAV configuration
-sudo DEBUG=1 sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/clamav.sh" \
+sudo DEBUG=1 sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security/clamav.sh" \
     --pc-type="${PC_TYPE}" \
     --real-user="${REAL_USER}" \
     --torrent-client="${HAS_TORRENT_CLIENT}" \
@@ -540,7 +540,7 @@ sudo DEBUG=1 sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/clamav.sh" \
     --backup-dir="${SCRIPT_BACKUPS_DIR}" \
     --timestamp="${FILENAME_TIMESTAMP}"
 
-sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/hosts.sh"
+sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security/hosts.sh"
 
 if [ "$SETUP_TYPE" = "$SETUP_TYPE_FULL" ]; then
     sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/bash.sh"
@@ -549,7 +549,7 @@ if [ "$SETUP_TYPE" = "$SETUP_TYPE_FULL" ]; then
     sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/jetbrains_toolbox.sh"
     sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/docker.sh"
     sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/neovim_lazyvim.sh"
-    sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/i2p.sh"
+    sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security/i2p.sh"
 
     sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/tmux_zellij.sh"
     sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/yazi.sh"
@@ -558,7 +558,7 @@ if [ "$SETUP_TYPE" = "$SETUP_TYPE_FULL" ]; then
     [ "$DESKTOP" = "$DESKTOP_GNOME" ] && sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/gsconnect_kde_connect.sh"
 fi
 
-sudo sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/firewalld.sh" \
+sudo sh "${SYSUPDATE_CODE_BASE_DIR}/linux/security/firewalld.sh" \
     --filename-timestamp "$FILENAME_TIMESTAMP" \
     --script-backups-dir "$SCRIPT_BACKUPS_DIR" \
     --sysupdate-code-base-dir "$SYSUPDATE_CODE_BASE_DIR" \

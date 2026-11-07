@@ -651,14 +651,14 @@ bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/syncthing.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/avahi.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mpv.sh
 # bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cron_jobs.sh
-sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/dns.sh --nextdns-id "$NEXTDNS_ID" --nextdns-device-id "$NEXTDNS_DEVICE_ID"
-bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/proton_ag.sh --setup-type "$SETUP_TYPE" --desktop "$DESKTOP"
-# bash linux/security_os_level/proton_ag.sh --setup-type full --desktop kde
+sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/dns.sh --nextdns-id "$NEXTDNS_ID" --nextdns-device-id "$NEXTDNS_DEVICE_ID"
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/proton_ag.sh --setup-type "$SETUP_TYPE" --desktop "$DESKTOP"
+# bash linux/security/proton_ag.sh --setup-type full --desktop kde
 
-# sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh
-# sudo DEBUG=1 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh 
+# sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/clamav.sh
+# sudo DEBUG=1 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/clamav.sh 
 
-bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh \
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/clamav.sh \
     --pc-type="${PC_TYPE}" \
     --real-user="${REAL_USER}" \
     --torrent-client="${HAS_TORRENT_CLIENT}" \
@@ -678,15 +678,15 @@ bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh \
 # [ -n "${FILENAME_TIMESTAMP:-}" ] && CLAMAV_ARGS+=("--timestamp=${FILENAME_TIMESTAMP}")
 
 # # Execute the script with the constructed arguments
-#  sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/clamav.sh "${CLAMAV_ARGS[@]}"
+#  sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/clamav.sh "${CLAMAV_ARGS[@]}"
 
 
 # Be sure to run the following after: clamav
-bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/hosts.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/hosts.sh
 
 
 # Be sure to run the following after: firewalld
-# bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/fail2ban.sh
+# bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/fail2ban.sh
 
 
 if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ];
@@ -700,7 +700,7 @@ then
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cromite.sh
   
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/neovim_lazyvim.sh
-  sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/i2p.sh
+  sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/i2p.sh
 
   # Be sure to run the following after: zsh, alacritty, neovim
   bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/tmux_zellij.sh
@@ -716,8 +716,8 @@ fi
 
 # Also, it is best to setup firewalld at the end so it finds all installed services/packages to check before setting up
 # Be sure to run the following after: zsh
-# sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld.sh "$FILENAME_TIMESTAMP" "$SCRIPT_BACKUPS_DIR" $PRIVACY_LEVEL
-sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld.sh \
+# sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/firewalld.sh "$FILENAME_TIMESTAMP" "$SCRIPT_BACKUPS_DIR" $PRIVACY_LEVEL
+sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/firewalld.sh \
     --filename-timestamp "$FILENAME_TIMESTAMP" \
     --script-backups-dir "$SCRIPT_BACKUPS_DIR" \
     --sysupdate-code-base-dir "$SYSUPDATE_CODE_BASE_DIR" \
@@ -772,11 +772,11 @@ xdg-mime default codium.desktop text/plain
 
 #######################################
 
-# Configure firewall - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/firewalld.sh
+# Configure firewall - $SYSUPDATE_CODE_BASE_DIR/linux/security/firewalld.sh
 
-# Configure tor - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/tor.sh
+# Configure tor - $SYSUPDATE_CODE_BASE_DIR/linux/security/tor.sh
 
-# Configure Anti Virus - $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/clamav.sh
+# Configure Anti Virus - $SYSUPDATE_CODE_BASE_DIR/linux/security/clamav.sh
 
 # Firefox, Librewolf, Mullvad browsers - refer $SYSUPDATE_CODE_BASE_DIR/linux/common/firefox.sh
 
