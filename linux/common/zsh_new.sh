@@ -722,7 +722,7 @@ SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
 #   updates the plugins and (when not installed from dnf) Starship. The "|| true" keeps a failed
 #   download from skipping the later `. torsocks on` in the chain.
 alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && aws update && uv self update && (sudo /usr/local/sbin/nb-zsh-update || true) && . torsocks on && fastfetch"
-# alias nbupdateproton=". torsocks off && cd /home/nbhirud/nb/CodeProjects/system_update/ && sh /home/nbhirud/nb/CodeProjects/system_update/linux/security_os_level/proton_ag.sh --setup-type full --desktop kde && cd && . torsocks on"
+# alias nbupdateproton=". torsocks off && cd /home/nbhirud/nb/CodeProjects/system_update/ && sh /home/nbhirud/nb/CodeProjects/system_update/linux/security/proton_ag.sh --setup-type full --desktop kde && cd && . torsocks on"
 alias nbupdateextra=". torsocks off && sh /home/nbhirud/nb/CodeProjects/system_update/linux/fedora/update_all.sh && nbupdate"
 
 # https://docs.fedoraproject.org/en-US/quick-docs/upgrading-fedora-offline/

@@ -121,15 +121,15 @@ yay -Sua # Upgrading (only) the AUR packages:
 ########## 
 ##########################################################################
 
-# Configure dns - linux/security_os_level/dns.sh
+# Configure dns - linux/security/dns.sh
 
-# Configure firewall - linux/security_os_level/ufw.sh
+# Configure firewall - linux/security/ufw.sh
 
-# Configure tor - linux/security_os_level/tor.sh
+# Configure tor - linux/security/tor.sh
 
-# Configure Anti Virus - linux/security_os_level/clamav.sh
+# Configure Anti Virus - linux/security/clamav.sh
 
-# Configure hosts - linux/security_os_level/hosts.sh
+# Configure hosts - linux/security/hosts.sh
 
 # Firefox, Librewolf, Mullvad browsers - refer linux/common/firefox.sh
 

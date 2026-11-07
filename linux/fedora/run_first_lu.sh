@@ -1173,9 +1173,9 @@ run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/common/avahi.sh"
 run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/common/mpv.sh"
 
 # Security layer
-run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/dns.sh" "$NEXTDNS_ID" "$NEXTDNS_DEVICE_ID"
-run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/proton_ag.sh" --setup-type "${SETUP_TYPE}" --desktop "${DESKTOP}"
-run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/clamav.sh" \
+run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/security/dns.sh" "$NEXTDNS_ID" "$NEXTDNS_DEVICE_ID"
+run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/security/proton_ag.sh" --setup-type "${SETUP_TYPE}" --desktop "${DESKTOP}"
+run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/security/clamav.sh" \
     --pc-type="${PC_TYPE}" \
     --real-user="${REAL_USER}" \
     --torrent-client="${HAS_TORRENT_CLIENT}" \
@@ -1184,7 +1184,7 @@ run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/clamav.s
     --timestamp="${FILENAME_TIMESTAMP}"
 
 # Hosts file updates
-run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/hosts.sh"
+run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/security/hosts.sh"
 
 #===============================================================================
 # Full Setup Additional Scripts
@@ -1208,7 +1208,7 @@ if [ "$SETUP_TYPE" = "${SETUP_TYPE_FULL}" ]; then
     
     # Privacy tools
     run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/common/mullvad_browser.sh"
-    run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/i2p.sh"
+    run_external_script "${SYSUPDATE_CODE_BASE_DIR}/linux/security/i2p.sh"
     
     # Mobile integration
     if [ "$DESKTOP" = "${DESKTOP_GNOME}" ]; then
@@ -1221,7 +1221,7 @@ fi
 #===============================================================================
 log_header "Configuring firewall..."
 
-FIREWALLD_SCRIPT="${SYSUPDATE_CODE_BASE_DIR}/linux/security_os_level/firewalld.sh"
+FIREWALLD_SCRIPT="${SYSUPDATE_CODE_BASE_DIR}/linux/security/firewalld.sh"
 
 if [ -f "$FIREWALLD_SCRIPT" ]; then
     sudo bash "$FIREWALLD_SCRIPT" \

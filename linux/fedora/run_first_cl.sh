@@ -1486,16 +1486,16 @@ run_application_steps() {
   if [ "${GUI}" = true ]; then
     run_step "app:mpv"         run_sub linux/common/mpv.sh
   fi
-  run_step "app:dns-nextdns"   run_sub_root linux/security_os_level/dns.sh "${NEXTDNS_ID}" "${NEXTDNS_DEVICE_ID}"
+  run_step "app:dns-nextdns"   run_sub_root linux/security/dns.sh "${NEXTDNS_ID}" "${NEXTDNS_DEVICE_ID}"
   if [ "${GUI}" = true ]; then
-    run_step "app:proton"      run_sub linux/security_os_level/proton_ag.sh --setup-type "${SETUP_TYPE}" --desktop "${DESKTOP}"
+    run_step "app:proton"      run_sub linux/security/proton_ag.sh --setup-type "${SETUP_TYPE}" --desktop "${DESKTOP}"
   fi
 
-  run_step "app:clamav"        run_sub_root linux/security_os_level/clamav.sh \
+  run_step "app:clamav"        run_sub_root linux/security/clamav.sh \
       --pc-type="${PC_TYPE}" --real-user="${REAL_USER}" --torrent-client="${HAS_TORRENT_CLIENT}" \
       --kodi="${HAS_KODI}" --backup-dir="${SCRIPT_BACKUPS_DIR}" --timestamp="${FILENAME_TIMESTAMP}"
   # hosts.sh must run after clamav.sh
-  run_step "app:hosts"         run_sub linux/security_os_level/hosts.sh
+  run_step "app:hosts"         run_sub linux/security/hosts.sh
   # AppMan must run after clamav.sh (its installer is scanned before it runs)
   run_step "appimages"         step_appimages
 
@@ -1508,7 +1508,7 @@ run_application_steps() {
     fi
     run_step "app:docker"        run_sub linux/common/docker.sh
     run_step "app:neovim"        run_sub linux/common/neovim_lazyvim.sh
-    run_step "app:i2p"           run_sub linux/security_os_level/i2p.sh
+    run_step "app:i2p"           run_sub linux/security/i2p.sh
     # tmux_zellij.sh and yazi.sh must run after zsh, alacritty and neovim
     run_step "app:tmux-zellij"   run_sub linux/common/tmux_zellij.sh
     run_step "app:yazi"          run_sub linux/common/yazi.sh
@@ -1550,7 +1550,7 @@ step_sec_firewalld() {
   # Applies the per-application rules (syncthing, KDE Connect, ...) for services that are now installed.
   # Option names are the ones firewalld.sh already defines. fail2ban.sh is intentionally not run: no SSH
   # daemon is exposed. Add it after firewalld.sh if sshd is enabled.
-  run_sub_root linux/security_os_level/firewalld.sh \
+  run_sub_root linux/security/firewalld.sh \
     --filename-timestamp "${FILENAME_TIMESTAMP}" \
     --script-backups-dir "${SCRIPT_BACKUPS_DIR}" \
     --sysupdate-code-base-dir "${SYSUPDATE_CODE_BASE_DIR}" \

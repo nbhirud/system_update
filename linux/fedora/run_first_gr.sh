@@ -488,11 +488,11 @@ require_script "$SYSUPDATE_CODE_BASE_DIR/linux/common/git.sh"
 require_script "$SYSUPDATE_CODE_BASE_DIR/linux/common/syncthing.sh"
 require_script "$SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh"
 require_script "$SYSUPDATE_CODE_BASE_DIR/linux/common/mpv.sh"
-require_script "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh"
-require_script "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag.sh"
-require_script "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/clamav.sh"
-require_script "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/hosts.sh"
-require_script "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/firewalld.sh"
+require_script "$SYSUPDATE_CODE_BASE_DIR/linux/security/dns.sh"
+require_script "$SYSUPDATE_CODE_BASE_DIR/linux/security/proton_ag.sh"
+require_script "$SYSUPDATE_CODE_BASE_DIR/linux/security/clamav.sh"
+require_script "$SYSUPDATE_CODE_BASE_DIR/linux/security/hosts.sh"
+require_script "$SYSUPDATE_CODE_BASE_DIR/linux/security/firewalld.sh"
 
 bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/vscodium.sh"
 bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/librewolf_browser.sh"
@@ -514,10 +514,10 @@ bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/avahi.sh"
 bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/mpv.sh"
 
 # DNS / NextDNS – force any downloads into SCRIPT_DOWNLOADS_DIR inside the helper if possible
-sudo bash "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh" "$NEXTDNS_ID" "$NEXTDNS_DEVICE_ID"
+sudo bash "$SYSUPDATE_CODE_BASE_DIR/linux/security/dns.sh" "$NEXTDNS_ID" "$NEXTDNS_DEVICE_ID"
 
 # Proton (Pass, VPN, Mail, etc.) – helpers should download into $SCRIPT_DOWNLOADS_DIR
-bash "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/proton_ag.sh" \
+bash "$SYSUPDATE_CODE_BASE_DIR/linux/security/proton_ag.sh" \
   --setup-type "$SETUP_TYPE" \
   --desktop "$DESKTOP"
 
@@ -526,7 +526,7 @@ CLAMAV_DEBUG=1
 if [[ "$LOW_RAM" == true ]]; then
   log_warn "Low-RAM: ClamAV will be configured more lightly"
 fi
-sudo DEBUG="$CLAMAV_DEBUG" bash "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/clamav.sh" \
+sudo DEBUG="$CLAMAV_DEBUG" bash "$SYSUPDATE_CODE_BASE_DIR/linux/security/clamav.sh" \
   --pc-type="${PC_TYPE}" \
   --real-user="${REAL_USER}" \
   --torrent-client="${HAS_TORRENT_CLIENT}" \
@@ -534,7 +534,7 @@ sudo DEBUG="$CLAMAV_DEBUG" bash "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_leve
   --backup-dir="${SCRIPT_BACKUPS_DIR}" \
   --timestamp="${FILENAME_TIMESTAMP}"
 
-bash "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/hosts.sh"
+bash "$SYSUPDATE_CODE_BASE_DIR/linux/security/hosts.sh"
 
 #########################################################
 # Full-setup extras
@@ -551,7 +551,7 @@ if [[ "$SETUP_TYPE" == "$SETUP_TYPE_FULL" ]]; then
   bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/jetbrains_toolbox.sh" || true
   bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/docker.sh" || true
   bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/neovim_lazyvim.sh" || true
-  bash "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/i2p.sh" || true
+  bash "$SYSUPDATE_CODE_BASE_DIR/linux/security/i2p.sh" || true
   bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/tmux_zellij.sh" || true
   bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/yazi.sh" || true
   bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/mullvad_browser.sh" || true
@@ -565,7 +565,7 @@ fi
 # firewalld (near the end) + fail2ban
 #########################################################
 
-sudo bash "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/firewalld.sh" \
+sudo bash "$SYSUPDATE_CODE_BASE_DIR/linux/security/firewalld.sh" \
   --filename-timestamp "$FILENAME_TIMESTAMP" \
   --script-backups-dir "$SCRIPT_BACKUPS_DIR" \
   --sysupdate-code-base-dir "$SYSUPDATE_CODE_BASE_DIR" \
@@ -576,9 +576,9 @@ sudo bash "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/firewalld.sh" \
   --real-user "$REAL_USER"
 
 # fail2ban after firewalld
-if [[ -f "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/fail2ban.sh" ]]; then
+if [[ -f "$SYSUPDATE_CODE_BASE_DIR/linux/security/fail2ban.sh" ]]; then
   log_info "Configuring fail2ban"
-  sudo bash "$SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/fail2ban.sh" || true
+  sudo bash "$SYSUPDATE_CODE_BASE_DIR/linux/security/fail2ban.sh" || true
 else
   log_warn "fail2ban.sh not found – skipping"
 fi
