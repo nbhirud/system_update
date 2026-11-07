@@ -20,9 +20,10 @@
 #   fzf (fuzzy finder, Ctrl-T / Alt-C bindings, Ctrl-R until Atuin takes it over)   zoxide (`z` jumps)
 #   eza (ls)   bat (cat with syntax highlighting)   ripgrep   fd-find   direnv   fastfetch
 #
-# Installs the drop-in snippet conf.d/30-tools.zsh: integrations are activated only for tools that exist when
-# the shell starts, so removing a tool never breaks the shell. All packages come from dnf (updated by the
-# normal system update), so no updater is needed.
+# Installs the drop-in snippet ~/.config/zsh/conf.d/30-tools.zsh (owned by you): integrations are activated only for
+# tools that exist when the shell starts, so removing a tool never breaks the shell. All packages come from dnf
+# (updated by the normal system update), so no updater is needed.
+# Needs root only for dnf (it re-runs itself through sudo); the snippet is written for your user.
 #
 # NAMED OPTIONS
 #   --verify-setup        Only run the Verification section (no changes are made).
@@ -38,7 +39,7 @@
 #   Verification only:
 #     sudo bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/cli_tools.sh" --verify-setup
 #
-# REQUIRED HELPER FILES (in $SYSUPDATE_CODE_BASE_DIR/linux/commonh/)
+# REQUIRED HELPER FILES (helpers in $HELPER_DIR = $SYSUPDATE_CODE_BASE_DIR/linux/commonh/, getters in $GETTERS_DIR = .../linux/commong/)
 #   helper_common.sh helper_backup.sh helper_github_release.sh helper_nb_dropins.sh
 #   get_*.sh system detection scripts. Run zsh.sh first (the snippet needs its loader).
 
@@ -58,14 +59,16 @@ SCRIPT_DATA_DOWNLOADS="${SCRIPT_DATA}/downloads"
 SCRIPT_DATA_BACKUPS="${SCRIPT_DATA}/backups"
 CLITOOLS_BACKUP_DIR_BASE="${SCRIPT_DATA_BACKUPS}/cli_tools"
 
-HELPER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/commonh"
+# Where the helper_*.sh files and the get_*.sh detection scripts live (overridable from the environment).
+HELPER_DIR="${HELPER_DIR:-${SYSUPDATE_CODE_BASE_DIR}/linux/commonh}"     # helper_*.sh / helper_*.py
+GETTERS_DIR="${GETTERS_DIR:-${SYSUPDATE_CODE_BASE_DIR}/linux/commong}"   # get_*.sh system detection scripts
 for _f in helper_common.sh helper_backup.sh helper_github_release.sh helper_nb_dropins.sh; do
   [[ -r "${HELPER_DIR}/${_f}" ]] || { echo "Missing helper file: ${HELPER_DIR}/${_f}" >&2; exit 1; }
   # shellcheck source=/dev/null
   source "${HELPER_DIR}/${_f}"
 done
 unset _f
-nb_require_functions backup_path_parents nb_install_conf nb_remove_conf render write_file
+nb_require_functions backup_path_parents nb_mkdir nb_install_conf nb_remove_conf render write_file
 trap 'log_error "Unexpected failure at line ${LINENO}: ${BASH_COMMAND}"' ERR
 
 # --- Script specific ---
@@ -92,7 +95,7 @@ infer_variables() {
 #########################################################
 # shellcheck disable=SC2016  # the $ signs below are zsh syntax
 IFS= read -r -d '' SNIPPET_TOOLS <<'EOF' || true
-# 30-tools.zsh - CLI tool integrations. Installed by cli_tools.sh (root-owned: re-run cli_tools.sh to change it).
+# 30-tools.zsh - CLI tool integrations. Installed by cli_tools.sh (re-run it to regenerate; edit freely if you prefer).
 # Every block is guarded: a tool that is not installed is simply skipped.
 
 if (( $+commands[fzf] )); then
@@ -107,9 +110,8 @@ if (( $+commands[fzf] )); then
 fi
 
 (( $+commands[zoxide] )) && eval "$(zoxide init zsh)"    # `z <partial-dir-name>` jumps to frequent directories
-# direnv loads .envrc files from the directory you enter (each needs `direnv allow`). Not for root:
-# a root shell should never evaluate environment files from other people's directories.
-(( EUID != 0 )) && (( $+commands[direnv] )) && eval "$(direnv hook zsh)"
+# direnv loads .envrc files from the directory you enter (each needs `direnv allow` once).
+(( $+commands[direnv] )) && eval "$(direnv hook zsh)"
 
 # `ls` is deliberately NOT aliased to eza: eza's flags differ from GNU ls (eza -t takes a field name, so
 # `ls -ltra` fails with "Option --time has no 'ra' setting"). Muscle-memory commands keep working; the
@@ -135,7 +137,7 @@ EOF
 backup_existing() {
   log_header "Backup"
   mkdir -p "$CLITOOLS_CURRENT_BACKUP_DIR"
-  backup_path_parents "${NB_CONF_COMMON_DIR}/30-tools.zsh" "$CLITOOLS_CURRENT_BACKUP_DIR"
+  backup_path_parents "${NB_ZSH_CONF_DIR}/30-tools.zsh" "$CLITOOLS_CURRENT_BACKUP_DIR"
   backup_record "$CLITOOLS_CURRENT_BACKUP_DIR" "installed_packages" rpm -q "${CLI_TOOLS_PACKAGES[@]}"
   chown -R "${REAL_USER}:${REAL_USER}" "$CLITOOLS_BACKUP_DIR_BASE"
   chmod 0700 "$CLITOOLS_CURRENT_BACKUP_DIR"
@@ -148,7 +150,7 @@ backup_existing() {
 # Only the snippet is removed and rewritten. The packages are the system's own (dnf) and stay installed.
 reset_existing() {
   log_header "Reset"
-  nb_remove_conf common 30-tools.zsh
+  nb_remove_conf 30-tools.zsh
   log_success "Previous tools snippet removed"
 }
 
@@ -169,16 +171,8 @@ install_packages() {
 }
 
 install_snippet() {
-  nb_install_conf common 30-tools.zsh "$SNIPPET_TOOLS"
+  nb_install_conf 30-tools.zsh "$SNIPPET_TOOLS"
   log_success "Snippet 30-tools.zsh installed"
-}
-
-#########################################################
-# Security
-#########################################################
-apply_security() {
-  if has_cmd restorecon; then restorecon -RF "$NB_CONF_COMMON_DIR" 2>/dev/null || true; fi
-  # Packages come from signed Fedora repositories; nothing here listens on a port.
 }
 
 #########################################################
@@ -188,7 +182,7 @@ verify_setup() {
   nb_verify_begin
   if [[ "$INSTALL_CLI_TOOLS" != "true" ]]; then
     log_info "RAM profile '${RAM_PROFILE}' is not in CLI_TOOLS_PROFILES: nothing to verify"
-    check "no tools snippet is installed on this low-RAM profile" test ! -e "${NB_CONF_COMMON_DIR}/30-tools.zsh"
+    check "no tools snippet is installed on this low-RAM profile" test ! -e "${NB_ZSH_CONF_DIR}/30-tools.zsh"
     nb_verify_end
     return
   fi
@@ -199,10 +193,9 @@ verify_setup() {
   if has_cmd fzf && ! fzf --zsh >/dev/null 2>&1; then
     nb_verify_warn "fzf is older than 0.48: shell key bindings are skipped"
   fi
-  check "snippet is installed and root-owned" test "$(stat -c %U "${NB_CONF_COMMON_DIR}/30-tools.zsh")" = "root"
-  check "snippet passes zsh syntax check" zsh -n "${NB_CONF_COMMON_DIR}/30-tools.zsh"
+  check "snippet is installed and owned by ${REAL_USER}" test "$(stat -c %U "${NB_ZSH_CONF_DIR}/30-tools.zsh")" = "$REAL_USER"
+  check "snippet passes zsh syntax check" zsh -n "${NB_ZSH_CONF_DIR}/30-tools.zsh"
   check "user shell starts without errors" nb_user_zsh_starts_clean
-  check "root shell starts without errors" bash -c "! (HOME=/root TERM=xterm-256color zsh -i -c exit 2>&1 </dev/null | grep -Eiq 'error|not found|permission denied')"
   nb_verify_end
 }
 
@@ -229,7 +222,6 @@ main() {
     log_info "RAM profile '${RAM_PROFILE}': installing productivity CLI tools"
     install_packages
     install_snippet
-    apply_security
   else
     log_info "RAM profile '${RAM_PROFILE}': CLI tools skipped (keeps the shell light on this machine)"
   fi
@@ -254,7 +246,7 @@ exit $?
 # * Atuin (atuin.sh) is not a dnf package here; it has its own script. fzf's Ctrl-R remains the history search
 #   until Atuin is installed.
 # * Packages are NOT removed by Reset: they are normal system packages other things may depend on.
-# * direnv is skipped for root on purpose (evaluating .envrc files as root is a risk).
+# * Only your user gets these integrations; root stays plain bash.
 # * `ls` is NOT aliased to eza (an earlier version did): eza's -t means --time=FIELD, so the common
 #   `ls -ltra` broke. Use `ll` (long, git, dirs first), `llt` (sorted by modified time, newest last), `lt` (tree).
 #   Oh My Zsh also defines ll/la/l as plain `ls` aliases; the snippet loads after it, so ours win.

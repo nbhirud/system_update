@@ -24,7 +24,8 @@
 #       Any mismatch or missing sidecar = failure. Unverified binaries are never installed.
 #
 #   nb_install_github_binary <repo> <asset_template> <binary> <dest_path> <min_age_days> <work_dir> [installed_version]
-#       Full flow: pick release -> download -> verify -> extract -> install root:root 0755.
+#       Full flow: pick release -> download -> verify -> extract -> install 0755 (root:root when run as root,
+#       or NB_INSTALL_USER:NB_INSTALL_GROUP if set; the caller's own user otherwise).
 #       <asset_template> contains @TRIPLE@, replaced by x86_64-unknown-linux-musl (or aarch64).
 #       Return codes: 0 = installed (tag in NB_INSTALLED_TAG), 10 = already current, 1 = error.
 #       The binary is replaced atomically (install next to target, then rename).
@@ -38,8 +39,8 @@
 #   release. The cooldown reduces (does not remove) that exposure.
 #
 # SELF-CONTAINED
-#   Installed unchanged to /usr/local/lib/nb/ so root-run updaters can use it without
-#   touching any user-owned directory. Does not depend on helper_common.sh.
+#   A copy is installed next to the per-user updaters (~/.local/share/nb) so they can use it without
+#   the project directory. Does not depend on helper_common.sh.
 #
 # REQUIREMENTS: curl, sha256sum, awk, tar, python3, install, find
 
@@ -50,6 +51,33 @@
 # Sourcing Guard Rails - uses a safety guard (HELPER_XYZ_LOADED) to prevent issues if it gets sourced multiple times.
 if [[ -z "${HELPER_GITHUB_RELEASE_LOADED:-}" ]]; then
     HELPER_GITHUB_RELEASE_LOADED=1
+
+    # Python programs used below. Their text is kept at column 0 inside these heredocs ON PURPOSE: Python is
+    # indentation-sensitive, and indenting the shell code around them (as the sourcing guard does) must not
+    # change them. (A previous merge indented them and broke the release picker.)
+    IFS= read -r -d '' _GH_PY_PICK <<'PY' || true
+import json, sys, datetime
+min_days = float(sys.argv[1])
+now = datetime.datetime.now(datetime.timezone.utc)
+for r in json.load(sys.stdin):
+    if r.get("draft") or r.get("prerelease"):
+        continue
+    pub = datetime.datetime.fromisoformat(r["published_at"].replace("Z", "+00:00"))
+    if (now - pub).total_seconds() >= min_days * 86400:
+        print(r["tag_name"])
+        sys.exit(0)
+sys.exit(3)
+PY
+
+    IFS= read -r -d '' _GH_PY_DIGEST <<'PY' || true
+import json, sys
+name = sys.argv[1]
+for a in json.load(sys.stdin).get("assets", []):
+    d = a.get("digest") or ""
+    if a.get("name") == name and d.startswith("sha256:"):
+        print(d[7:])
+        break
+PY
 
     NB_GITHUB_API_BASE="${NB_GITHUB_API_BASE:-https://api.github.com}"   # overridable (tests mock _gh_curl instead)
 
@@ -83,19 +111,7 @@ if [[ -z "${HELPER_GITHUB_RELEASE_LOADED:-}" ]]; then
         github_latest_tag "$repo"
         return $?
       fi
-      tag="$(printf '%s' "$json" | python3 -c '
-    import json, sys, datetime
-    min_days = float(sys.argv[1])
-    now = datetime.datetime.now(datetime.timezone.utc)
-    for r in json.load(sys.stdin):
-        if r.get("draft") or r.get("prerelease"):
-            continue
-        pub = datetime.datetime.fromisoformat(r["published_at"].replace("Z", "+00:00"))
-        if (now - pub).total_seconds() >= min_days * 86400:
-            print(r["tag_name"])
-            sys.exit(0)
-    sys.exit(3)
-    ' "$min_days")" && rc=0 || rc=$?
+      tag="$(printf '%s' "$json" | python3 -c "$_GH_PY_PICK" "$min_days")" && rc=0 || rc=$?
       if [[ $rc -eq 0 && -n "$tag" ]]; then
         printf '%s\n' "$tag"
       elif [[ $rc -eq 3 ]]; then
@@ -110,15 +126,7 @@ if [[ -z "${HELPER_GITHUB_RELEASE_LOADED:-}" ]]; then
     github_release_asset_digest() {
       local repo="$1" tag="$2" asset="$3" json
       json="$(_gh_curl "${NB_GITHUB_API_BASE}/repos/${repo}/releases/tags/${tag}")" || return 0
-      printf '%s' "$json" | python3 -c '
-    import json, sys
-    name = sys.argv[1]
-    for a in json.load(sys.stdin).get("assets", []):
-        d = a.get("digest") or ""
-        if a.get("name") == name and d.startswith("sha256:"):
-            print(d[7:])
-            break
-    ' "$asset" 2>/dev/null || true
+      printf '%s' "$json" | python3 -c "$_GH_PY_DIGEST" "$asset" 2>/dev/null || true
     }
 
     github_download_verified() {
@@ -170,7 +178,13 @@ if [[ -z "${HELPER_GITHUB_RELEASE_LOADED:-}" ]]; then
       [[ -n "$bin" ]] || { _gh_warn "binary '${binary}' not found in ${asset}"; return 1; }
 
       # Install next to the target and rename: replacing a running binary in place can fail.
-      install -o root -g root -m 0755 "$bin" "${dest}.new" || return 1
+      # Owner: root:root by default (system-wide installs, as before). Set NB_INSTALL_USER to install for a
+      # user instead; a non-root caller simply owns what it creates.
+      local -a own=()
+      if [[ ${EUID} -eq 0 ]]; then
+        own=(-o "${NB_INSTALL_USER:-root}" -g "${NB_INSTALL_GROUP:-${NB_INSTALL_USER:-root}}")
+      fi
+      install "${own[@]}" -m 0755 "$bin" "${dest}.new" || return 1
       mv -f "${dest}.new" "$dest" || return 1
       NB_INSTALLED_TAG="$tag"
       echo "${binary} installed: ${tag}"
