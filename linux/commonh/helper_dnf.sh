@@ -31,6 +31,7 @@ if [[ -z "${HELPER_DNF_LOADED:-}" ]]; then
 
     # shellcheck source=/dev/null
     source "$(dirname "${BASH_SOURCE[0]}")/helper_array.sh"
+    # source "${SYSUPDATE_CODE_BASE_DIR}/linux/commonh/helper_array.sh"
 
     require_fedora() {
         if [[ "${DISTRO,,}" != *fedora* ]]; then

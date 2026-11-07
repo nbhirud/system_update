@@ -289,7 +289,7 @@ resolve_settings() {
   SCRIPT_DOWNLOADS_DIR="$SCRIPT_DATA_DIR/downloads"
   PROTON_DOWNLOADS_DIR_BASE="$SCRIPT_DOWNLOADS_DIR/proton_ag"
   PROTON_CURRENT_DOWNLOADS_DIR="$PROTON_DOWNLOADS_DIR_BASE/proton_ag_${FILENAME_TIMESTAMP}"
-  SYSUPDATE_FEDORA_CODE_DIR="$SYSUPDATE_CODE_BASE_DIR/linux/fedora"
+  GETTER_DIR="$SYSUPDATE_CODE_BASE_DIR/linux/commong"
   BACKUP_DIR="$PROTON_CURRENT_DOWNLOADS_DIR/backup"
   MANIFEST_DIR="$PROTON_CURRENT_DOWNLOADS_DIR/manifests"
 }
@@ -308,9 +308,9 @@ normalise_desktop() {
 }
 
 detect_desktop() {
-  local raw="$DESKTOP" helper="$SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh"
-  # 1) value from caller  2) your helper script  3) the session's own variables
-  if [[ -z "$raw" && -r "$helper" ]]; then raw="$(bash "$helper" 2>/dev/null | head -n1)"; fi
+  local raw="$DESKTOP" getter="$GETTER_DIR/get_desktop_env.sh"
+  # 1) value from caller  2) your getter script  3) the session's own variables
+  if [[ -z "$raw" && -r "$getter" ]]; then raw="$(bash "$getter" 2>/dev/null | head -n1)"; fi
   [[ -n "$raw" ]] || raw="${XDG_CURRENT_DESKTOP:-${XDG_SESSION_DESKTOP:-}}"
   DESKTOP="$(normalise_desktop "$raw")"
 }
@@ -318,17 +318,17 @@ detect_desktop() {
 detect_fedora_version() {
   # `rpm -E %fedora` is canonical and immune to /etc/fedora-release wording
   # (e.g. "Fedora Asahi Remix release 43" breaks `cut -d' ' -f3`).
-  local from_rpm from_helper helper="$SYSUPDATE_FEDORA_CODE_DIR/get_fedora_release_version.sh"
+  local from_rpm from_getter getter="$GETTER_DIR/get_fedora_release_version.sh"
   from_rpm="$(rpm -E %fedora 2>/dev/null)"
   [[ "$from_rpm" =~ ^[0-9]+$ ]] || from_rpm=""
-  from_helper=""
-  [[ -r "$helper" ]] && from_helper="$(sh "$helper" 2>/dev/null | head -n1)"
-  [[ "$from_helper" =~ ^[0-9]+$ ]] || from_helper=""
+  from_getter=""
+  [[ -r "$getter" ]] && from_getter="$(sh "$getter" 2>/dev/null | head -n1)"
+  [[ "$from_getter" =~ ^[0-9]+$ ]] || from_getter=""
 
-  if [[ -n "$from_rpm" && -n "$from_helper" && "$from_rpm" != "$from_helper" ]]; then
-    log_warn "Your helper says Fedora $from_helper but rpm says $from_rpm; trusting rpm."
+  if [[ -n "$from_rpm" && -n "$from_getter" && "$from_rpm" != "$from_getter" ]]; then
+    log_warn "Your getter says Fedora $from_getter but rpm says $from_rpm; trusting rpm."
   fi
-  FEDORA_RELEASE_VERSION="${from_rpm:-$from_helper}"
+  FEDORA_RELEASE_VERSION="${from_rpm:-$from_getter}"
   [[ -n "$FEDORA_RELEASE_VERSION" ]] || die "Could not determine the Fedora release number (is this Fedora?)"
 }
 
@@ -853,7 +853,7 @@ fi
 # # if [[ -z $2 ]];
 # # then
 # #   echo "DESKTOP not provided. Identifying."
-# #   DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_desktop_env.sh)
+# #   DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_desktop_env.sh)
 
 # # else 
 # #   DESKTOP=$2
@@ -1158,7 +1158,7 @@ fi
 # # detect_desktop() {
 # #   if [ -z "$DESKTOP" ]; then
 # #     # Prefer the shared helper if the system_update tree is present.
-# #     _helper="$HOME_DIR/nb/CodeProjects/system_update/linux/common/get_desktop_env.sh"
+# #     _helper="$HOME_DIR/nb/CodeProjects/system_update/linux/commong/get_desktop_env.sh"
 # #     if [ -f "$_helper" ]; then
 # #       DESKTOP=$(sh "$_helper" 2>/dev/null || true)
 # #     fi
@@ -1178,7 +1178,7 @@ fi
 # # Handle desktop detection if not provided
 # if [ -z "$DESKTOP" ]; then
 #   log_warn "DESKTOP not provided. Identifying."
-#   DESKTOP=$(bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_desktop_env.sh)
+#   DESKTOP=$(bash "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_desktop_env.sh)
 # fi
 
 

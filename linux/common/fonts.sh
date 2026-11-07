@@ -174,15 +174,23 @@ done
 ##########################################################################
 # Paths
 ##########################################################################
-# Where is this script? Works no matter which directory you run it from,
-# which fixes the old "rigid file structure" TODO.
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # Home directory of the current user. `id -un` is used instead of $USER because
 # $USER can be unset (cron, some sudo setups). Quoted everywhere: your old
 # `getent passwd $USER` was unquoted.
 HOME_DIR="$(getent passwd "$(id -un)" | cut -d: -f6)"
 [ -n "$HOME_DIR" ] || HOME_DIR="${HOME:-}"
+
+NBDIR="${HOME_DIR}/nb" 
+CODEPROJECTS_DIR="${NBDIR}/CodeProjects" # Path for all code projects
+SYSUPDATE_CODE_BASE_DIR="${CODEPROJECTS_DIR}/system_update" # Path for linux setup project
+
+
+# Where is this script? Works no matter which directory you run it from,
+# which fixes the old "rigid file structure" TODO.
+# GETTER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+GETTER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/commong"
+
 
 RUN_ID="$(date +%Y%m%d-%H%M%S)"
 # Config backups + the log of this run live together in one small folder:
@@ -589,8 +597,8 @@ backup_everything() {
 detect_desktop() {
     local d=""
     # Prefer your own helper if present; fall back to the standard variable.
-    if [ -r "$SCRIPT_DIR/get_desktop_env.sh" ]; then
-        d="$(sh "$SCRIPT_DIR/get_desktop_env.sh" 2>/dev/null)" || d=""
+    if [ -r "$GETTER_DIR/get_desktop_env.sh" ]; then
+        d="$(sh "$GETTER_DIR/get_desktop_env.sh" 2>/dev/null)" || d=""
     fi
     [ -n "$d" ] || d="${XDG_CURRENT_DESKTOP:-}"
     d="${d,,}"

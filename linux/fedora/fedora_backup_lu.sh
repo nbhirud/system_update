@@ -64,9 +64,9 @@ KEYS_BACKUP_DIR="${FEDORA_CURRENT_BACKUP_DIR}/keys"
 LISTINGS_BACKUP_DIR="${FEDORA_CURRENT_BACKUP_DIR}/listings"
 
 # Detection variables
-DISTRO=$(bash "$(dirname "$0")/../common/get_distro_name.sh" 2>/dev/null || echo "unknown")
-DISTRO_VERSION=$(bash "$(dirname "$0")/../common/get_distro_version.sh" 2>/dev/null || echo "0")
-DESKTOP=$(bash "$(dirname "$0")/../common/get_desktop_env.sh" 2>/dev/null || echo "unknown")
+DISTRO=$(bash "$(dirname "$0")/../commong/get_distro_name.sh" 2>/dev/null || echo "unknown")
+DISTRO_VERSION=$(bash "$(dirname "$0")/../commong/get_distro_version.sh" 2>/dev/null || echo "0")
+DESKTOP=$(bash "$(dirname "$0")/../commong/get_desktop_env.sh" 2>/dev/null || echo "unknown")
 
 # Verify we're on Fedora
 if [[ "${DISTRO}" != "fedora" ]]; then

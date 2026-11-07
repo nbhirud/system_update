@@ -44,7 +44,7 @@
 #   Verification only:
 #     sudo bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh" --verify-setup
 #
-# REQUIRED HELPER FILES (in $SYSUPDATE_CODE_BASE_DIR/linux/common/)
+# REQUIRED HELPER FILES (in $SYSUPDATE_CODE_BASE_DIR/linux/commonh/)
 #   helper_common.sh helper_backup.sh helper_github_release.sh helper_nb_dropins.sh
 #   get_cpu_cores.sh get_ram_size.sh get_ram_profile.sh get_ssd_present.sh get_pc_type.sh
 #   get_desktop_env.sh get_distro_name.sh get_cpu_model.sh
@@ -78,7 +78,7 @@ UPDATE_TIMER_SCHEDULE="weekly"                     # systemd OnCalendar value fo
 NTFY_URL=""                                        # optional, e.g. https://ntfy.sh/<topic>
 
 # Helpers are sourced from the project; the file must exist before anything else can run.
-HELPER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/common"
+HELPER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/commonh"
 for _f in helper_common.sh helper_backup.sh helper_github_release.sh helper_nb_dropins.sh; do
   [[ -r "${HELPER_DIR}/${_f}" ]] || { echo "Missing helper file: ${HELPER_DIR}/${_f}" >&2; exit 1; }
   # shellcheck source=/dev/null

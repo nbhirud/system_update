@@ -19,14 +19,14 @@ set -eux
 #     echo "DESKTOP not provided. Identifying."
 #     HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
 #     SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
-#     DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh)
+#     DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/commong/get_desktop_env.sh)
 # else 
 #     DESKTOP="$1"
 # fi
 
 HOME_DIR=$(getent passwd "$USER" | cut -d: -f6)
 SYSUPDATE_CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects/system_update"
-DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_desktop_env.sh)
+DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_desktop_env.sh)
 
 echo "The current DESKTOP is $DESKTOP."
 
@@ -47,7 +47,7 @@ DOWNLOAD_METHOD="archive" # Choose one of "full", "sparse", "archive"
 
 
 # echo "************************ Identify Desktop Environment ************************"
-# DESKTOP=$(sh "$SYSUPDATE_CODE_DIR"/linux/common/get_desktop_env.sh)
+# DESKTOP=$(sh "$SYSUPDATE_CODE_DIR"/linux/commong/get_desktop_env.sh)
 # echo "Desktop Environment is $DESKTOP"
 
 ##########################################################################

@@ -44,7 +44,7 @@
 #   Verification only:
 #     sudo bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/omz.sh" --verify-setup
 #
-# REQUIRED HELPER FILES (in $SYSUPDATE_CODE_BASE_DIR/linux/common/)
+# REQUIRED HELPER FILES (in $SYSUPDATE_CODE_BASE_DIR/linux/commonh/)
 #   helper_common.sh helper_backup.sh helper_github_release.sh helper_nb_dropins.sh
 #   get_*.sh system detection scripts. Run zsh.sh first.
 
@@ -65,7 +65,7 @@ SCRIPT_DATA_BACKUPS="${SCRIPT_DATA}/backups"
 OMZ_DOWNLOADS_DIR_BASE="${SCRIPT_DATA_DOWNLOADS}/omz"
 OMZ_BACKUP_DIR_BASE="${SCRIPT_DATA_BACKUPS}/omz"
 
-HELPER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/common"
+HELPER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/commonh"
 for _f in helper_common.sh helper_backup.sh helper_github_release.sh helper_nb_dropins.sh; do
   [[ -r "${HELPER_DIR}/${_f}" ]] || { echo "Missing helper file: ${HELPER_DIR}/${_f}" >&2; exit 1; }
   # shellcheck source=/dev/null

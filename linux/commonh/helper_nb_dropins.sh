@@ -96,7 +96,7 @@ EOF
 
 nb_ensure_update_runner() {
   nb_ensure_conf_dirs
-  install -o root -g root -m 0644 "${SYSUPDATE_CODE_BASE_DIR}/linux/common/helper_github_release.sh" \
+  install -o root -g root -m 0644 "${SYSUPDATE_CODE_BASE_DIR}/linux/commonh/helper_github_release.sh" \
     "${NB_LIB_DIR}/helper_github_release.sh"
   write_file "$NB_UPDATE_RUNNER" root root 0755 "$_NB_RUNNER_TEMPLATE"
 

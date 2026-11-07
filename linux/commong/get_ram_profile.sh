@@ -14,7 +14,7 @@ NBDIR="$HOME_DIR/nb"
 CODEPROJECTS_DIR="$NBDIR/CodeProjects"
 SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
 
-RAM_MB=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ram_size.sh)
+RAM_MB=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_ram_size.sh)
 
 if   [ "$RAM_MB" -lt 10000 ];  then RAM_PROFILE=low
 elif [ "$RAM_MB" -lt 20000 ]; then RAM_PROFILE=mid

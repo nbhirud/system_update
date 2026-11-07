@@ -6,7 +6,7 @@ set -eux
 # https://docs.fedoraproject.org/en-US/quick-docs/installing-from-source/
 
 # TODO - Make this an "Install, or update if already installed" script
-# Need to run this to open toolbox and then click update: 
+# Need to run this to open toolbox and then click update and then restart the app: 
 # '''sudo /opt/jetbrains-toolbox/bin/jetbrains-toolbox'''
 
 # RELEASE_TYPE=release

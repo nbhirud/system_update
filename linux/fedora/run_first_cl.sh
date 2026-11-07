@@ -131,7 +131,8 @@ SYSUPDATE_CODE_BASE_DIR="${CODEPROJECTS_DIR}/system_update"   # linux setup proj
 if [ ! -d "${SYSUPDATE_CODE_BASE_DIR}/linux/common" ]; then
   SYSUPDATE_CODE_BASE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 fi
-HELPER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/common"
+HELPER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/commonh"
+GETTER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/commong"
 
 DESKTOP_DIR="${NBDIR}/Desktop"
 DOCUMENTS_DIR="${NBDIR}/Documents"
@@ -234,22 +235,22 @@ FLATPAK_MEDIA_APPS=(io.freetubeapp.FreeTube dev.fredol.open-tv com.spotify.Clien
 ##################################################################################
 # Everything below is detected at run time, so the script works on any 64-bit PC (roughly 2008 onward).
 infer_system() {
-  CPU_CORES="$(infer get_cpu_cores.sh 1)"
-  RAM_MB="$(infer get_ram_size.sh 0)"
-  RAM_PROFILE="$(infer get_ram_profile.sh mid)"           # low | mid | high
-  SSD_PRESENT="$(infer get_ssd_present.sh false)"         # false if any of the key directories is on an HDD
-  [ -n "${PC_TYPE}" ] || PC_TYPE="$(infer get_pc_type.sh desktop)"
-  DESKTOP="$(infer get_desktop_env.sh "")"
-  DISTRO="$(infer get_distro_name.sh "")"
-  CPU_MODEL="$(infer get_cpu_model.sh unknown)"
-  GPU_VENDORS="$(infer get_gpu_vendors.sh none)"          # e.g. "intel nvidia"
-  GPU_NAMES="$(infer get_gpu_names.sh "")"                # one per line
-  NVIDIA_DRIVER="$(infer get_nvidia_driver.sh none)"      # proprietary | nouveau | none
-  INTEL_GENERATION="$(infer get_intel_gen.sh 0)"          # Core generation: 2 = Sandy Bridge ... 12 = Alder Lake
-  CPU_IS_ULV="$(infer get_cpu_is_ulv.sh false)"
-  AMD_GPU_CLASS="$(infer get_amd_gpu_class.sh none)"      # none | legacy | modern | discrete
-  GPU_TIER="$(infer get_gpu_tier.sh low)"                 # low | mid | high
-  IS_ETHERNET="$(infer get_is_ethernet.sh false)"
+  CPU_CORES="$(infer_getter get_cpu_cores.sh 1)"
+  RAM_MB="$(infer_getter get_ram_size.sh 0)"
+  RAM_PROFILE="$(infer_getter get_ram_profile.sh mid)"           # low | mid | high
+  SSD_PRESENT="$(infer_getter get_ssd_present.sh false)"         # false if any of the key directories is on an HDD
+  [ -n "${PC_TYPE}" ] || PC_TYPE="$(infer_getter get_pc_type.sh desktop)"
+  DESKTOP="$(infer_getter get_desktop_env.sh "")"
+  DISTRO="$(infer_getter get_distro_name.sh "")"
+  CPU_MODEL="$(infer_getter get_cpu_model.sh unknown)"
+  GPU_VENDORS="$(infer_getter get_gpu_vendors.sh none)"          # e.g. "intel nvidia"
+  GPU_NAMES="$(infer_getter get_gpu_names.sh "")"                # one per line
+  NVIDIA_DRIVER="$(infer_getter get_nvidia_driver.sh none)"      # proprietary | nouveau | none
+  INTEL_GENERATION="$(infer_getter get_intel_gen.sh 0)"          # Core generation: 2 = Sandy Bridge ... 12 = Alder Lake
+  CPU_IS_ULV="$(infer_getter get_cpu_is_ulv.sh false)"
+  AMD_GPU_CLASS="$(infer_getter get_amd_gpu_class.sh none)"      # none | legacy | modern | discrete
+  GPU_TIER="$(infer_getter get_gpu_tier.sh low)"                 # low | mid | high
+  IS_ETHERNET="$(infer_getter get_is_ethernet.sh false)"
 
   # Root filesystem type (btrfs enables snapshots and scrubbing).
   ROOT_FSTYPE="$(findmnt -n -o FSTYPE / 2>/dev/null || echo unknown)"
@@ -445,10 +446,10 @@ make_user_dir() {
   mkdir -p "$1" 2>/dev/null || sudo install -d -o "${REAL_USER}" -g "${REAL_USER}" "$1"
 }
 
-# Run a helper from linux/common that prints one value. If the helper is missing, use the fallback
+# Run a helper from linux/commonh that prints one value. If the helper is missing, use the fallback
 # so the rest of the script can still proceed (e.g. on a partially cloned repo).
-infer() {
-  local script="${HELPER_DIR}/$1" fallback="$2"
+infer_getter() {
+  local script="${GETTER_DIR}/$1" fallback="$2"
   if [ -f "$script" ]; then
     bash "$script" 2>/dev/null || printf '%s' "$fallback"
   else
@@ -2261,7 +2262,7 @@ exit $?
 # Memory
 #   zramctl ; swapon --show ; sysctl vm.swappiness vm.page-cluster ; systemctl status systemd-zram-setup@zram0
 # MIME
-#   xdg-mime query default text/plain ; python3 linux/common/helper_mimeapps.py get-default --mime-type text/plain
+#   xdg-mime query default text/plain ; python3 linux/commonh/helper_mimeapps.py get-default --mime-type text/plain
 # Notifications
 #   nb-ntfy "test" "hello" ; sudo cat /etc/nb/ntfy.env ; journalctl -u nb-btrfs-scrub.service
 # Logging under script(1) behaves oddly (quoting)?  Run with RUN_FIRST_UNDER_SCRIPT=1 to bypass the re-exec and log nothing.

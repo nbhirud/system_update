@@ -207,20 +207,20 @@ mkdir -p "${OPENSNUITCH_CURRENT_BACKUP_DIR}"
 #########################################################
 
 # Load system detection scripts if available
-if [[ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_cpu_cores.sh" ]]; then
-    CPU_CORES=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_cpu_cores.sh")
+if [[ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_cpu_cores.sh" ]]; then
+    CPU_CORES=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_cpu_cores.sh")
 else
     CPU_CORES=$(nproc)
 fi
 
-if [[ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_ram_size.sh" ]]; then
-    RAM_MB=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_ram_size.sh")
+if [[ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_ram_size.sh" ]]; then
+    RAM_MB=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_ram_size.sh")
 else
     RAM_MB=$(free -m | awk '/^Mem:/{print $2}')
 fi
 
-if [[ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_ram_profile.sh" ]]; then
-    RAM_PROFILE=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_ram_profile.sh")
+if [[ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_ram_profile.sh" ]]; then
+    RAM_PROFILE=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_ram_profile.sh")
 else
     if [[ ${RAM_MB} -lt 4096 ]]; then
         RAM_PROFILE="low"
@@ -231,14 +231,14 @@ else
     fi
 fi
 
-if [[ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_pc_type.sh" ]]; then
-    PC_TYPE=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_pc_type.sh")
+if [[ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_pc_type.sh" ]]; then
+    PC_TYPE=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_pc_type.sh")
 else
     PC_TYPE="desktop"  # Default assumption
 fi
 
-if [[ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_desktop_env.sh" ]]; then
-    DESKTOP=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_desktop_env.sh")
+if [[ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_desktop_env.sh" ]]; then
+    DESKTOP=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_desktop_env.sh")
 else
     DESKTOP="${XDG_CURRENT_DESKTOP:-unknown}"
 fi

@@ -69,8 +69,9 @@
 #   Verification only:
 #     sudo bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/zsh.sh" --verify-setup
 #
-# REQUIRED HELPER FILES (in $SYSUPDATE_CODE_BASE_DIR/linux/common/)
+# REQUIRED HELPER FILES (in $SYSUPDATE_CODE_BASE_DIR/linux/commonh/)
 #   helper_backup.sh, helper_github_release.sh
+# REQUIRED Getter FILES (in $SYSUPDATE_CODE_BASE_DIR/linux/commong/)
 #   get_cpu_cores.sh get_ram_size.sh get_ram_profile.sh get_ssd_present.sh get_pc_type.sh
 #   get_desktop_env.sh get_distro_name.sh get_cpu_model.sh
 
@@ -177,18 +178,18 @@ AUTOSUGGEST_STRATEGY="" AUTOSUGGEST_BUFFER_MAX="" HIGHLIGHTERS=""
 VERIFY_ONLY="false"
 
 infer_variables() {
-  local common="${SYSUPDATE_CODE_BASE_DIR}/linux/common"
-  [[ -d "$common" ]] || log_die "Helper directory not found: ${common} (set SYSUPDATE_CODE_BASE_DIR)"
+  local commong="${SYSUPDATE_CODE_BASE_DIR}/linux/commong"
+  [[ -d "$commong" ]] || log_die "Getter directory not found: ${commong} (set SYSUPDATE_CODE_BASE_DIR)"
 
   # Reuse the tried-and-tested detection scripts instead of re-implementing them here.
-  CPU_CORES=$(sh "${common}/get_cpu_cores.sh")
-  RAM_MB=$(sh "${common}/get_ram_size.sh")
-  RAM_PROFILE=$(sh "${common}/get_ram_profile.sh")     # low | mid | high
-  SSD_PRESENT=$(sh "${common}/get_ssd_present.sh")     # true | false
-  PC_TYPE=$(sh "${common}/get_pc_type.sh")             # laptop | desktop | server
-  DESKTOP=$(sh "${common}/get_desktop_env.sh")         # kde | gnome | ...
-  DISTRO=$(sh "${common}/get_distro_name.sh")          # fedora | ...
-  CPU_MODEL=$(sh "${common}/get_cpu_model.sh")
+  CPU_CORES=$(sh "${commong}/get_cpu_cores.sh")
+  RAM_MB=$(sh "${commong}/get_ram_size.sh")
+  RAM_PROFILE=$(sh "${commong}/get_ram_profile.sh")     # low | mid | high
+  SSD_PRESENT=$(sh "${commong}/get_ssd_present.sh")     # true | false
+  PC_TYPE=$(sh "${commong}/get_pc_type.sh")             # laptop | desktop | server
+  DESKTOP=$(sh "${commong}/get_desktop_env.sh")         # kde | gnome | ...
+  DISTRO=$(sh "${commong}/get_distro_name.sh")          # fedora | ...
+  CPU_MODEL=$(sh "${commong}/get_cpu_model.sh")
 
   ZSH_CURRENT_BACKUP_DIR="${ZSH_BACKUP_DIR_BASE}/zsh_${FILENAME_TIMESTAMP}"
   ZSH_CURRENT_DOWNLOADS_DIR="${ZSH_DOWNLOADS_DIR_BASE}/zsh_${FILENAME_TIMESTAMP}"
@@ -265,10 +266,10 @@ parse_options() {
 load_helpers() {
   local f
   for f in helper_backup.sh helper_github_release.sh; do
-    [[ -r "${SYSUPDATE_CODE_BASE_DIR}/linux/common/${f}" ]] \
-      || log_die "Missing helper file: ${SYSUPDATE_CODE_BASE_DIR}/linux/common/${f}"
+    [[ -r "${SYSUPDATE_CODE_BASE_DIR}/linux/commonh/${f}" ]] \
+      || log_die "Missing helper file: ${SYSUPDATE_CODE_BASE_DIR}/linux/commonh/${f}"
     # shellcheck source=/dev/null
-    source "${SYSUPDATE_CODE_BASE_DIR}/linux/common/${f}"
+    source "${SYSUPDATE_CODE_BASE_DIR}/linux/commonh/${f}"
   done
 }
 
@@ -1011,7 +1012,7 @@ install_updater() {
   log_header "Updater (manual command + weekly timer)"
 
   install -d -o root -g root -m 0755 "$NB_ZSH_LIB_DIR"
-  install -o root -g root -m 0644 "${SYSUPDATE_CODE_BASE_DIR}/linux/common/helper_github_release.sh" \
+  install -o root -g root -m 0644 "${SYSUPDATE_CODE_BASE_DIR}/linux/commonh/helper_github_release.sh" \
     "${NB_ZSH_LIB_DIR}/helper_github_release.sh"
 
   local updater

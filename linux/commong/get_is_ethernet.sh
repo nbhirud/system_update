@@ -10,7 +10,7 @@ CODEPROJECTS_DIR="$NBDIR/CodeProjects"
 SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
 
 # CONNECTION_TYPE=$(nmcli -t -f TYPE,STATE device | awk -F: '($1=="ethernet" || $1=="wifi") && $2 ~ /^connected/ { print $1; exit}')
-CONNECTION_TYPE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_connection_type.sh)
+CONNECTION_TYPE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_connection_type.sh)
 
 IS_ETHERNET=false
 if [ "$CONNECTION_TYPE" = "ethernet" ]; then

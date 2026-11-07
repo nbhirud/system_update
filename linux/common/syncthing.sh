@@ -199,7 +199,7 @@ EOF
 
 
 echo "************************ Identify Desktop Environment ************************"
-DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh)
+DESKTOP=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/commong/get_desktop_env.sh)
 echo "Desktop Environment is $DESKTOP"
 
 

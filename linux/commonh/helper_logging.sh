@@ -5,7 +5,7 @@
 # Standard colored logging functions shared by all setup scripts.
 #
 # USAGE
-#   source "${SYSUPDATE_CODE_BASE_DIR}/linux/common/helper_logging.sh"
+#   source "${SYSUPDATE_CODE_BASE_DIR}/linux/commonh/helper_logging.sh"
 #   log_header "Section title"      # blank line + cyan banner
 #   log_info "something happened"   # blue   [INFO]
 #   log_success "it worked"         # green  [✓]

@@ -61,7 +61,7 @@
 # mpv setup for Fedora KDE (Wayland or X11): hardware-aware, privacy-first, re-runnable.
 #
 # WHAT IT DOES
-#   1. Detects hardware through the shared mini scripts in linux/common/ and picks a tier
+#   1. Detects hardware through the shared mini scripts in linux/common* and picks a tier
 #   2. Backs up every file it touches, plus locations older setups may have used
 #   3. Installs packages (mpv, full ffmpeg, GPU video drivers, KDE helpers); a failure here
 #      leaves the existing setup untouched
@@ -127,7 +127,7 @@ SCRIPT_DATA_BACKUPS="${SCRIPT_DATA}/backups" # Base dir for all backups by scrip
 MPV_BACKUP_DIR_BASE="${SCRIPT_DATA_BACKUPS}/mpv"
 MPV_CURRENT_BACKUP_DIR="${MPV_BACKUP_DIR_BASE}/mpv_${FILENAME_TIMESTAMP}" # use this to backup everything
 
-COMMON_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/common"
+HELPER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/commonh"
 
 #########################################################
 # User defined
@@ -189,17 +189,17 @@ MPV_EXTRA_VIDEO_MIME_TYPES=(application/x-matroska application/mxf application/v
 #########################################################
 # Helpers
 #########################################################
-# Reusable helpers live in linux/common/helper_*.sh (documented in each file).
+# Reusable helpers live in linux/commonh/helper_*.sh (documented in each file).
 # Functions below are specific to this script.
 
 for _helper in helper_logging helper_array helper_version_compare helper_fonts helper_github \
                helper_download helper_backup helper_dnf helper_run_as_user helper_mimeapps; do
-    if [[ ! -r "${COMMON_DIR}/${_helper}.sh" ]]; then
-        echo "[✗] Missing helper: ${COMMON_DIR}/${_helper}.sh (is SYSUPDATE_CODE_BASE_DIR correct?)" >&2
+    if [[ ! -r "${HELPER_DIR}/${_helper}.sh" ]]; then
+        echo "[✗] Missing helper: ${HELPER_DIR}/${_helper}.sh (is SYSUPDATE_CODE_BASE_DIR correct?)" >&2
         exit 1
     fi
     # shellcheck source=/dev/null
-    source "${COMMON_DIR}/${_helper}.sh"
+    source "${HELPER_DIR}/${_helper}.sh"
 done
 unset _helper
 
@@ -344,22 +344,22 @@ infer_paths() {
 infer_system_variables() {
     # DISTRO is read by require_fedora() in helper_dnf.sh
     # shellcheck disable=SC2034
-    DISTRO=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_distro_name.sh)           # fedora, etc
-    DISTRO_VERSION=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_distro_version.sh) # 44
-    DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_desktop_env.sh)          # kde/gnome/cosmic/etc
-    PC_TYPE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_pc_type.sh)              # laptop or desktop or server
-    CPU_CORES=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_cpu_cores.sh)          # logical CPUs (nproc)
-    RAM_MB=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ram_size.sh)              # total RAM in MB
-    RAM_PROFILE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ram_profile.sh)      # low or mid or high
-    SSD_PRESENT=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ssd_present.sh)      # true or false
-    CPU_MODEL=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_cpu_model.sh)
-    GPU_VENDORS=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_gpu_vendors.sh)      # e.g. "intel nvidia"
-    GPU_NAMES=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_gpu_names.sh)          # one per line
-    NVIDIA_DRIVER=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_nvidia_driver.sh)  # proprietary | nouveau | none
-    INTEL_GENERATION=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_intel_gen.sh)   # 1 (pre-2011) .. 15; 0 unknown
-    CPU_IS_ULV=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_cpu_is_ulv.sh)        # true | false
-    AMD_GPU_CLASS=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_amd_gpu_class.sh)  # none | legacy | modern | discrete
-    GPU_TIER=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_gpu_tier.sh)            # low | mid | high
+    DISTRO=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_distro_name.sh)           # fedora, etc
+    DISTRO_VERSION=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_distro_version.sh) # 44
+    DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_desktop_env.sh)          # kde/gnome/cosmic/etc
+    PC_TYPE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_pc_type.sh)              # laptop or desktop or server
+    CPU_CORES=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_cpu_cores.sh)          # logical CPUs (nproc)
+    RAM_MB=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_ram_size.sh)              # total RAM in MB
+    RAM_PROFILE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_ram_profile.sh)      # low or mid or high
+    SSD_PRESENT=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_ssd_present.sh)      # true or false
+    CPU_MODEL=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_cpu_model.sh)
+    GPU_VENDORS=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_gpu_vendors.sh)      # e.g. "intel nvidia"
+    GPU_NAMES=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_gpu_names.sh)          # one per line
+    NVIDIA_DRIVER=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_nvidia_driver.sh)  # proprietary | nouveau | none
+    INTEL_GENERATION=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_intel_gen.sh)   # 1 (pre-2011) .. 15; 0 unknown
+    CPU_IS_ULV=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_cpu_is_ulv.sh)        # true | false
+    AMD_GPU_CLASS=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_amd_gpu_class.sh)  # none | legacy | modern | discrete
+    GPU_TIER=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_gpu_tier.sh)            # low | mid | high
 
     [[ "$CPU_CORES" =~ ^[0-9]+$ ]] || log_die "get_cpu_cores.sh returned a non-number: '${CPU_CORES}'"
     [[ "$RAM_MB" =~ ^[0-9]+$ ]]    || log_die "get_ram_size.sh returned a non-number: '${RAM_MB}'"
@@ -679,9 +679,9 @@ infer_decoder_variables() {
     MPV_VERSION="$(mpv --version | awk 'NR==1 {print $2}')"; MPV_VERSION="${MPV_VERSION#v}"
     load_mpv_defaults
 
-    VAAPI_DEVICE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_vaapi_device.sh)    # render node or "none"
-    VAAPI_CODECS=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_vaapi_codecs.sh)    # "h264 hevc vp9 av1" or "none"
-    NVIDIA_COMPUTE_CAP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_nvidia_compute_cap.sh)
+    VAAPI_DEVICE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_vaapi_device.sh)    # render node or "none"
+    VAAPI_CODECS=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_vaapi_codecs.sh)    # "h264 hevc vp9 av1" or "none"
+    NVIDIA_COMPUTE_CAP=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_nvidia_compute_cap.sh)
 
     # NVDEC only when the NVIDIA card is the ONLY GPU (desktop). On hybrid machines the Intel/AMD
     # iGPU renders the desktop and does the decoding.
@@ -1886,7 +1886,7 @@ exit 0
 #   mpv --hwdec=vaapi -v FILE 2>&1 | grep -i -E "hwdec|vaapi"      what happened on load
 #   mpv --hwdec=vaapi-copy FILE                works when zero-copy interop fails
 #   intel_gpu_top (intel-gpu-tools) / nvidia-smi dmon / radeontop      is the GPU actually busy?
-#   sh linux/common/get_vaapi_codecs.sh ; sh linux/common/get_gpu_tier.sh   what the setup saw
+#   sh linux/commong/get_vaapi_codecs.sh ; sh linux/commong/get_gpu_tier.sh   what the setup saw
 #   vulkaninfo --summary                       is Vulkan available at all (old GPUs: no)
 #   Wayland vs X11: echo $XDG_SESSION_TYPE
 #   NVIDIA proprietary + Wayland: needs the nvidia-drm.modeset=1 kernel parameter (RPM Fusion sets it).
@@ -1913,7 +1913,7 @@ exit 0
 #   NOTE: `mpv --config-dir=...` makes mpv ignore /etc/mpv, so a plugin installed there is not loaded.
 #   xdg-mime query default video/mp4           which application the system thinks is the default
 #   gio mime video/mp4                         same question through GIO
-#   python3 linux/common/helper_mimeapps.py get-default --mime-type video/mp4 --file ~/.config/mimeapps.list
+#   python3 linux/commonh/helper_mimeapps.py get-default --mime-type video/mp4 --file ~/.config/mimeapps.list
 #   kbuildsycoca6 --noincremental              refresh KDE's application cache after MIME changes
 #   systemd-tmpfiles --user --clean --dry-run  what the resume-file pruning would delete
 #   systemctl --user list-timers | grep tmpfiles   is the clean-up timer active

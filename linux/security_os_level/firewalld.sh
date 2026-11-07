@@ -111,7 +111,7 @@ fi
 # # Fallback if the user's home directory could not be determined.
 # HOME_DIR="${HOME_DIR:-$HOME}"
 
-# # Common directories.
+# # Standard directories.
 # NBDIR="$HOME_DIR/nb"
 # SCRIPT_DATA="$NBDIR/nb_script_data"
 # CODEPROJECTS_DIR="$NBDIR/CodeProjects"
@@ -125,7 +125,7 @@ fi
 
 # HOME_LAN_SUBNET="${4:-192.168.0.0/24}"
 
-# DESKTOP="${5:-$(sh "$SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh")}"
+# DESKTOP="${5:-$(sh "$SYSUPDATE_CODE_BASE_DIR/linux/commong/get_desktop_env.sh")}"
 
 # PRIVACY_LEVEL="${6:-portable}"
 
@@ -290,7 +290,7 @@ REAL_USER="${REAL_USER:-${SUDO_USER:-${USER}}}"
 HOME_DIR="${HOME_DIR:-$(getent passwd "$REAL_USER" | cut -d: -f6)}"
 HOME_DIR="${HOME_DIR:-$HOME}"
 
-# Common directories.
+# Standard directories.
 NBDIR="$HOME_DIR/nb"
 SCRIPT_DATA="$NBDIR/nb_script_data"
 CODEPROJECTS_DIR="$NBDIR/CodeProjects"
@@ -309,7 +309,7 @@ fi
 
 # Detect the desktop environment only when not supplied.
 if [ -z "${DESKTOP:-}" ]; then
-    DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh") || {
+    DESKTOP=$(sh "$SYSUPDATE_CODE_BASE_DIR/linux/commong/get_desktop_env.sh") || {
         echo "Error: Failed to detect desktop environment." >&2
         exit 1
     }
