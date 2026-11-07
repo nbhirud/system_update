@@ -92,7 +92,7 @@ readonly DESKTOP_COSMIC="cosmic"
 echo "************************ Setting User-Defined constants and flags ************************"
 
 
-PC_TYPE=""  # If not set, we identify using /linux/common/get_pc_type.sh
+PC_TYPE=""  # If not set, we identify using /linux/commong/get_pc_type.sh
 # PC_TYPE - allowed values: desktop or laptop or server - "${PC_TYPE_DESKTOP}" or "${PC_TYPE_LAPTOP}" or "${PC_TYPE_HEADLESS_SERVER}"
 
 
@@ -157,7 +157,7 @@ HOME_LAN_SUBNET="${HOME_LAN_SUBNET:-192.168.1.0/24}"
 readonly HOME_LAN_SUBNET
 
 echo "************************ Identify the real user (non root) running the script/logged in ************************"
-# REAL_USER=$(bash $SYSUPDATE_CODE_BASE_DIR/linux/common/get_real_user.sh)
+# REAL_USER=$(bash $SYSUPDATE_CODE_BASE_DIR/linux/commong/get_real_user.sh)
 
 # 1. Check SUDO_USER first, but make sure it isn't 'root'
 if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
@@ -202,7 +202,7 @@ echo "************************ Verifying User-Defined constants and flags ******
 
 NEW_ETHERNET_NAME="${NEW_ETHERNET_NAME:-nbEthernet}"
 
-IS_ETHERNET=$(bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_is_ethernet.sh)
+IS_ETHERNET=$(bash "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_is_ethernet.sh)
 
 if [ "$GIT_USER_EMAIL" = "" ]; then
   echo "Warning - GIT_USER_EMAIL not provided."
@@ -210,7 +210,7 @@ if [ "$GIT_USER_EMAIL" = "" ]; then
 fi
 
 if [ "$PC_TYPE" = "" ]; then
-  PC_TYPE=$(bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_pc_type.sh)
+  PC_TYPE=$(bash "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_pc_type.sh)
 fi
 
 
@@ -256,7 +256,7 @@ sudo chown -R $REAL_USER:$REAL_USER $SCRIPT_DATA_DIR $SCRIPT_BACKUPS_DIR $SCRIPT
 # sudo install -d -o "$REAL_USER" -g "$REAL_USER" -m 750 "$SCRIPT_DATA_DIR"
 
 echo "************************ Identify Desktop Environment ************************"
-DESKTOP=$(bash $SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh)
+DESKTOP=$(bash $SYSUPDATE_CODE_BASE_DIR/linux/commong/get_desktop_env.sh)
 echo "Desktop Environment is $DESKTOP"
 
 if [ "$DESKTOP" = "" ]; 
@@ -269,7 +269,7 @@ fi
 
 echo "************************ Identify Distro ************************"
 # Useful in cases where the common/security/etc scripts need them when they support multiple distros
-DISTRO=$(bash $SYSUPDATE_CODE_BASE_DIR/linux/common/get_distro_name.sh)
+DISTRO=$(bash $SYSUPDATE_CODE_BASE_DIR/linux/commong/get_distro_name.sh)
 
 if [ "$DISTRO" = "" ];
 then

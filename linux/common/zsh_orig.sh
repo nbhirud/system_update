@@ -36,7 +36,7 @@ fi
 # if [[ -z $1 ]];
 # then 
 #   echo "Distro not provided. Identifying"
-#   DISTRO=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/common/get_distro_name.sh)
+#   DISTRO=$(sh $SYSUPDATE_CODE_BASE_DIR/linux/commong/get_distro_name.sh)
   
 #   if [ "$DISTRO" != "" ];
 #   then 

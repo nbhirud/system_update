@@ -342,7 +342,7 @@ for boolean_setting in HAS_TORRENT_CLIENT HAS_KODI INSTALL_AM REMOVE_UNWANTED_PA
 done
 
 if [[ -z "$PC_TYPE" ]]; then
-    pc_type_helper="$SYSUPDATE_CODE_BASE_DIR/linux/common/get_pc_type.sh"
+    pc_type_helper="$SYSUPDATE_CODE_BASE_DIR/linux/commong/get_pc_type.sh"
     if [[ -f "$pc_type_helper" ]]; then
         PC_TYPE="$(bash "$pc_type_helper")"
     fi
@@ -368,7 +368,7 @@ case "$PRIVACY_LEVEL" in
 esac
 
 DESKTOP=""
-desktop_helper="$SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh"
+desktop_helper="$SYSUPDATE_CODE_BASE_DIR/linux/commong/get_desktop_env.sh"
 if [[ -f "$desktop_helper" ]]; then
     DESKTOP="$(bash "$desktop_helper")"
 fi

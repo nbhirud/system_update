@@ -235,10 +235,10 @@ except Exception:
 ' 2>/dev/null || echo "192.168.1.0/24")
 readonly HOME_LAN_SUBNET
 
-IS_ETHERNET=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_is_ethernet.sh" 2>/dev/null || echo false)
+IS_ETHERNET=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_is_ethernet.sh" 2>/dev/null || echo false)
 
 if [ -z "$PC_TYPE" ]; then
-    PC_TYPE=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_pc_type.sh" 2>/dev/null || echo "$PC_TYPE_DESKTOP")
+    PC_TYPE=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_pc_type.sh" 2>/dev/null || echo "$PC_TYPE_DESKTOP")
 fi
 readonly PC_TYPE
 
@@ -254,11 +254,11 @@ readonly PRIVACY_LEVEL
 NEXTDNS_DEVICE_ID="${HOSTNAME:-$(hostname)}"
 readonly NEXTDNS_DEVICE_ID
 
-DESKTOP=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_desktop_env.sh" 2>/dev/null || echo "")
+DESKTOP=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_desktop_env.sh" 2>/dev/null || echo "")
 [ -z "$DESKTOP" ] && log_die "Desktop Environment not identified. Fix get_desktop_env.sh and run again."
 readonly DESKTOP
 
-DISTRO=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_distro_name.sh" 2>/dev/null || echo "")
+DISTRO=$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_distro_name.sh" 2>/dev/null || echo "")
 [ -z "$DISTRO" ] && log_die "Distro not identified. Fix get_distro_name.sh and run again."
 readonly DISTRO
 

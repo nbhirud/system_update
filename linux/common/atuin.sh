@@ -51,7 +51,7 @@
 #   Verification only:
 #     sudo bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/atuin.sh" --verify-setup
 #
-# REQUIRED HELPER FILES (in $SYSUPDATE_CODE_BASE_DIR/linux/common/)
+# REQUIRED HELPER FILES (in $SYSUPDATE_CODE_BASE_DIR/linux/commonh/)
 #   helper_common.sh helper_backup.sh helper_github_release.sh helper_nb_dropins.sh
 #   get_*.sh system detection scripts. Initialize AFTER fzf (cli_tools.sh): both bind Ctrl-R; Atuin's snippet
 #   (50) loads after the tools snippet (30), so Atuin wins Ctrl-R and Up-arrow.
@@ -73,7 +73,7 @@ SCRIPT_DATA_BACKUPS="${SCRIPT_DATA}/backups"
 ATUIN_DOWNLOADS_DIR_BASE="${SCRIPT_DATA_DOWNLOADS}/atuin"
 ATUIN_BACKUP_DIR_BASE="${SCRIPT_DATA_BACKUPS}/atuin"
 
-HELPER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/common"
+HELPER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/commonh"
 for _f in helper_common.sh helper_backup.sh helper_github_release.sh helper_nb_dropins.sh; do
   [[ -r "${HELPER_DIR}/${_f}" ]] || { echo "Missing helper file: ${HELPER_DIR}/${_f}" >&2; exit 1; }
   # shellcheck source=/dev/null

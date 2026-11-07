@@ -242,7 +242,7 @@ CLAMAV_CURRENT_BACKUP_DIR="${CLAMAV_BACKUP_DIR_BASE}/clamav_${FILENAME_TIMESTAMP
 
 # 1. PC_TYPE (detected via OS release if not provided)
 if [ -z "$PC_TYPE" ]; then
-    PC_TYPE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_pc_type.sh)
+    PC_TYPE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_pc_type.sh)
 fi
 
 
@@ -605,7 +605,7 @@ CLAM_USER="clamscan"
 UPDATE_USER="clamupdate" 
 
 # Watch where payloads LAND, not profile or cache dirs.
-# Initialize base directories common to all client setups
+# Initialize base directories standard to all client setups
 # NEVER use OnAccessExcludePath on a directory that has subfolders: clamonacc logs
 # "ERROR: ClamInotif: can't exclude ..." and silently stops blocking the WHOLE watch.
 ONACC_DIRS=(
@@ -657,13 +657,13 @@ sudo dnf install -y clamav clamd clamav-update clamav-unofficial-sigs clamdtop p
 #########################################################
 
 # The following logic was moved to separate scripts for standardization and reuse across all other scripts too.
-CPU_CORES=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_cpu_cores.sh) # number of cores using nproc
-RAM_MB=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ram_size.sh) # Total RAM memory in MB
-RAM_PROFILE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ram_profile.sh) # either low or mid or high
-SSD_PRESENT=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/common/get_ssd_present.sh) # true or false
+CPU_CORES=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_cpu_cores.sh) # number of cores using nproc
+RAM_MB=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_ram_size.sh) # Total RAM memory in MB
+RAM_PROFILE=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_ram_profile.sh) # either low or mid or high
+SSD_PRESENT=$(sh "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_ssd_present.sh) # true or false
 
-for h in get_cpu_cores get_ram_size get_ram_profile get_ssd_present; do
-    [ -f "$SYSUPDATE_CODE_BASE_DIR/linux/common/$h.sh" ] || { echo "ERROR: missing helper $h.sh under $SYSUPDATE_CODE_BASE_DIR (clone your system_update repo first)" >&2; exit 1; }
+for getter in get_cpu_cores get_ram_size get_ram_profile get_ssd_present; do
+    [ -f "$SYSUPDATE_CODE_BASE_DIR/linux/commong/$getter.sh" ] || { echo "ERROR: missing getter $getter.sh under $SYSUPDATE_CODE_BASE_DIR (clone your system_update repo first)" >&2; exit 1; }
 done
 
 # (after the four assignments)

@@ -184,8 +184,8 @@ log_header "Detecting system configuration..."
 
 # Detect PC Type
 if [ -z "$PC_TYPE" ]; then
-    if [ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_pc_type.sh" ]; then
-        PC_TYPE="$(bash "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_pc_type.sh")"
+    if [ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_pc_type.sh" ]; then
+        PC_TYPE="$(bash "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_pc_type.sh")"
     else
         if command -v upower &>/dev/null && upower -i /org/freedesktop/UPower/devices/battery_BAT0 &>/dev/null; then
             PC_TYPE="${PC_TYPE_LAPTOP}"
@@ -196,8 +196,8 @@ if [ -z "$PC_TYPE" ]; then
 fi
 
 # Detect Desktop Environment
-if [ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_desktop_env.sh" ]; then
-    DESKTOP="$(bash "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_desktop_env.sh")"
+if [ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_desktop_env.sh" ]; then
+    DESKTOP="$(bash "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_desktop_env.sh")"
 else
     if [ -n "$XDG_CURRENT_DESKTOP" ]; then
         DESKTOP=$(echo "$XDG_CURRENT_DESKTOP" | tr '[:upper:]' '[:lower:]' | sed 's/gnome/gnome/' | sed 's/kde-plasma/kde/' | sed 's/cosmic/cosmic/')
@@ -214,8 +214,8 @@ log_info "Detected PC Type: ${PC_TYPE}"
 log_info "Detected Desktop: ${DESKTOP}"
 
 # Detect Distribution
-if [ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_distro_name.sh" ]; then
-    DISTRO="$(bash "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_distro_name.sh")"
+if [ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_distro_name.sh" ]; then
+    DISTRO="$(bash "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_distro_name.sh")"
 else
     if [ -f /etc/fedora-release ]; then
         DISTRO="fedora"
@@ -229,8 +229,8 @@ log_info "Detected Distro: ${DISTRO}"
 # Detect Ethernet Connection
 IS_ETHERNET=false
 CURRENT_ETHERNET_NAME=""
-if [ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_is_ethernet.sh" ]; then
-    IS_ETHERNET="$(bash "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_is_ethernet.sh")"
+if [ -f "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_is_ethernet.sh" ]; then
+    IS_ETHERNET="$(bash "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_is_ethernet.sh")"
     CURRENT_ETHERNET_NAME="$(nmcli -t -f DEVICE,CONNECTION device | awk -F: '$1=="ethernet" {print $2; exit}' 2>/dev/null || '')"
 fi
 

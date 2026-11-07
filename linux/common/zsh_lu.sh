@@ -79,39 +79,39 @@ ZSH_BACKUP_DIR_BASE="${SCRIPT_DATA_BACKUPS}/zsh"
 ZSH_CURRENT_BACKUP_DIR="${ZSH_BACKUP_DIR_BASE}/zsh_${FILENAME_TIMESTAMP}"
 
 # Distro / desktop / pc-type are inferred if not passed as options.
-# The shared detection scripts in linux/common are the canonical source;
+# The shared detection scripts in linux/commong are the canonical source;
 # inline fallbacks keep the script usable on a brand-new machine before the
 # repo has ever been cloned.
 infer_or_default() {
   # $1 = variable name, $2 = detection script name, $3 = fallback logic
   local var="$1" script="$2" fallback="$3" val
-  if [[ -x "${SYSUPDATE_CODE_BASE_DIR}/linux/common/${script}" ]]; then
-    val="$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/common/${script}")"
+  if [[ -x "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/${script}" ]]; then
+    val="$(sh "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/${script}")"
   else
     val="$(eval "$fallback")"
   fi
   printf '%s' "$var" "${val:-}"
 }
 
-COMMON_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/common"
+GETTER_DIR="${SYSUPDATE_CODE_BASE_DIR}/linux/commong"
 
-run_common() {
+run_commong() {
   # Run a shared detection script if present, else echo the fallback value.
-  # Usage: FOO=$(run_common get_foo.sh "fallback command")
+  # Usage: FOO=$(run_commong get_foo.sh "fallback command")
   local script="$1" fallback="$2"
-  if [[ -x "${COMMON_DIR}/${script}" ]]; then
-    sh "${COMMON_DIR}/${script}"
+  if [[ -x "${GETTER_DIR}/${script}" ]]; then
+    sh "${GETTER_DIR}/${script}"
   else
-    log_warn "Common helper '${script}' not found — using inline fallback"
+    log_warn "Common getter '${script}' not found — using inline fallback"
     eval "$fallback"
   fi
 }
 
-CPU_CORES="$(run_common get_cpu_cores.sh 'nproc')"
-RAM_MB="$(run_common get_ram_size.sh "awk '/MemTotal/{printf \"%d\", \$2/1024}' /proc/meminfo")"
-PC_TYPE="$(run_common get_pc_type.sh 'systemctl is-active graphical.target &>/dev/null && echo desktop || echo server')"
-DESKTOP="${DESKTOP:-$(run_common get_desktop_env.sh 'echo "${XDG_CURRENT_DESKTOP:-unknown}" | tr "[:upper:]" "[:lower:]"')}"
-DISTRO="${DISTRO:-$(run_common get_distro_name.sh "source /etc/os-release && echo \"\$ID\"")}"
+CPU_CORES="$(run_commong get_cpu_cores.sh 'nproc')"
+RAM_MB="$(run_commong get_ram_size.sh "awk '/MemTotal/{printf \"%d\", \$2/1024}' /proc/meminfo")"
+PC_TYPE="$(run_commong get_pc_type.sh 'systemctl is-active graphical.target &>/dev/null && echo desktop || echo server')"
+DESKTOP="${DESKTOP:-$(run_commong get_desktop_env.sh 'echo "${XDG_CURRENT_DESKTOP:-unknown}" | tr "[:upper:]" "[:lower:]"')}"
+DISTRO="${DISTRO:-$(run_commong get_distro_name.sh "source /etc/os-release && echo \"\$ID\"")}"
 
 IS_HEADLESS=false
 [[ "$PC_TYPE" == "server" ]] && IS_HEADLESS=true

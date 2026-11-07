@@ -78,26 +78,26 @@ fi
 ##################################################################################
 
 # Detect system properties using standard helper scripts or fallbacks
-if [[ -x "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_distro_name.sh" ]]; then
-    DISTRO="$("${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_distro_name.sh")"
+if [[ -x "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_distro_name.sh" ]]; then
+    DISTRO="$("${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_distro_name.sh")"
 else
     DISTRO="$(grep -oP '^ID=\K\w+' /etc/os-release 2>/dev/null || echo "unknown")"
 fi
 
-if [[ -x "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_desktop_env.sh" ]]; then
-    DESKTOP="$("${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_desktop_env.sh")"
+if [[ -x "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_desktop_env.sh" ]]; then
+    DESKTOP="$("${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_desktop_env.sh")"
 else
     DESKTOP="${XDG_CURRENT_DESKTOP:-KDE}"
 fi
 
-if [[ -x "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_cpu_cores.sh" ]]; then
-    CPU_CORES="$("${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_cpu_cores.sh")"
+if [[ -x "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_cpu_cores.sh" ]]; then
+    CPU_CORES="$("${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_cpu_cores.sh")"
 else
     CPU_CORES="$(nproc 2>/dev/null || echo "4")"
 fi
 
-if [[ -x "${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_ram_size.sh" ]]; then
-    RAM_MB="$("${SYSUPDATE_CODE_BASE_DIR}/linux/common/get_ram_size.sh")"
+if [[ -x "${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_ram_size.sh" ]]; then
+    RAM_MB="$("${SYSUPDATE_CODE_BASE_DIR}/linux/commong/get_ram_size.sh")"
 else
     RAM_MB="$(free -m | awk '/Mem:/ {print $2}')"
 fi

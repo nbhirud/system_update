@@ -195,13 +195,13 @@ sudo chown -R "$REAL_USER:$REAL_USER" \
 # Identify PC type, desktop, distro, hardware profile
 #########################################################
 
-require_script "$SYSUPDATE_CODE_BASE_DIR/linux/common/get_pc_type.sh"
-require_script "$SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh"
-require_script "$SYSUPDATE_CODE_BASE_DIR/linux/common/get_distro_name.sh"
-require_script "$SYSUPDATE_CODE_BASE_DIR/linux/common/get_is_ethernet.sh"
+require_script "$SYSUPDATE_CODE_BASE_DIR/linux/commong/get_pc_type.sh"
+require_script "$SYSUPDATE_CODE_BASE_DIR/linux/commong/get_desktop_env.sh"
+require_script "$SYSUPDATE_CODE_BASE_DIR/linux/commong/get_distro_name.sh"
+require_script "$SYSUPDATE_CODE_BASE_DIR/linux/commong/get_is_ethernet.sh"
 
 if [[ -z "$PC_TYPE" ]]; then
-  PC_TYPE=$(bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/get_pc_type.sh")
+  PC_TYPE=$(bash "$SYSUPDATE_CODE_BASE_DIR/linux/commong/get_pc_type.sh")
 fi
 
 case "$PC_TYPE" in
@@ -210,21 +210,21 @@ case "$PC_TYPE" in
   *)                                  PRIVACY_LEVEL="${PRIVACY_LEVEL:-$PRIVACY_PORTABLE}" ;;
 esac
 
-DESKTOP=$(bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/get_desktop_env.sh")
+DESKTOP=$(bash "$SYSUPDATE_CODE_BASE_DIR/linux/commong/get_desktop_env.sh")
 if [[ -z "$DESKTOP" ]]; then
   log_error "Desktop environment not identified. Fix get_desktop_env.sh"
   exit 1
 fi
 log_info "Desktop Environment: $DESKTOP"
 
-DISTRO=$(bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/get_distro_name.sh")
+DISTRO=$(bash "$SYSUPDATE_CODE_BASE_DIR/linux/commong/get_distro_name.sh")
 if [[ -z "$DISTRO" ]]; then
   log_error "Distro not identified. Fix get_distro_name.sh"
   exit 1
 fi
 log_info "Distro: $DISTRO"
 
-IS_ETHERNET=$(bash "$SYSUPDATE_CODE_BASE_DIR/linux/common/get_is_ethernet.sh")
+IS_ETHERNET=$(bash "$SYSUPDATE_CODE_BASE_DIR/linux/commong/get_is_ethernet.sh")
 
 # Hardware profile
 TOTAL_RAM_MB=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
