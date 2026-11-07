@@ -638,11 +638,11 @@ bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/tor_browser.sh
 
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/bash.sh
 # bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zsh_orig.sh "$DISTRO" $SETUP_TYPE "$DESKTOP" "$FILENAME_TIMESTAMP"
-sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zsh.sh
-sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/omz.sh
-sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cli_tools.sh
-sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/starship.sh
-sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/atuin.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/zsh.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/omz.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cli_tools.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/starship.sh
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/atuin.sh
 
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/alacritty_orig.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/bleachbit.sh
