@@ -137,7 +137,7 @@ fi
 
 # # Usage:
 
-# # sh "linux/security_os_level/firewalld.sh" \
+# # sh "linux/security/firewalld.sh" \
 # #     "$FILENAME_TIMESTAMP" \
 # #     "$SCRIPT_BACKUPS_DIR" \
 # #     "$SYSUPDATE_CODE_BASE_DIR" \
@@ -150,7 +150,7 @@ fi
 # # If you want to use defaults for some arguments:
 # # You cannot skip a middle positional argument simply by omitting it. Pass an empty string as a placeholder.
 # # For example, to provide only FILENAME_TIMESTAMP and PRIVACY_LEVEL while defaulting everything else:
-# # sh "linux/security_os_level/firewalld.sh" \
+# # sh "linux/security/firewalld.sh" \
 # #     "$FILENAME_TIMESTAMP" \
 # #     "" \
 # #     "" \
@@ -1635,7 +1635,7 @@ fi
 
 # Could be done later using nbFirewalldSetConnectionZone
 # Or can be done later by calling:
-# bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld_assign_zone_to_connection.sh $CONNECTION_NAME $ZONE
+# bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/firewalld_assign_zone_to_connection.sh $CONNECTION_NAME $ZONE
 
 
 
@@ -1821,7 +1821,7 @@ sudo tee -a "$HOME_DIR/.zshrc" <<'FIREWALLD_ZSHRC_EOF'
 # nbFirewalldSwitchZone status
 # nbFirewalldSwitchZone <firewalld_zone|status>
 nbFirewalldSwitchZone() {
-    sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld_switch_current_zone.sh "$@"
+    sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security/firewalld_switch_current_zone.sh "$@"
 }
 
 
@@ -1831,7 +1831,7 @@ nbFirewalldSwitchZone() {
 # nbFirewalldSetConnectionZone "Wired connection 1" home
 # nbFirewalldSetConnectionZone <connection name> <firewalld zone>
 nbFirewalldSetConnectionZone() {
-    sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security_os_level/firewalld_assign_zone_to_connection.sh "$@"
+    sudo sh "$SYSUPDATE_CODE_BASE_DIR"/linux/security/firewalld_assign_zone_to_connection.sh "$@"
 }
 
 ############################

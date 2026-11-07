@@ -906,7 +906,7 @@ fi
 
 
 # # CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects"
-# # SYSUPDATE_SEC_CODE_DIR="$CODE_BASE_DIR/system_update/linux/security_os_level/"
+# # SYSUPDATE_SEC_CODE_DIR="$CODE_BASE_DIR/system_update/linux/security/"
 # # SYSUPDATE_FEDORA_CODE_DIR="$CODE_BASE_DIR/system_update/linux/fedora/"
 
 # # SCRIPT_DOWNLOADS_DIR="${SCRIPT_DATA_DIR}/downloads"
@@ -1215,7 +1215,7 @@ fi
 # log_info "************************ Setting literals and constants ************************"
 
 # CODE_BASE_DIR="$HOME_DIR/nb/CodeProjects"
-# # SYSUPDATE_SEC_CODE_DIR="$CODE_BASE_DIR/system_update/linux/security_os_level/"
+# # SYSUPDATE_SEC_CODE_DIR="$CODE_BASE_DIR/system_update/linux/security/"
 # SYSUPDATE_FEDORA_CODE_DIR="$CODE_BASE_DIR/system_update/linux/fedora/"
 
 # SCRIPT_DOWNLOADS_DIR="${SCRIPT_DATA_DIR}/downloads"
@@ -2116,7 +2116,7 @@ fi
 
 
 # ################################################################################################
-# # linux/security_os_level/proton_get_sha.sh
+# # linux/security/proton_get_sha.sh
 # ################################################################################################
 
 # #!/bin/sh

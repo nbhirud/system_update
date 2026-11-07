@@ -15,7 +15,7 @@ set -eux
 # NEXTDNS_DEVICE_ID="<YOUR_NEXTDNS_DEVICE_ID>" # Replace with your NextDNS device ID to uniquely identify the device
 
 # # Anything assigned here will be disregarded. Pass these instead to the script as:
-# # sh $SYSUPDATE_CODE_BASE_DIR/linux/security_os_level/dns.sh $NEXTDNS_ID $NEXTDNS_DEVICE_ID
+# # sh $SYSUPDATE_CODE_BASE_DIR/linux/security/dns.sh $NEXTDNS_ID $NEXTDNS_DEVICE_ID
 # NEXTDNS_ID="" # Do not initialize here
 # NEXTDNS_DEVICE_ID="" # Do not initialize here
 
