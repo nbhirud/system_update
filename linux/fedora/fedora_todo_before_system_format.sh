@@ -68,7 +68,7 @@ flatpak list > "flatpak_list_$(date +%Y-%m-%d_%H-%M-%S).txt"
 ### Backup the following directory, and delete things you don't need
 # TODO - make a list
 
-
+# before fedora reset - also backup root's home directory - zsh and bash history, etc.
 
 
 ##### Export the following from specific apps:

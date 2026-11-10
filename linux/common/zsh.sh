@@ -170,7 +170,7 @@ SYSUPDATE_CODE_BASE_DIR="$CODEPROJECTS_DIR/system_update"
 # nb-update-tools updates what `omz update` and dnf do not cover: the cloned zsh plugins (fzf-tab, zsh-completions)
 # and the per-user starship and atuin binaries. It runs as you (no sudo); "|| true" keeps a failed download
 # from skipping the later `. torsocks on` in the chain.
-alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && aws update && uv self update && omz update -y && (nb-update-tools || true) && . torsocks on && fastfetch"
+alias nbupdate=". torsocks off && sudo dnf update -y && sudo dnf upgrade --refresh -y && flatpak update -y && aws update && uv self update && omz update -y && (nb-update-tools || true) && fastfetch && . torsocks on"
 # alias nbupdateproton=". torsocks off && cd /home/nbhirud/nb/CodeProjects/system_update/ && sh /home/nbhirud/nb/CodeProjects/system_update/linux/security/proton_ag.sh --setup-type full --desktop kde && cd && . torsocks on"
 alias nbupdateextra=". torsocks off && sh /home/nbhirud/nb/CodeProjects/system_update/linux/fedora/update_all.sh && nbupdate"
 
