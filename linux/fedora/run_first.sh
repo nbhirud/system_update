@@ -507,6 +507,8 @@ fi
 
 
 echo "************************ Install and configure more flatpak packages ************************"
+# https://docs.flatpak.org/en/latest/flatpak-command-reference.html
+
 flatpak install -y flathub org.signal.Signal com.github.tchx84.Flatseal it.mijorus.gearlever
 # com.brave.Browser - use dnf package
 # it.mijorus.gearlever using AppMan/AM instead. Ok ok, install it till get used to AppMan/AM
