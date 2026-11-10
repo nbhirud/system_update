@@ -1,0 +1,1 @@
+# https://github.com/fastfetch-cli/fastfetch/wiki/Fastfetch-Configuration-Guide/ae6256886f0d10de782408d6400eff85396cb68a
