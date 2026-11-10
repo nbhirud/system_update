@@ -33,5 +33,5 @@ EOF
 
 sudo systemctl daemon-reload
 sudo systemctl restart firewalld
-sudo systemctl enable --now docker
+systemctl enable --now docker
 # sudo systemctl restart docker

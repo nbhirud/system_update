@@ -196,6 +196,19 @@ sudo tee  ~/.config/systemd/user/syncthing.service.d/override.conf  <<'EOF'
 After=network-online.target
 Wants=network-online.target
 EOF
+#########################################################
+# drop-in override for user service
+#########################################################
+
+
+
+
+mkdir -p ~/.config/systemd/user/syncthing.service.d/
+sudo tee  ~/.config/systemd/user/syncthing.service.d/override.conf  <<'EOF'
+[Unit]
+After=network-online.target
+Wants=network-online.target
+EOF
 
 
 echo "************************ Identify Desktop Environment ************************"
