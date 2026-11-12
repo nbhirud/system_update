@@ -350,6 +350,28 @@ decide_toolkit() {
   esac
 }
 
+# Marketplace lookups (idea from another script: do not trust remembered plugin ids).
+#  1. Documented endpoint https://plugins.jetbrains.com/plugins/list?pluginId=<xmlId>
+#     answers with XML that contains an <idea-plugin> element when the id exists.
+#  2. Fallback: /api/searchPlugins?search=<name> (JSON {plugins:[{name,xmlId}]}), exact
+#     name match only, so a wrong plugin is never installed by accident.
+# Prints the id to install; returns 1 when nothing could be resolved. When the
+# Marketplace cannot be reached at all, the id is used unchanged (installPlugins
+# then reports the real problem).
+marketplace_resolve_id() {
+  local id="$1" name="$2" body found
+  body="$(curl -fsSL --proto '=https' --tlsv1.2 --max-time 20 \
+          "https://plugins.jetbrains.com/plugins/list?pluginId=$(printf '%s' "$id" | jq -sRr @uri)" 2>/dev/null)" || { printf '%s\n' "$id"; return 0; }
+  if printf '%s' "$body" | grep -q '<idea-plugin'; then
+    printf '%s\n' "$id"; return 0
+  fi
+  found="$(curl -fsSL --proto '=https' --tlsv1.2 --max-time 20 \
+          "https://plugins.jetbrains.com/api/searchPlugins?search=$(printf '%s' "$name" | jq -sRr @uri)&max=10" 2>/dev/null \
+          | jq -r --arg n "$name" '[.plugins[]? | select((.name // "") | ascii_downcase == ($n | ascii_downcase))][0].xmlId // empty' 2>/dev/null)" || true
+  [ -n "$found" ] || return 1
+  printf '%s\n' "$found"
+}
+
 # Plugins are installed on the clean config directory, BEFORE our files are
 # written, because the IDE may rewrite option files while running headless.
 install_plugins() {
