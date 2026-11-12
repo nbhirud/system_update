@@ -29,7 +29,8 @@
 # Sample calls (assuming the caller uses the same variable names)
 #   (a) all options:
 #       bash "$COMMON_DIR/pycharm.sh" --real-user "$REAL_USER" \
-#            --filename-timestamp "$FILENAME_TIMESTAMP" --toolkit auto --heap-mb 3072
+#            --filename-timestamp "$FILENAME_TIMESTAMP" --toolkit auto --heap-mb 3072 \
+#            --wait-minutes 30 --ntfy-topic "$NTFY_TOPIC"
 #   (b) mandatory only (nothing is mandatory; every option has a default):
 #       bash "$COMMON_DIR/pycharm.sh"
 #   (c) verification only:
@@ -55,6 +56,7 @@ ORIGINAL_ARGS=("$@")
 TOOLKIT_MODE="${TOOLKIT_MODE:-auto}"     # auto | wayland | x11
 HEAP_MB_OVERRIDE="${HEAP_MB_OVERRIDE:-}" # empty = computed from RAM
 VERIFY_ONLY=false
+NTFY_TOPIC="${NTFY_TOPIC:-}"             # optional push notification at the end (sent with ntfy_send from helper_ntfy.sh)
 
 # Fonts: first installed family wins (checked with fontconfig via helper_fonts.sh).
 EDITOR_FONT_CANDIDATES=("JetBrainsMono Nerd Font Mono" "JetBrainsMono Nerd Font" "JetBrainsMono NF" "JetBrains Mono")
@@ -121,6 +123,7 @@ Usage: pycharm.sh [options]
   --filename-timestamp TS     shared timestamp for backup/download/log dirs
   --toolkit auto|wayland|x11  display toolkit (default: auto, decided by hardware)
   --heap-mb N                 maximum heap in MB (default: computed from RAM)
+  --ntfy-topic TOPIC          send a push notification via ntfy when done (default: off)
   --verify-setup              only run the verification section
   -h, --help                  show this help
 USAGE
@@ -136,6 +139,8 @@ while [ $# -gt 0 ]; do
     --toolkit=*)             TOOLKIT_MODE="${1#*=}"; shift ;;
     --heap-mb)               HEAP_MB_OVERRIDE="${2:?--heap-mb needs a value}"; shift 2 ;;
     --heap-mb=*)             HEAP_MB_OVERRIDE="${1#*=}"; shift ;;
+    --ntfy-topic)            NTFY_TOPIC="${2:?--ntfy-topic needs a value}"; shift 2 ;;
+    --ntfy-topic=*)          NTFY_TOPIC="${1#*=}"; shift ;;
     --verify-setup)          VERIFY_ONLY=true; shift ;;
     -h|--help)               print_usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; print_usage >&2; exit 2 ;;
@@ -189,7 +194,7 @@ SSD_PRESENT="$(run_getter get_ssd_present)"
 # Helpers
 ##################################################################################
 for helper in helper_logging helper_run_as_user helper_dnf helper_backup helper_version_compare \
-              helper_fonts helper_script_logging helper_opensnitch helper_bleachbit helper_jetbrains; do
+              helper_fonts helper_script_logging helper_opensnitch helper_bleachbit helper_jetbrains helper_ntfy; do
   if [ ! -r "${HELPER_DIR}/${helper}.sh" ]; then
     echo "ERROR: missing helper ${HELPER_DIR}/${helper}.sh" >&2
     exit 1
@@ -592,7 +597,12 @@ print_next_steps() {
 main() {
   if [ "$VERIFY_ONLY" = true ]; then verify_setup; return; fi
   main_setup
-  verify_setup || log_warn "Verification reported failures; see above"
+  if verify_setup; then
+    ntfy_send "PyCharm configured" "pycharm.sh finished on $(hostname): ${VERIFY_PASS} ok, ${VERIFY_WARN} warnings" default white_check_mark || true
+  else
+    log_warn "Verification reported failures; see above"
+    ntfy_send "PyCharm setup: failures" "pycharm.sh on $(hostname): ${VERIFY_FAIL} failed checks" high warning || true
+  fi
   print_next_steps
 }
 
