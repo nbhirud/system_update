@@ -30,7 +30,8 @@
 #   (a) all options:
 #       bash "$COMMON_DIR/jetbrains_toolbox.sh" --real-user "$REAL_USER" \
 #            --filename-timestamp "$FILENAME_TIMESTAMP" --release-type release \
-#            --auto-update true --autostart-delay 10
+#            --auto-update true --autostart-delay 10 \
+#            --ntfy-topic "$NTFY_TOPIC"
 #   (b) mandatory only (nothing is mandatory; every option has a default):
 #       bash "$COMMON_DIR/jetbrains_toolbox.sh"
 #   (c) verification only:
@@ -55,6 +56,7 @@ RELEASE_TYPE="${RELEASE_TYPE:-release}"                 # release | eap
 TOOLBOX_AUTO_UPDATE="${TOOLBOX_AUTO_UPDATE:-true}"      # let Toolbox update itself and tools
 AUTOSTART_DELAY_SECONDS="${AUTOSTART_DELAY_SECONDS:-10}" # delay after login (tray must exist first)
 VERIFY_ONLY=false
+NTFY_TOPIC="${NTFY_TOPIC:-}"                            # optional push notification at the end (sent with ntfy_send from helper_ntfy.sh)
 
 TOOLBOX_PRODUCT_CODE="TBA"                              # JetBrains product code of the Toolbox App
 TOOLBOX_RELEASE_API="https://data.services.jetbrains.com/products/releases"
@@ -86,6 +88,7 @@ Usage: jetbrains_toolbox.sh [options]
   --release-type TYPE         release (default) | eap
   --auto-update true|false    Toolbox automatic updates (default: true)
   --autostart-delay SECONDS   delay of the autostart entry (default: 10)
+  --ntfy-topic TOPIC          send a push notification via ntfy when done (default: off)
   --verify-setup              only run the verification section
   -h, --help                  show this help
 USAGE
@@ -103,6 +106,8 @@ while [ $# -gt 0 ]; do
     --auto-update=*)         TOOLBOX_AUTO_UPDATE="${1#*=}"; shift ;;
     --autostart-delay)       AUTOSTART_DELAY_SECONDS="${2:?--autostart-delay needs a value}"; shift 2 ;;
     --autostart-delay=*)     AUTOSTART_DELAY_SECONDS="${1#*=}"; shift ;;
+    --ntfy-topic)            NTFY_TOPIC="${2:?--ntfy-topic needs a value}"; shift 2 ;;
+    --ntfy-topic=*)          NTFY_TOPIC="${1#*=}"; shift ;;
     --verify-setup)          VERIFY_ONLY=true; shift ;;
     -h|--help)               print_usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; print_usage >&2; exit 2 ;;
@@ -169,7 +174,7 @@ PC_TYPE="$(run_getter get_pc_type)"
 ##################################################################################
 for helper in helper_logging helper_run_as_user helper_dnf helper_download helper_backup \
               helper_version_compare helper_mimeapps helper_script_logging \
-              helper_opensnitch helper_bleachbit; do
+              helper_opensnitch helper_bleachbit helper_ntfy; do
   if [ ! -r "${HELPER_DIR}/${helper}.sh" ]; then
     echo "ERROR: missing helper ${HELPER_DIR}/${helper}.sh" >&2
     exit 1
@@ -609,7 +614,12 @@ main() {
     return
   fi
   main_setup
-  verify_setup || log_warn "Verification reported failures; see above"
+  if verify_setup; then
+    ntfy_send "JetBrains Toolbox ready" "jetbrains_toolbox.sh finished on $(hostname): ${VERIFY_PASS} ok, ${VERIFY_WARN} warnings" default white_check_mark || true
+  else
+    log_warn "Verification reported failures; see above"
+    ntfy_send "JetBrains Toolbox: failures" "jetbrains_toolbox.sh on $(hostname): ${VERIFY_FAIL} failed checks" high warning || true
+  fi
   print_next_steps
 }
 
