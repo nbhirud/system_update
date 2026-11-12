@@ -279,8 +279,9 @@ reset_toolbox_program() {
     done
   fi
 
-  # 3. The program itself and the launcher files (Toolbox rewrites them on start).
-  rm -rf "$TOOLBOX_BIN_DIR"
+  # 3. Launcher files (Toolbox rewrites them on start). The program directory bin/
+  #    is NOT deleted here: install_toolbox_program swaps it atomically, so a
+  #    failed install can never leave you without a working Toolbox.
   rm -f "$AUTOSTART_FILE" "$APP_DESKTOP_FILE" "$USER_BIN_LINK"
   log_success "Reset done"
 }
@@ -324,6 +325,13 @@ preflight() {
     *) log_warn "Desktop '${DESKTOP}' is not officially supported by Toolbox (GNOME and KDE Plasma are)" ;;
   esac
   if [ "$(id -u)" -eq 0 ]; then log_die "Run as a normal user (the script uses sudo only where needed)"; fi
+  # The tarball and its extracted copy need roughly 0.5 GB; IDEs installed later
+  # by Toolbox need several GB more.
+  local free_kb
+  free_kb="$(df --output=avail -k "$HOME_DIR" 2>/dev/null | tail -1 | tr -dc '0-9')"
+  if [ -n "$free_kb" ] && [ "$free_kb" -lt $((2 * 1024 * 1024)) ]; then
+    log_die "Less than 2 GB free under ${HOME_DIR}: free some space and retry"
+  fi
   sudo -v
 }
 
@@ -398,8 +406,20 @@ install_toolbox_program() {
   src_root="$(dirname "$(dirname "$bin_found")")"
 
   mkdir -p "$TOOLBOX_DIR"
-  cp -a "${src_root}/." "${TOOLBOX_DIR}/"
-  chmod 0755 "$TOOLBOX_BIN"
+  # Atomic swap (idea from another script): stage the new program next to the old
+  # one, validate it, then rename. A failure before the rename leaves the old
+  # installation untouched.
+  local staged="${TOOLBOX_DIR}/bin.new.$$"
+  rm -rf "$staged"
+  cp -a "${src_root}/bin" "$staged"
+  [ -f "${staged}/jetbrains-toolbox" ] || { rm -rf "$staged"; log_die "Staged copy has no jetbrains-toolbox binary"; }
+  chmod 0755 "${staged}/jetbrains-toolbox"
+  rm -rf "${TOOLBOX_BIN_DIR}.old"
+  [ -d "$TOOLBOX_BIN_DIR" ] && mv "$TOOLBOX_BIN_DIR" "${TOOLBOX_BIN_DIR}.old"
+  mv "$staged" "$TOOLBOX_BIN_DIR"
+  rm -rf "${TOOLBOX_BIN_DIR}.old"
+  # Anything else shipped next to bin/ (if the layout ever grows) is copied too.
+  find "$src_root" -mindepth 1 -maxdepth 1 ! -name bin -exec cp -a {} "${TOOLBOX_DIR}/" \;
   log_success "Installed to ${TOOLBOX_BIN_DIR}"
 
   mkdir -p "$USER_BIN_DIR"
@@ -654,6 +674,21 @@ exit 0
 #    Exec=sh -c 'sleep 60; exec /path/jetbrains-toolbox --minimize'
 #  - No CLI to install IDEs: only an experimental Java-based "tb-cli.jar" meant
 #    for remote hosts exists. IDE installs therefore stay a GUI step.
+#  - Rejected after review of other implementations:
+#      * systemd --user unit instead of XDG autostart: Toolbox's own "Run at login"
+#        switch and the unit would fight each other, and IDEs started from Toolbox
+#        become children of the service's cgroup. XDG autostart is what Toolbox
+#        itself writes, so the GUI switch keeps working. If Toolbox ever rewrites
+#        the entry (the verification step would show it), re-run this script.
+#      * A ".installed-version" marker file: Toolbox updates itself in place, so the
+#        marker goes stale and the script would wrongly "update" or report outdated.
+#      * Editing ~/.zshrc / ~/.bashrc to extend PATH: the zsh setup script owns
+#        those files; a symlink into ~/.local/bin is enough.
+#      * libfuse2 and glx-utils: FUSE is not needed since Toolbox 2.6.3, and
+#        glx-utils was renamed mesa-demos on current Fedora.
+#      * Writing keys such as "privacy.send_usage_statistics" or "shell_scripts" into
+#        .settings.json: no such keys are documented, and overwriting the whole
+#        file would also erase real settings. Only the documented key is merged.
 #  - Replaced old code (previous script): it unpacked into /opt with sudo, parsed
 #    the checksum inline, ran Toolbox in the foreground (blocking the script) and
 #    slept 15 s. The new flow verifies the checksum, runs Toolbox detached, and
