@@ -58,6 +58,7 @@ ORIGINAL_ARGS=("$@")
 TOOLKIT_MODE="${TOOLKIT_MODE:-auto}"     # auto | wayland | x11
 HEAP_MB_OVERRIDE="${HEAP_MB_OVERRIDE:-}" # empty = computed from RAM
 VERIFY_ONLY=false
+WAIT_MINUTES="${WAIT_MINUTES:-30}"       # how long to wait for you to install PyCharm in Toolbox (0 = do not wait)
 NTFY_TOPIC="${NTFY_TOPIC:-}"             # optional push notification at the end (sent with ntfy_send from helper_ntfy.sh)
 
 # Fonts: first installed family wins (checked with fontconfig via helper_fonts.sh).
@@ -129,6 +130,7 @@ Usage: pycharm.sh [options]
   --filename-timestamp TS     shared timestamp for backup/download/log dirs
   --toolkit auto|wayland|x11  display toolkit (default: auto, decided by hardware)
   --heap-mb N                 maximum heap in MB (default: computed from RAM)
+  --wait-minutes N            wait up to N minutes for PyCharm to be installed in Toolbox (default: 30)
   --ntfy-topic TOPIC          send a push notification via ntfy when done (default: off)
   --verify-setup              only run the verification section
   -h, --help                  show this help
@@ -145,6 +147,8 @@ while [ $# -gt 0 ]; do
     --toolkit=*)             TOOLKIT_MODE="${1#*=}"; shift ;;
     --heap-mb)               HEAP_MB_OVERRIDE="${2:?--heap-mb needs a value}"; shift 2 ;;
     --heap-mb=*)             HEAP_MB_OVERRIDE="${1#*=}"; shift ;;
+    --wait-minutes)          WAIT_MINUTES="${2:?--wait-minutes needs a value}"; shift 2 ;;
+    --wait-minutes=*)        WAIT_MINUTES="${1#*=}"; shift ;;
     --ntfy-topic)            NTFY_TOPIC="${2:?--ntfy-topic needs a value}"; shift 2 ;;
     --ntfy-topic=*)          NTFY_TOPIC="${1#*=}"; shift ;;
     --verify-setup)          VERIFY_ONLY=true; shift ;;
@@ -153,6 +157,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+case "$WAIT_MINUTES" in ''|*[!0-9]*) echo "--wait-minutes must be a number" >&2; exit 2 ;; esac
 case "$TOOLKIT_MODE" in auto|wayland|x11) ;; *) echo "--toolkit must be auto, wayland or x11" >&2; exit 2 ;; esac
 case "$HEAP_MB_OVERRIDE" in ''|*[!0-9]*) [ -z "$HEAP_MB_OVERRIDE" ] || { echo "--heap-mb must be a number" >&2; exit 2; } ;; esac
 
@@ -303,12 +308,39 @@ setup_security() {
 ##################################################################################
 # main setup
 ##################################################################################
+# If PyCharm is not installed yet, start Toolbox and poll until the install shows
+# up (installing needs a click in the Toolbox window; there is no supported CLI).
+# Idea taken from another script's "poll until installed" loop.
+wait_for_pycharm() {
+  locate_pycharm && return 0
+  [ "$WAIT_MINUTES" -gt 0 ] || return 1
+  has_display || return 1
+  [ -x "$TOOLBOX_BIN" ] || return 1
+
+  log_warn "PyCharm is not installed yet."
+  log_info "In the Toolbox window click 'Install' next to PyCharm. Do NOT open PyCharm afterwards."
+  pgrep -u "$REAL_USER" -f 'JetBrains/Toolbox/bin/jetbrains-toolbox' >/dev/null 2>&1 \
+    || setsid -f "$TOOLBOX_BIN" >/dev/null 2>&1 </dev/null
+  local waited=0 limit=$((WAIT_MINUTES * 60))
+  while [ "$waited" -lt "$limit" ]; do
+    if locate_pycharm; then
+      # Toolbox may still be finalizing files right after the install appears.
+      sleep 10
+      locate_pycharm && return 0
+    fi
+    sleep 10
+    waited=$((waited + 10))
+    [ $((waited % 60)) -eq 0 ] && log_info "...still waiting for the PyCharm install (${waited}s of ${limit}s)"
+  done
+  return 1
+}
+
 preflight() {
   log_header "Preflight"
   require_fedora
   if [ "$(id -u)" -eq 0 ]; then log_die "Run as a normal user"; fi
   command -v jq >/dev/null 2>&1 || log_die "jq missing: run jetbrains_toolbox.sh first"
-  locate_pycharm || log_die "No PyCharm found under ${TOOLBOX_APPS_DIR}. Install 'PyCharm' from the Toolbox window first, then re-run."
+  wait_for_pycharm || log_die "No PyCharm found under ${TOOLBOX_APPS_DIR}. Install 'PyCharm' from the Toolbox window, then re-run."
   if pgrep -u "$REAL_USER" -f 'JetBrains/Toolbox/apps/.*[Pp]y[Cc]harm' >/dev/null 2>&1; then
     log_die "PyCharm is running. Close it completely and re-run."
   fi
