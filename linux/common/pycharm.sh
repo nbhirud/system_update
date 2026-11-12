@@ -29,7 +29,8 @@
 # Sample calls (assuming the caller uses the same variable names)
 #   (a) all options:
 #       bash "$COMMON_DIR/pycharm.sh" --real-user "$REAL_USER" \
-#            --filename-timestamp "$FILENAME_TIMESTAMP" --toolkit auto --heap-mb 3072
+#            --filename-timestamp "$FILENAME_TIMESTAMP" --toolkit auto --heap-mb 3072 \
+#            --wait-minutes 30 --ntfy-topic "$NTFY_TOPIC"
 #   (b) mandatory only (nothing is mandatory; every option has a default):
 #       bash "$COMMON_DIR/pycharm.sh"
 #   (c) verification only:
@@ -41,8 +42,10 @@
 #
 # Licensing reality (2026): Community Edition no longer exists. Toolbox installs the
 # unified "PyCharm": a free core tier plus a 30-day Pro trial. Kubernetes,
-# Terraform and Database/SQL tools are Pro features: they work during the trial,
-# then switch off. See Notes for the free-tier alternatives configured here.
+# Terraform and the built-in Database/SQL tools are Pro features: they work during
+# the trial, then switch off. See Notes for the free-tier alternatives configured
+# here (LSP4IJ for Terraform, AWS Toolkit for CloudFormation, Database Navigator
+# for SQL).
 ##################################################################################
 
 set -Eeuo pipefail
@@ -55,6 +58,8 @@ ORIGINAL_ARGS=("$@")
 TOOLKIT_MODE="${TOOLKIT_MODE:-auto}"     # auto | wayland | x11
 HEAP_MB_OVERRIDE="${HEAP_MB_OVERRIDE:-}" # empty = computed from RAM
 VERIFY_ONLY=false
+WAIT_MINUTES="${WAIT_MINUTES:-30}"       # how long to wait for you to install PyCharm in Toolbox (0 = do not wait)
+NTFY_TOPIC="${NTFY_TOPIC:-}"             # optional push notification at the end (sent with ntfy_send from helper_ntfy.sh)
 
 # Fonts: first installed family wins (checked with fontconfig via helper_fonts.sh).
 EDITOR_FONT_CANDIDATES=("JetBrainsMono Nerd Font Mono" "JetBrainsMono Nerd Font" "JetBrainsMono NF" "JetBrains Mono")
@@ -64,39 +69,43 @@ UI_FONT_SIZE=13
 
 # Python used for `uv tool install` of CLI tools. Fedora 45 ships Python 3.15, which
 # many tool dependencies do not support yet; pin a mature version (uv fetches it).
-UV_TOOL_PYTHON="${UV_TOOL_PYTHON:-3.13}"
+UV_TOOL_PYTHON="${UV_TOOL_PYTHON:-3.15}"
 
-# Plugins to install: "plugin.xml id|description". A wrong/incompatible id is not
-# fatal: it is reported and the next plugin is installed.
+# Plugins to install: "plugin.xml id|Display name|description".
+# Every id is checked against the JetBrains Marketplace before installing; if the id
+# is unknown, the plugin is looked up by its display name instead. Anything still
+# unresolved is reported at the end and skipped (never fatal).
 PLUGINS_CORE=(
-  "com.redhat.devtools.lsp4ij|LSP4IJ: Language Server client (terraform-ls etc.; works in the free tier)"
-  "aws.toolkit|AWS Toolkit: CloudFormation language server (cfn-lint + Guard), SAM, explorer"
-  "ru.adelf.idea.dotenv|.env files support"
-  "mobi.hsz.idea.gitignore|.ignore files support (.gitignore, .dockerignore)"
-  "net.seesharpsoft.intellij.plugins.csv|CSV Editor"
-  "com.koxudaxi.pydantic|Pydantic (FastAPI/pydantic models)"
-  "name.kropp.intellij.makefile|Makefile language support"
-  "Key Promoter X|Shows the keyboard shortcut for actions you click"
+  "com.redhat.devtools.lsp4ij|LSP4IJ|Language Server client (terraform-ls etc.; works in the free tier)"
+  "aws.toolkit|AWS Toolkit|CloudFormation language server (cfn-lint + Guard), SAM, explorer"
+  "DBN|Database Navigator|SQL editor + database browser (PostgreSQL, SQLite, any JDBC); free replacement for the Pro-only Database tools"
+  "ru.adelf.idea.dotenv|.env files support|.env file support"
+  "mobi.hsz.idea.gitignore|.ignore|.gitignore/.dockerignore support"
+  "net.seesharpsoft.intellij.plugins.csv|CSV Editor|CSV/TSV editor"
+  "com.koxudaxi.pydantic|Pydantic|FastAPI/pydantic models"
+  "name.kropp.intellij.makefile|Makefile Language|Makefile support"
+  "Key Promoter X|Key Promoter X|Shows the keyboard shortcut for actions you click"
 )
 # Installed only when RAM is not low (each costs memory/indexing time).
 PLUGINS_HEAVY=(
-  "zielu.gittoolbox|GitToolBox: inline blame, branch status"
-  "com.intellij.mermaid|Mermaid diagrams in Markdown"
+  "zielu.gittoolbox|GitToolBox|Inline blame, branch status"
+  "com.intellij.mermaid|Mermaid|Mermaid diagrams in Markdown"
 )
 # Optional and good, but NOT installed. Uncomment to install.
 PLUGINS_OPTIONAL=(
-  # "IdeaVIM|IdeaVim: Vim emulation (you use the default keymap, so off)"
-  # "org.sonarlint.idea|SonarQube for IDE: local static analysis"
-  # "com.github.lppedd.idea-conventional-commit|Conventional Commit helper"
-  # "izhangzhihao.rainbow.brackets|Rainbow Brackets"
-  # "com.nasller.CodeGlancePro|CodeGlance Pro minimap"
-  # "String Manipulation|Case conversion, sorting, encoding helpers"
+  # "IdeaVIM|IdeaVim|Vim emulation (you use the default keymap, so off)"
+  # "org.sonarlint.idea|SonarQube for IDE|Local static analysis"
+  # "com.github.lppedd.idea-conventional-commit|Conventional Commit|Conventional commit helper"
+  # "izhangzhihao.rainbow.brackets|Rainbow Brackets|Colored bracket pairs"
+  # "com.nasller.CodeGlancePro|CodeGlance Pro|Minimap"
+  # "String Manipulation|String Manipulation|Case conversion, sorting, encoding helpers"
 )
 
 # Disabled for privacy/performance. Ids that are not bundled are skipped.
 DISABLED_PLUGINS_ALWAYS=(
   "com.intellij.ml.llm"          # JetBrains AI Assistant
   "org.jetbrains.junie"          # Junie agent
+  "com.intellij.junie"           # alternative Junie id seen in other sources (skipped if not bundled)
   "com.jetbrains.codeWithMe"     # Code With Me (remote pairing)
 )
 # Only on low-RAM machines (bundled but not part of your stack).
@@ -121,6 +130,8 @@ Usage: pycharm.sh [options]
   --filename-timestamp TS     shared timestamp for backup/download/log dirs
   --toolkit auto|wayland|x11  display toolkit (default: auto, decided by hardware)
   --heap-mb N                 maximum heap in MB (default: computed from RAM)
+  --wait-minutes N            wait up to N minutes for PyCharm to be installed in Toolbox (default: 30)
+  --ntfy-topic TOPIC          send a push notification via ntfy when done (default: off)
   --verify-setup              only run the verification section
   -h, --help                  show this help
 USAGE
@@ -136,12 +147,17 @@ while [ $# -gt 0 ]; do
     --toolkit=*)             TOOLKIT_MODE="${1#*=}"; shift ;;
     --heap-mb)               HEAP_MB_OVERRIDE="${2:?--heap-mb needs a value}"; shift 2 ;;
     --heap-mb=*)             HEAP_MB_OVERRIDE="${1#*=}"; shift ;;
+    --wait-minutes)          WAIT_MINUTES="${2:?--wait-minutes needs a value}"; shift 2 ;;
+    --wait-minutes=*)        WAIT_MINUTES="${1#*=}"; shift ;;
+    --ntfy-topic)            NTFY_TOPIC="${2:?--ntfy-topic needs a value}"; shift 2 ;;
+    --ntfy-topic=*)          NTFY_TOPIC="${1#*=}"; shift ;;
     --verify-setup)          VERIFY_ONLY=true; shift ;;
     -h|--help)               print_usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; print_usage >&2; exit 2 ;;
   esac
 done
 
+case "$WAIT_MINUTES" in ''|*[!0-9]*) echo "--wait-minutes must be a number" >&2; exit 2 ;; esac
 case "$TOOLKIT_MODE" in auto|wayland|x11) ;; *) echo "--toolkit must be auto, wayland or x11" >&2; exit 2 ;; esac
 case "$HEAP_MB_OVERRIDE" in ''|*[!0-9]*) [ -z "$HEAP_MB_OVERRIDE" ] || { echo "--heap-mb must be a number" >&2; exit 2; } ;; esac
 
@@ -171,6 +187,7 @@ PYCHARM_CURRENT_LOG_DIR="${PYCHARM_LOG_DIR_BASE}/pycharm_${FILENAME_TIMESTAMP}"
 
 TOOLBOX_DIR="${HOME_DIR}/.local/share/JetBrains/Toolbox"
 TOOLBOX_APPS_DIR="${TOOLBOX_DIR}/apps"
+TOOLBOX_BIN="${TOOLBOX_DIR}/bin/jetbrains-toolbox"
 USER_BIN_DIR="${HOME_DIR}/.local/bin"
 CRASH_DUMP_DIR="${HOME_DIR}/.cache/JetBrains/crash-dumps"
 
@@ -189,7 +206,7 @@ SSD_PRESENT="$(run_getter get_ssd_present)"
 # Helpers
 ##################################################################################
 for helper in helper_logging helper_run_as_user helper_dnf helper_backup helper_version_compare \
-              helper_fonts helper_script_logging helper_opensnitch helper_bleachbit helper_jetbrains; do
+              helper_fonts helper_script_logging helper_opensnitch helper_bleachbit helper_jetbrains helper_ntfy; do
   if [ ! -r "${HELPER_DIR}/${helper}.sh" ]; then
     echo "ERROR: missing helper ${HELPER_DIR}/${helper}.sh" >&2
     exit 1
@@ -292,17 +309,52 @@ setup_security() {
 ##################################################################################
 # main setup
 ##################################################################################
+has_display() { [ -n "${WAYLAND_DISPLAY:-}" ] || [ -n "${DISPLAY:-}" ]; }
+
+# If PyCharm is not installed yet, start Toolbox and poll until the install shows
+# up (installing needs a click in the Toolbox window; there is no supported CLI).
+# Idea taken from another script's "poll until installed" loop.
+wait_for_pycharm() {
+  locate_pycharm && return 0
+  [ "$WAIT_MINUTES" -gt 0 ] || return 1
+  has_display || return 1
+  [ -x "$TOOLBOX_BIN" ] || return 1
+
+  log_warn "PyCharm is not installed yet."
+  log_info "In the Toolbox window click 'Install' next to PyCharm. Do NOT open PyCharm afterwards."
+  pgrep -u "$REAL_USER" -f 'JetBrains/Toolbox/bin/jetbrains-toolbox' >/dev/null 2>&1 \
+    || setsid -f "$TOOLBOX_BIN" >/dev/null 2>&1 </dev/null
+  local waited=0 limit=$((WAIT_MINUTES * 60))
+  while [ "$waited" -lt "$limit" ]; do
+    if locate_pycharm; then
+      # Toolbox may still be finalizing files right after the install appears.
+      sleep 10
+      locate_pycharm && return 0
+    fi
+    sleep 10
+    waited=$((waited + 10))
+    [ $((waited % 60)) -eq 0 ] && log_info "...still waiting for the PyCharm install (${waited}s of ${limit}s)"
+  done
+  return 1
+}
+
 preflight() {
   log_header "Preflight"
   require_fedora
   if [ "$(id -u)" -eq 0 ]; then log_die "Run as a normal user"; fi
   command -v jq >/dev/null 2>&1 || log_die "jq missing: run jetbrains_toolbox.sh first"
-  locate_pycharm || log_die "No PyCharm found under ${TOOLBOX_APPS_DIR}. Install 'PyCharm' from the Toolbox window first, then re-run."
+  wait_for_pycharm || log_die "No PyCharm found under ${TOOLBOX_APPS_DIR}. Install 'PyCharm' from the Toolbox window, then re-run."
   if pgrep -u "$REAL_USER" -f 'JetBrains/Toolbox/apps/.*[Pp]y[Cc]harm' >/dev/null 2>&1; then
     log_die "PyCharm is running. Close it completely and re-run."
   fi
   log_info "PyCharm ${IDE_VERSION} at ${IDE_DIR}"
   log_info "Hardware: RAM ${RAM_MB} MB (${RAM_PROFILE}), ${CPU_CORES} cores, GPU tier ${GPU_TIER}, ULV CPU ${CPU_IS_ULV}, SSD ${SSD_PRESENT}"
+  # PyCharm, its indexes and plugins need several GB in $HOME.
+  local free_gb
+  free_gb="$(df -BG --output=avail "$HOME_DIR" 2>/dev/null | tail -1 | tr -dc '0-9')"
+  if [ -n "$free_gb" ] && [ "$free_gb" -lt 8 ]; then
+    log_warn "Only ${free_gb} GB free under ${HOME_DIR}; PyCharm plus indexes wants about 8 GB"
+  fi
   sudo -v
 }
 
@@ -339,26 +391,54 @@ decide_toolkit() {
   esac
 }
 
+# Marketplace lookups (idea from another script: do not trust remembered plugin ids).
+#  1. Documented endpoint https://plugins.jetbrains.com/plugins/list?pluginId=<xmlId>
+#     answers with XML that contains an <idea-plugin> element when the id exists.
+#  2. Fallback: /api/searchPlugins?search=<name> (JSON {plugins:[{name,xmlId}]}), exact
+#     name match only, so a wrong plugin is never installed by accident.
+# Prints the id to install; returns 1 when nothing could be resolved. When the
+# Marketplace cannot be reached at all, the id is used unchanged (installPlugins
+# then reports the real problem).
+marketplace_resolve_id() {
+  local id="$1" name="$2" body found
+  body="$(curl -fsSL --proto '=https' --tlsv1.2 --max-time 20 \
+          "https://plugins.jetbrains.com/plugins/list?pluginId=$(printf '%s' "$id" | jq -sRr @uri)" 2>/dev/null)" || { printf '%s\n' "$id"; return 0; }
+  if printf '%s' "$body" | grep -q '<idea-plugin'; then
+    printf '%s\n' "$id"; return 0
+  fi
+  found="$(curl -fsSL --proto '=https' --tlsv1.2 --max-time 20 \
+          "https://plugins.jetbrains.com/api/searchPlugins?search=$(printf '%s' "$name" | jq -sRr @uri)&max=10" 2>/dev/null \
+          | jq -r --arg n "$name" '[.plugins[]? | select((.name // "") | ascii_downcase == ($n | ascii_downcase))][0].xmlId // empty' 2>/dev/null)" || true
+  [ -n "$found" ] || return 1
+  printf '%s\n' "$found"
+}
+
 # Plugins are installed on the clean config directory, BEFORE our files are
 # written, because the IDE may rewrite option files while running headless.
 install_plugins() {
   log_header "Plugins"
-  local entries=("${PLUGINS_CORE[@]}") entry id desc before after failed=()
+  local entries=("${PLUGINS_CORE[@]}") entry id name desc before after resolved failed=()
   if [ "$RAM_PROFILE" != "low" ]; then entries+=("${PLUGINS_HEAVY[@]}"); else log_info "Low RAM: skipping heavy plugins"; fi
   entries+=("${PLUGINS_OPTIONAL[@]}")
 
   for entry in "${entries[@]}"; do
-    id="${entry%%|*}"; desc="${entry#*|}"
+    IFS='|' read -r id name desc <<<"$entry"
+    if ! resolved="$(marketplace_resolve_id "$id" "$name")"; then
+      log_warn "No Marketplace plugin found for id '${id}' / name '${name}': skipped"
+      failed+=("$name")
+      continue
+    fi
+    [ "$resolved" = "$id" ] || log_info "Id '${id}' not found; resolved '${name}' to '${resolved}'"
     before="$(count_plugin_dirs)"
-    log_info "Installing ${id} (${desc})"
+    log_info "Installing ${resolved} (${name}: ${desc})"
     # Headless command; the IDE must be closed. Time-boxed, no stdin.
-    timeout 300 "$IDE_LAUNCHER" installPlugins "$id" </dev/null || log_warn "installPlugins exited non-zero for ${id}"
+    timeout 300 "$IDE_LAUNCHER" installPlugins "$resolved" </dev/null || log_warn "installPlugins exited non-zero for ${resolved}"
     after="$(count_plugin_dirs)"
     if [ "$after" -gt "$before" ]; then
-      log_success "Installed ${id}"
+      log_success "Installed ${resolved}"
     else
-      log_warn "No new plugin directory after ${id}: wrong id, incompatible with ${IDE_VERSION}, or already bundled"
-      failed+=("$id")
+      log_warn "No new plugin directory after ${resolved}: incompatible with ${IDE_VERSION} or already bundled"
+      failed+=("$name")
     fi
   done
   [ "${#failed[@]}" -gt 0 ] && log_warn "Plugins to check manually: ${failed[*]}"
@@ -592,7 +672,12 @@ print_next_steps() {
 main() {
   if [ "$VERIFY_ONLY" = true ]; then verify_setup; return; fi
   main_setup
-  verify_setup || log_warn "Verification reported failures; see above"
+  if verify_setup; then
+    ntfy_send "PyCharm configured" "pycharm.sh finished on $(hostname): ${VERIFY_PASS} ok, ${VERIFY_WARN} warnings" default white_check_mark || true
+  else
+    log_warn "Verification reported failures; see above"
+    ntfy_send "PyCharm setup: failures" "pycharm.sh on $(hostname): ${VERIFY_FAIL} failed checks" high warning || true
+  fi
   print_next_steps
 }
 
@@ -620,10 +705,14 @@ exit 0
 #                           user-defined server template; add it in the GUI once)
 #      CloudFormation     : AWS Toolkit (CloudFormation language server, cfn-lint)
 #      Kubernetes/YAML    : built-in YAML + JSON schemas; kubectl/helm from the shell
-#      SQL                : no free in-IDE option. DataGrip is free for NON-commercial
-#                           use but requires mandatory, non-configurable data
-#                           sharing: a privacy trade-off for you. DBeaver (FOSS) or
-#                           psql are the alternatives.
+#      SQL                : Database Navigator (plugin id DBN): free for personal and
+#                           commercial use, runs in free-tier PyCharm, supports
+#                           PostgreSQL, SQLite and any JDBC driver. Not as polished
+#                           as the Pro Database tools, and its compatibility with the
+#                           newest IDE builds can lag (check the install report).
+#                           Other options: DataGrip (free for NON-commercial use only,
+#                           with mandatory non-configurable data sharing, a privacy
+#                           trade-off), DBeaver (FOSS) or psql.
 #      Python tooling     : built-in Ruff, basedpyright/Pyright, ty, Pyrefly (2025.3+,
 #                           Settings > Python > Tools), uv as default env manager.
 #  - Type checker "what is best": per-project choice. basedpyright is the mature,
@@ -667,6 +756,8 @@ exit 0
 # LSP API free in unified IDEs:   https://blog.jetbrains.com/platform/2025/09/the-lsp-api-is-now-available-to-all-intellij-idea-users-and-plugin-developers/
 # LSP4IJ:                         https://plugins.jetbrains.com/plugin/23257-lsp4ij
 # AWS Toolkit for JetBrains:      https://github.com/aws/aws-toolkit-jetbrains
+# Database Navigator (DBN):       https://plugins.jetbrains.com/plugin/1800-database-navigator
+# Marketplace plugin details API: https://plugins.jetbrains.com/docs/marketplace/plugin-details.html
 # Data sharing / AI endpoints:    https://www.jetbrains.com/help/idea/settings-usage-statistics.html
 # Disable AI Assistant:           https://www.jetbrains.com/help/pycharm/disable-ai-assistant.html
 # DataGrip non-commercial:        https://blog.jetbrains.com/datagrip

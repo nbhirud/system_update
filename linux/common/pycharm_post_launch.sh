@@ -153,7 +153,7 @@ verify_post_launch() {
   [ "$n" -gt 0 ] && check_pass "Installed plugin directories found (${n})" || check_warn "No installed plugins found in ${plugins_base}"
 
   # 7. Tools the IDE integrates with.
-  for f in uv ruff basedpyright shellcheck shfmt; do
+  for f in uv ruff basedpyright shellcheck shfmt docker kubectl aws; do
     command -v "$f" >/dev/null 2>&1 || [ -x "${USER_BIN_DIR}/${f}" ] && check_pass "tool on PATH: ${f}" || check_warn "tool not on PATH: ${f}"
   done
   [ -z "${UV_PROJECT_ENVIRONMENT:-}" ] && check_pass "UV_PROJECT_ENVIRONMENT is not exported (avoids a 2026.2 uv bug)" || check_warn "UV_PROJECT_ENVIRONMENT is set: PyCharm 2026.2 cannot create uv environments with it"
@@ -179,7 +179,8 @@ print_gui_checklist() {
   log_info "3. Settings > Tools > Shell Script: set ShellCheck and shfmt paths (command -v shellcheck shfmt)."
   log_info "4. Settings > Appearance & Behavior > Appearance: confirm the dark theme was applied."
   log_info "5. AWS Toolkit: add a profile (aws configure / SSO) when you first use it."
-  log_info "6. After the 30-day trial: Kubernetes, Terraform and Database tools turn off (Pro features)."
+  log_info "6. SQL: View > Tool Windows > DB Browser (Database Navigator) to add a PostgreSQL/SQLite connection."
+  log_info "7. After the 30-day trial: Kubernetes, Terraform and the Pro Database tools turn off (Pro features)."
 }
 
 main() {

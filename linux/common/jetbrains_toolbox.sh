@@ -30,7 +30,8 @@
 #   (a) all options:
 #       bash "$COMMON_DIR/jetbrains_toolbox.sh" --real-user "$REAL_USER" \
 #            --filename-timestamp "$FILENAME_TIMESTAMP" --release-type release \
-#            --auto-update true --autostart-delay 10
+#            --auto-update true --autostart-delay 10 \
+#            --ntfy-topic "$NTFY_TOPIC"
 #   (b) mandatory only (nothing is mandatory; every option has a default):
 #       bash "$COMMON_DIR/jetbrains_toolbox.sh"
 #   (c) verification only:
@@ -55,6 +56,7 @@ RELEASE_TYPE="${RELEASE_TYPE:-release}"                 # release | eap
 TOOLBOX_AUTO_UPDATE="${TOOLBOX_AUTO_UPDATE:-true}"      # let Toolbox update itself and tools
 AUTOSTART_DELAY_SECONDS="${AUTOSTART_DELAY_SECONDS:-10}" # delay after login (tray must exist first)
 VERIFY_ONLY=false
+NTFY_TOPIC="${NTFY_TOPIC:-}"                            # optional push notification at the end (sent with ntfy_send from helper_ntfy.sh)
 
 TOOLBOX_PRODUCT_CODE="TBA"                              # JetBrains product code of the Toolbox App
 TOOLBOX_RELEASE_API="https://data.services.jetbrains.com/products/releases"
@@ -86,6 +88,7 @@ Usage: jetbrains_toolbox.sh [options]
   --release-type TYPE         release (default) | eap
   --auto-update true|false    Toolbox automatic updates (default: true)
   --autostart-delay SECONDS   delay of the autostart entry (default: 10)
+  --ntfy-topic TOPIC          send a push notification via ntfy when done (default: off)
   --verify-setup              only run the verification section
   -h, --help                  show this help
 USAGE
@@ -103,6 +106,8 @@ while [ $# -gt 0 ]; do
     --auto-update=*)         TOOLBOX_AUTO_UPDATE="${1#*=}"; shift ;;
     --autostart-delay)       AUTOSTART_DELAY_SECONDS="${2:?--autostart-delay needs a value}"; shift 2 ;;
     --autostart-delay=*)     AUTOSTART_DELAY_SECONDS="${1#*=}"; shift ;;
+    --ntfy-topic)            NTFY_TOPIC="${2:?--ntfy-topic needs a value}"; shift 2 ;;
+    --ntfy-topic=*)          NTFY_TOPIC="${1#*=}"; shift ;;
     --verify-setup)          VERIFY_ONLY=true; shift ;;
     -h|--help)               print_usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; print_usage >&2; exit 2 ;;
@@ -169,7 +174,7 @@ PC_TYPE="$(run_getter get_pc_type)"
 ##################################################################################
 for helper in helper_logging helper_run_as_user helper_dnf helper_download helper_backup \
               helper_version_compare helper_mimeapps helper_script_logging \
-              helper_opensnitch helper_bleachbit; do
+              helper_opensnitch helper_bleachbit helper_ntfy; do
   if [ ! -r "${HELPER_DIR}/${helper}.sh" ]; then
     echo "ERROR: missing helper ${HELPER_DIR}/${helper}.sh" >&2
     exit 1
@@ -274,8 +279,9 @@ reset_toolbox_program() {
     done
   fi
 
-  # 3. The program itself and the launcher files (Toolbox rewrites them on start).
-  rm -rf "$TOOLBOX_BIN_DIR"
+  # 3. Launcher files (Toolbox rewrites them on start). The program directory bin/
+  #    is NOT deleted here: install_toolbox_program swaps it atomically, so a
+  #    failed install can never leave you without a working Toolbox.
   rm -f "$AUTOSTART_FILE" "$APP_DESKTOP_FILE" "$USER_BIN_LINK"
   log_success "Reset done"
 }
@@ -319,6 +325,13 @@ preflight() {
     *) log_warn "Desktop '${DESKTOP}' is not officially supported by Toolbox (GNOME and KDE Plasma are)" ;;
   esac
   if [ "$(id -u)" -eq 0 ]; then log_die "Run as a normal user (the script uses sudo only where needed)"; fi
+  # The tarball and its extracted copy need roughly 0.5 GB; IDEs installed later
+  # by Toolbox need several GB more.
+  local free_kb
+  free_kb="$(df --output=avail -k "$HOME_DIR" 2>/dev/null | tail -1 | tr -dc '0-9')"
+  if [ -n "$free_kb" ] && [ "$free_kb" -lt $((2 * 1024 * 1024)) ]; then
+    log_die "Less than 2 GB free under ${HOME_DIR}: free some space and retry"
+  fi
   sudo -v
 }
 
@@ -393,8 +406,20 @@ install_toolbox_program() {
   src_root="$(dirname "$(dirname "$bin_found")")"
 
   mkdir -p "$TOOLBOX_DIR"
-  cp -a "${src_root}/." "${TOOLBOX_DIR}/"
-  chmod 0755 "$TOOLBOX_BIN"
+  # Atomic swap (idea from another script): stage the new program next to the old
+  # one, validate it, then rename. A failure before the rename leaves the old
+  # installation untouched.
+  local staged="${TOOLBOX_DIR}/bin.new.$$"
+  rm -rf "$staged"
+  cp -a "${src_root}/bin" "$staged"
+  [ -f "${staged}/jetbrains-toolbox" ] || { rm -rf "$staged"; log_die "Staged copy has no jetbrains-toolbox binary"; }
+  chmod 0755 "${staged}/jetbrains-toolbox"
+  rm -rf "${TOOLBOX_BIN_DIR}.old"
+  [ -d "$TOOLBOX_BIN_DIR" ] && mv "$TOOLBOX_BIN_DIR" "${TOOLBOX_BIN_DIR}.old"
+  mv "$staged" "$TOOLBOX_BIN_DIR"
+  rm -rf "${TOOLBOX_BIN_DIR}.old"
+  # Anything else shipped next to bin/ (if the layout ever grows) is copied too.
+  find "$src_root" -mindepth 1 -maxdepth 1 ! -name bin -exec cp -a {} "${TOOLBOX_DIR}/" \;
   log_success "Installed to ${TOOLBOX_BIN_DIR}"
 
   mkdir -p "$USER_BIN_DIR"
@@ -609,7 +634,12 @@ main() {
     return
   fi
   main_setup
-  verify_setup || log_warn "Verification reported failures; see above"
+  if verify_setup; then
+    ntfy_send "JetBrains Toolbox ready" "jetbrains_toolbox.sh finished on $(hostname): ${VERIFY_PASS} ok, ${VERIFY_WARN} warnings" default white_check_mark || true
+  else
+    log_warn "Verification reported failures; see above"
+    ntfy_send "JetBrains Toolbox: failures" "jetbrains_toolbox.sh on $(hostname): ${VERIFY_FAIL} failed checks" high warning || true
+  fi
   print_next_steps
 }
 
@@ -644,6 +674,21 @@ exit 0
 #    Exec=sh -c 'sleep 60; exec /path/jetbrains-toolbox --minimize'
 #  - No CLI to install IDEs: only an experimental Java-based "tb-cli.jar" meant
 #    for remote hosts exists. IDE installs therefore stay a GUI step.
+#  - Rejected after review of other implementations:
+#      * systemd --user unit instead of XDG autostart: Toolbox's own "Run at login"
+#        switch and the unit would fight each other, and IDEs started from Toolbox
+#        become children of the service's cgroup. XDG autostart is what Toolbox
+#        itself writes, so the GUI switch keeps working. If Toolbox ever rewrites
+#        the entry (the verification step would show it), re-run this script.
+#      * A ".installed-version" marker file: Toolbox updates itself in place, so the
+#        marker goes stale and the script would wrongly "update" or report outdated.
+#      * Editing ~/.zshrc / ~/.bashrc to extend PATH: the zsh setup script owns
+#        those files; a symlink into ~/.local/bin is enough.
+#      * libfuse2 and glx-utils: FUSE is not needed since Toolbox 2.6.3, and
+#        glx-utils was renamed mesa-demos on current Fedora.
+#      * Writing keys such as "privacy.send_usage_statistics" or "shell_scripts" into
+#        .settings.json: no such keys are documented, and overwriting the whole
+#        file would also erase real settings. Only the documented key is merged.
 #  - Replaced old code (previous script): it unpacked into /opt with sudo, parsed
 #    the checksum inline, ran Toolbox in the foreground (blocking the script) and
 #    slept 15 s. The new flow verifies the checksum, runs Toolbox detached, and
