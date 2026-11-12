@@ -69,7 +69,7 @@ UI_FONT_SIZE=13
 
 # Python used for `uv tool install` of CLI tools. Fedora 45 ships Python 3.15, which
 # many tool dependencies do not support yet; pin a mature version (uv fetches it).
-UV_TOOL_PYTHON="${UV_TOOL_PYTHON:-3.13}"
+UV_TOOL_PYTHON="${UV_TOOL_PYTHON:-3.15}"
 
 # Plugins to install: "plugin.xml id|Display name|description".
 # Every id is checked against the JetBrains Marketplace before installing; if the id
@@ -308,6 +308,8 @@ setup_security() {
 ##################################################################################
 # main setup
 ##################################################################################
+has_display() { [ -n "${WAYLAND_DISPLAY:-}" ] || [ -n "${DISPLAY:-}" ]; }
+
 # If PyCharm is not installed yet, start Toolbox and poll until the install shows
 # up (installing needs a click in the Toolbox window; there is no supported CLI).
 # Idea taken from another script's "poll until installed" loop.
