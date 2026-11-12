@@ -187,6 +187,7 @@ PYCHARM_CURRENT_LOG_DIR="${PYCHARM_LOG_DIR_BASE}/pycharm_${FILENAME_TIMESTAMP}"
 
 TOOLBOX_DIR="${HOME_DIR}/.local/share/JetBrains/Toolbox"
 TOOLBOX_APPS_DIR="${TOOLBOX_DIR}/apps"
+TOOLBOX_BIN="${TOOLBOX_DIR}/bin/jetbrains-toolbox"
 USER_BIN_DIR="${HOME_DIR}/.local/bin"
 CRASH_DUMP_DIR="${HOME_DIR}/.cache/JetBrains/crash-dumps"
 
@@ -348,6 +349,12 @@ preflight() {
   fi
   log_info "PyCharm ${IDE_VERSION} at ${IDE_DIR}"
   log_info "Hardware: RAM ${RAM_MB} MB (${RAM_PROFILE}), ${CPU_CORES} cores, GPU tier ${GPU_TIER}, ULV CPU ${CPU_IS_ULV}, SSD ${SSD_PRESENT}"
+  # PyCharm, its indexes and plugins need several GB in $HOME.
+  local free_gb
+  free_gb="$(df -BG --output=avail "$HOME_DIR" 2>/dev/null | tail -1 | tr -dc '0-9')"
+  if [ -n "$free_gb" ] && [ "$free_gb" -lt 8 ]; then
+    log_warn "Only ${free_gb} GB free under ${HOME_DIR}; PyCharm plus indexes wants about 8 GB"
+  fi
   sudo -v
 }
 
@@ -410,22 +417,28 @@ marketplace_resolve_id() {
 # written, because the IDE may rewrite option files while running headless.
 install_plugins() {
   log_header "Plugins"
-  local entries=("${PLUGINS_CORE[@]}") entry id desc before after failed=()
+  local entries=("${PLUGINS_CORE[@]}") entry id name desc before after resolved failed=()
   if [ "$RAM_PROFILE" != "low" ]; then entries+=("${PLUGINS_HEAVY[@]}"); else log_info "Low RAM: skipping heavy plugins"; fi
   entries+=("${PLUGINS_OPTIONAL[@]}")
 
   for entry in "${entries[@]}"; do
-    id="${entry%%|*}"; desc="${entry#*|}"
+    IFS='|' read -r id name desc <<<"$entry"
+    if ! resolved="$(marketplace_resolve_id "$id" "$name")"; then
+      log_warn "No Marketplace plugin found for id '${id}' / name '${name}': skipped"
+      failed+=("$name")
+      continue
+    fi
+    [ "$resolved" = "$id" ] || log_info "Id '${id}' not found; resolved '${name}' to '${resolved}'"
     before="$(count_plugin_dirs)"
-    log_info "Installing ${id} (${desc})"
+    log_info "Installing ${resolved} (${name}: ${desc})"
     # Headless command; the IDE must be closed. Time-boxed, no stdin.
-    timeout 300 "$IDE_LAUNCHER" installPlugins "$id" </dev/null || log_warn "installPlugins exited non-zero for ${id}"
+    timeout 300 "$IDE_LAUNCHER" installPlugins "$resolved" </dev/null || log_warn "installPlugins exited non-zero for ${resolved}"
     after="$(count_plugin_dirs)"
     if [ "$after" -gt "$before" ]; then
-      log_success "Installed ${id}"
+      log_success "Installed ${resolved}"
     else
-      log_warn "No new plugin directory after ${id}: wrong id, incompatible with ${IDE_VERSION}, or already bundled"
-      failed+=("$id")
+      log_warn "No new plugin directory after ${resolved}: incompatible with ${IDE_VERSION} or already bundled"
+      failed+=("$name")
     fi
   done
   [ "${#failed[@]}" -gt 0 ] && log_warn "Plugins to check manually: ${failed[*]}"
