@@ -42,8 +42,10 @@
 #
 # Licensing reality (2026): Community Edition no longer exists. Toolbox installs the
 # unified "PyCharm": a free core tier plus a 30-day Pro trial. Kubernetes,
-# Terraform and Database/SQL tools are Pro features: they work during the trial,
-# then switch off. See Notes for the free-tier alternatives configured here.
+# Terraform and the built-in Database/SQL tools are Pro features: they work during
+# the trial, then switch off. See Notes for the free-tier alternatives configured
+# here (LSP4IJ for Terraform, AWS Toolkit for CloudFormation, Database Navigator
+# for SQL).
 ##################################################################################
 
 set -Eeuo pipefail
@@ -68,37 +70,41 @@ UI_FONT_SIZE=13
 # many tool dependencies do not support yet; pin a mature version (uv fetches it).
 UV_TOOL_PYTHON="${UV_TOOL_PYTHON:-3.13}"
 
-# Plugins to install: "plugin.xml id|description". A wrong/incompatible id is not
-# fatal: it is reported and the next plugin is installed.
+# Plugins to install: "plugin.xml id|Display name|description".
+# Every id is checked against the JetBrains Marketplace before installing; if the id
+# is unknown, the plugin is looked up by its display name instead. Anything still
+# unresolved is reported at the end and skipped (never fatal).
 PLUGINS_CORE=(
-  "com.redhat.devtools.lsp4ij|LSP4IJ: Language Server client (terraform-ls etc.; works in the free tier)"
-  "aws.toolkit|AWS Toolkit: CloudFormation language server (cfn-lint + Guard), SAM, explorer"
-  "ru.adelf.idea.dotenv|.env files support"
-  "mobi.hsz.idea.gitignore|.ignore files support (.gitignore, .dockerignore)"
-  "net.seesharpsoft.intellij.plugins.csv|CSV Editor"
-  "com.koxudaxi.pydantic|Pydantic (FastAPI/pydantic models)"
-  "name.kropp.intellij.makefile|Makefile language support"
-  "Key Promoter X|Shows the keyboard shortcut for actions you click"
+  "com.redhat.devtools.lsp4ij|LSP4IJ|Language Server client (terraform-ls etc.; works in the free tier)"
+  "aws.toolkit|AWS Toolkit|CloudFormation language server (cfn-lint + Guard), SAM, explorer"
+  "DBN|Database Navigator|SQL editor + database browser (PostgreSQL, SQLite, any JDBC); free replacement for the Pro-only Database tools"
+  "ru.adelf.idea.dotenv|.env files support|.env file support"
+  "mobi.hsz.idea.gitignore|.ignore|.gitignore/.dockerignore support"
+  "net.seesharpsoft.intellij.plugins.csv|CSV Editor|CSV/TSV editor"
+  "com.koxudaxi.pydantic|Pydantic|FastAPI/pydantic models"
+  "name.kropp.intellij.makefile|Makefile Language|Makefile support"
+  "Key Promoter X|Key Promoter X|Shows the keyboard shortcut for actions you click"
 )
 # Installed only when RAM is not low (each costs memory/indexing time).
 PLUGINS_HEAVY=(
-  "zielu.gittoolbox|GitToolBox: inline blame, branch status"
-  "com.intellij.mermaid|Mermaid diagrams in Markdown"
+  "zielu.gittoolbox|GitToolBox|Inline blame, branch status"
+  "com.intellij.mermaid|Mermaid|Mermaid diagrams in Markdown"
 )
 # Optional and good, but NOT installed. Uncomment to install.
 PLUGINS_OPTIONAL=(
-  # "IdeaVIM|IdeaVim: Vim emulation (you use the default keymap, so off)"
-  # "org.sonarlint.idea|SonarQube for IDE: local static analysis"
-  # "com.github.lppedd.idea-conventional-commit|Conventional Commit helper"
-  # "izhangzhihao.rainbow.brackets|Rainbow Brackets"
-  # "com.nasller.CodeGlancePro|CodeGlance Pro minimap"
-  # "String Manipulation|Case conversion, sorting, encoding helpers"
+  # "IdeaVIM|IdeaVim|Vim emulation (you use the default keymap, so off)"
+  # "org.sonarlint.idea|SonarQube for IDE|Local static analysis"
+  # "com.github.lppedd.idea-conventional-commit|Conventional Commit|Conventional commit helper"
+  # "izhangzhihao.rainbow.brackets|Rainbow Brackets|Colored bracket pairs"
+  # "com.nasller.CodeGlancePro|CodeGlance Pro|Minimap"
+  # "String Manipulation|String Manipulation|Case conversion, sorting, encoding helpers"
 )
 
 # Disabled for privacy/performance. Ids that are not bundled are skipped.
 DISABLED_PLUGINS_ALWAYS=(
   "com.intellij.ml.llm"          # JetBrains AI Assistant
   "org.jetbrains.junie"          # Junie agent
+  "com.intellij.junie"           # alternative Junie id seen in other sources (skipped if not bundled)
   "com.jetbrains.codeWithMe"     # Code With Me (remote pairing)
 )
 # Only on low-RAM machines (bundled but not part of your stack).
@@ -630,10 +636,14 @@ exit 0
 #                           user-defined server template; add it in the GUI once)
 #      CloudFormation     : AWS Toolkit (CloudFormation language server, cfn-lint)
 #      Kubernetes/YAML    : built-in YAML + JSON schemas; kubectl/helm from the shell
-#      SQL                : no free in-IDE option. DataGrip is free for NON-commercial
-#                           use but requires mandatory, non-configurable data
-#                           sharing: a privacy trade-off for you. DBeaver (FOSS) or
-#                           psql are the alternatives.
+#      SQL                : Database Navigator (plugin id DBN): free for personal and
+#                           commercial use, runs in free-tier PyCharm, supports
+#                           PostgreSQL, SQLite and any JDBC driver. Not as polished
+#                           as the Pro Database tools, and its compatibility with the
+#                           newest IDE builds can lag (check the install report).
+#                           Other options: DataGrip (free for NON-commercial use only,
+#                           with mandatory non-configurable data sharing, a privacy
+#                           trade-off), DBeaver (FOSS) or psql.
 #      Python tooling     : built-in Ruff, basedpyright/Pyright, ty, Pyrefly (2025.3+,
 #                           Settings > Python > Tools), uv as default env manager.
 #  - Type checker "what is best": per-project choice. basedpyright is the mature,
@@ -677,6 +687,8 @@ exit 0
 # LSP API free in unified IDEs:   https://blog.jetbrains.com/platform/2025/09/the-lsp-api-is-now-available-to-all-intellij-idea-users-and-plugin-developers/
 # LSP4IJ:                         https://plugins.jetbrains.com/plugin/23257-lsp4ij
 # AWS Toolkit for JetBrains:      https://github.com/aws/aws-toolkit-jetbrains
+# Database Navigator (DBN):       https://plugins.jetbrains.com/plugin/1800-database-navigator
+# Marketplace plugin details API: https://plugins.jetbrains.com/docs/marketplace/plugin-details.html
 # Data sharing / AI endpoints:    https://www.jetbrains.com/help/idea/settings-usage-statistics.html
 # Disable AI Assistant:           https://www.jetbrains.com/help/pycharm/disable-ai-assistant.html
 # DataGrip non-commercial:        https://blog.jetbrains.com/datagrip
