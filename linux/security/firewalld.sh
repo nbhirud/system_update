@@ -370,6 +370,7 @@ GSCONNECT_AVAILABLE=false        # on gnome
 SYNCTHING_AVAILABLE=false
 IMMICH_AVAILABLE=false
 GRAYJAY_AVAILABLE=false          # Grayjay sync + mDNS (only on home)
+FCAST_AVAILABLE=false
 AVAHI_MDNS_AVAILABLE=false
 RADICALE_AVAILABLE=false
 NEXTCLOUD_AVAILABLE=false
@@ -487,6 +488,19 @@ if dnf list --installed avahi &>/dev/null || rpm -q avahi &>/dev/null; then
     AVAHI_MDNS_AVAILABLE=true
 else
     echo "MDNS / Avahi is NOT installed."
+fi
+
+
+# FCAST (Wireless Audio/Video Streaming Protocol Receiver/Sender)
+if flatpak info org.fcast.Receiver &>/dev/null || flatpak info org.fcast.Sender &>/dev/null || docker ps -a --format '{{.Names}}' 2>/dev/null | grep -iq "fcast" || [ -d "/opt/fcast" ] || command -v fcast &>/dev/null || command -v fcast-receiver &>/dev/null || rpm -q fcast &>/dev/null; then
+    echo "FCast is detected / installed."
+    # add_firewall_port "FCast Receiver Control" "46899/tcp"
+    # add_firewall_port "mDNS Discovery" "5353/udp"
+    FCAST_AVAILABLE=true
+    AVAHI_MDNS_AVAILABLE=true
+else
+    echo "FCast is NOT detected."
+    FCAST_AVAILABLE=false
 fi
 
 
@@ -1426,6 +1440,30 @@ if $GRAYJAY_AVAILABLE; then
     sudo firewall-cmd --permanent --zone="$DROP_ZONE" --remove-port=12315/udp
 
 fi
+
+
+
+
+############################
+# Fcast receiver
+############################
+# FCAST_AVAILABLE
+# https://docs.fcast.org/receiver/
+
+if $FCAST_AVAILABLE; then
+
+    ##### home
+    sudo firewall-cmd --permanent --zone="$HOME_ZONE" --add-port=46899/tcp
+
+    ##### public
+    sudo firewall-cmd --permanent --zone="$PUBLIC_ZONE" --remove-port=46899/tcp
+
+    ##### drop
+    sudo firewall-cmd --permanent --zone="$DROP_ZONE" --remove-port=46899/tcp
+
+fi
+
+
 
 
 ############################

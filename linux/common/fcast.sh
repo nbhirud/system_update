@@ -9,17 +9,16 @@ flatpak install flathub org.fcast.Receiver org.fcast.Sender
 # Check current config
 # sudo firewall-cmd --list-all
 
-# Allow mDNS (critical for discovery)
-sudo firewall-cmd --permanent --add-service=mdns
+##### home
+sudo firewall-cmd --permanent --zone="home" --add-port=46899/tcp
+sudo firewall-cmd --permanent --zone="home" --add-service=mdns
 
-# Allow FCast port
-sudo firewall-cmd --permanent --add-port=46899/tcp
+##### public
+sudo firewall-cmd --permanent --zone="public" --remove-port=46899/tcp
+sudo firewall-cmd --permanent --zone="public" --remove-service=mdns
 
-# Reload
-# sudo firewall-cmd --reload
+##### drop
+sudo firewall-cmd --permanent --zone="drop" --remove-port=46899/tcp
+sudo firewall-cmd --permanent --zone="drop" --remove-service=mdns
 
-# Also add to your active zone if needed (usually FedoraWorkstation or home):
-sudo firewall-cmd --permanent --zone=FedoraWorkstation --add-service=mdns
-sudo firewall-cmd --permanent --zone=FedoraWorkstation --add-port=46899/tcp
 sudo firewall-cmd --reload
-
