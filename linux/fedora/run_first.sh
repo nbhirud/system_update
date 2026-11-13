@@ -664,6 +664,7 @@ then
 
 fi
 
+
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/fonts.sh
 # bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/vscodium_orig.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/vscodium.sh
@@ -686,39 +687,9 @@ bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/syncthing.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/avahi.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mpv.sh
 # bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/cron_jobs.sh
-sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/dns.sh --nextdns-id "$NEXTDNS_ID" --nextdns-device-id "$NEXTDNS_DEVICE_ID"
+
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/proton_ag.sh --setup-type "$SETUP_TYPE" --desktop "$DESKTOP"
 # bash linux/security/proton_ag.sh --setup-type full --desktop kde
-
-# sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/clamav.sh
-# sudo DEBUG=1 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/clamav.sh 
-
-bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/clamav.sh \
-    --pc-type="${PC_TYPE}" \
-    --real-user="${REAL_USER}" \
-    --torrent-client="${HAS_TORRENT_CLIENT}" \
-    --kodi="${HAS_KODI}" \
-    --backup-dir="${SCRIPT_BACKUPS_DIR}" \
-    --timestamp="${FILENAME_TIMESTAMP}"
-
-# # If any of those variables might occasionally be empty/unset in the caller script and you only want to pass them when they actually contain a value, you can build an argument array dynamically:
-# # Build argument array dynamically to omit empty variables
-# CLAMAV_ARGS=()
-
-# [ -n "${PC_TYPE:-}" ] && CLAMAV_ARGS+=("--pc-type=${PC_TYPE}")
-# [ -n "${REAL_USER:-}" ] && CLAMAV_ARGS+=("--real-user=${REAL_USER}")
-# [ -n "${HAS_TORRENT_CLIENT:-}" ] && CLAMAV_ARGS+=("--torrent-client=${HAS_TORRENT_CLIENT}")
-# [ -n "${HAS_KODI:-}" ] && CLAMAV_ARGS+=("--kodi=${HAS_KODI}")
-# [ -n "${SCRIPT_BACKUPS_DIR:-}" ] && CLAMAV_ARGS+=("--backup-dir=${SCRIPT_BACKUPS_DIR}")
-# [ -n "${FILENAME_TIMESTAMP:-}" ] && CLAMAV_ARGS+=("--timestamp=${FILENAME_TIMESTAMP}")
-
-# # Execute the script with the constructed arguments
-#  sudo bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/clamav.sh "${CLAMAV_ARGS[@]}"
-
-
-# Be sure to run the following after: clamav
-bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/hosts.sh
-
 
 # Be sure to run the following after: firewalld
 # bash "$SYSUPDATE_CODE_BASE_DIR"/linux/security/fail2ban.sh
