@@ -582,21 +582,6 @@ EOF
 
 
 ###############################################################################
-# GIT CONFIG
-###############################################################################
-
-log_header "Applying Git defaults"
-
-run_user "
-    git config --global init.defaultBranch main
-    git config --global pull.rebase false
-    git config --global fetch.prune true
-    git config --global core.editor codium
-    git config --global core.pager 'bat --paging=always'
-"
-
-
-###############################################################################
 # Install EXTENSIONS
 ###############################################################################
 
