@@ -37,7 +37,16 @@ git config --global user.name "$GIT_USER_NAME"
 git config --global user.email "$GIT_USER_EMAIL"
 
 # https://code.visualstudio.com/docs/sourcecontrol/overview#_vs-code-as-git-difftool-and-mergetool
+# git config --global core.editor codium
 git config --global core.editor "codium --wait" # # https://git-scm.com/book/en/v2/Appendix-C:-Git-Commands-Setup-and-Config
+
+# # Other options for "git config --global core.editor"
+# git config --global core.editor "nvim" # Neovim
+# git config --global core.editor "nano" # Nano (nano) or Micro
+# git config --global core.editor "kwrite" # kwrite
+# git config --global core.editor "code --wait" # VS Code
+
+
 git config --global merge.tool codium # codium might not be supported. vscode is supported
 # check supported merge tools:
 # git mergetool --tool-help
