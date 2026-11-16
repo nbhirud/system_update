@@ -1,7 +1,8 @@
 # Script to setup git on a new machine or new installation of OS
-echo "************************ Configure git ************************"
+echo "************************ Install and Configure git ************************"
 
 GIT_USER_EMAIL=""
+GIT_USER_NAME=""
 
 if [[ -z $1 ]];
 then 
@@ -12,9 +13,21 @@ else
     echo "Will set user.email to $GIT_USER_EMAIL"
 fi
 
+if [[ -z $2 ]];
+then 
+    echo "Need to run later: git config --global user.name \"Firstname Lastname\""
+    sleep 5s
+else
+    GIT_USER_NAME=$2
+    echo "Will set user.email to $GIT_USER_NAME"
+fi
+
+# Note: git may not come already installed on some flavors like xfce, etc.
+sudo dnf install -y git
 
 # https://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration
-git config --global user.name "Nikhil Bhirud"
+# TODO replace with correct Name
+git config --global user.name "$GIT_USER_NAME"
 
 # TODO replace with correct email
 git config --global user.email "$GIT_USER_EMAIL"
