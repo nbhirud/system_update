@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+
+set -eux
+
 # Script to setup git on a new machine or new installation of OS
 echo "************************ Install and Configure git ************************"
 
