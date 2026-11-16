@@ -362,12 +362,9 @@ sudo dnf install fedora-workstation-repositories
 # dnf copr enable imput/helium
 # sudo dnf install -y helium-bin
 
-echo "************************ Installing packages ************************"
+# echo "************************ Installing packages ************************"
 # install the packages
-sudo dnf install -y git flatpak
-
-# Note: flatpak and git may not come already installed on some flavors like xfce, etc.
-
+# sudo dnf install -y 
 
 
 #######################################
@@ -457,6 +454,10 @@ sudo dnf install gstreamer1-plugin-openh264 mozilla-openh264
 #######################################
 
 echo "************************ Enabling flatpak flathub ************************"
+# Note: flatpak may not come already installed on some flavors like xfce, etc.
+sudo dnf install -y flatpak
+# Note: flatpak and git may not come already installed on some flavors like xfce, etc.
+
 ### Enable flatpak flathub
 # https://docs.fedoraproject.org/en-US/quick-docs/flathub-flatpak-applications/
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
