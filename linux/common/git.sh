@@ -71,6 +71,13 @@ git config --global mergetool.codium.cmd 'codium --wait --merge "$REMOTE" "$LOCA
 # check supported merge tools:
 # git mergetool --tool-help
 
+# Essential Companion Git Settings: Regardless of which two tools you pick, set these two global defaults alongside them:
+# Prevent Git from leaving clutter (.orig files) in your repo after a merge
+git config --global mergetool.keepBackup false
+# Show the original common ancestor (BASE) + trimmed context in conflict blocks
+git config --global merge.conflictstyle "zdiff3"
+
+
 git config --global core.autocrlf input # # Configure Git to ensure line endings in files you checkout are correct for Linux
 
 git config --global init.defaultBranch main
