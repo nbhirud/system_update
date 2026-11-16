@@ -82,11 +82,14 @@ git config --global core.autocrlf input # # Configure Git to ensure line endings
 
 git config --global init.defaultBranch main
 
-
-git config --global  help.autocorrect 1
-
+git config --global help.autocorrect 1
 
 git config --global color.ui true # default is true
+
+
+git config --global pull.rebase false # Not sure if I want this
+git config --global fetch.prune true # Not sure if I want this
+git config --global core.pager 'bat --paging=always'  # Not sure if I want this
 
 # The above sets all the below. Allowed values = true, false, or always:
 # color.branch
@@ -133,4 +136,3 @@ git config --global color.ui true # default is true
 # # https://git-scm.com/book/en/v2/Appendix-A:-Git-in-Other-Environments-Git-in-IntelliJ-/-PyCharm-/-WebStorm-/-PhpStorm-/-RubyMine
 # # https://git-scm.com/book/en/v2/Appendix-A:-Git-in-Other-Environments-Git-in-Zsh # if not using omz
 
-# # 
