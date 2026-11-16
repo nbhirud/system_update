@@ -48,6 +48,26 @@ git config --global core.editor "codium --wait" # # https://git-scm.com/book/en/
 
 
 git config --global merge.tool codium # codium might not be supported. vscode is supported
+git config --global mergetool.codium.cmd 'codium --wait --merge "$REMOTE" "$LOCAL" "$BASE" "$MERGED"' # Not sure if this will work
+
+# # Other options for "git config --global merge.tool"
+# # KDiff3
+# sudo dnf install kdiff3
+# git config --global merge.tool "kdiff3"
+# # Meld
+# sudo dnf install meld
+# git config --global merge.tool "meld"
+# # VS Codium
+# git config --global merge.tool "vscodium"
+# git config --global mergetool.vscodium.cmd 'codium --wait --merge "$REMOTE" "$LOCAL" "$BASE" "$MERGED"'
+# # VS Code
+# git config --global merge.tool "vscode"
+# git config --global mergetool.vscode.cmd 'code --wait --merge "$REMOTE" "$LOCAL" "$BASE" "$MERGED"'
+# Neovim (nvimdiff)
+# git config --global merge.tool "nvimdiff"
+# # Beyond Compare (Proprietary)
+# git config --global merge.tool "bc"
+
 # check supported merge tools:
 # git mergetool --tool-help
 
