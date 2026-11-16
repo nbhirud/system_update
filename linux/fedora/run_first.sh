@@ -115,6 +115,7 @@ NEW_ETHERNET_NAME="" # nbEthernet, etc
 
 HOST_NAME=""  # "nbPC"
 GIT_USER_EMAIL=""  # "<GITHUB PRIVATE EMAIL>@users.noreply.github.com"
+GIT_USER_NAME=""
 NEXTDNS_ID=""  
 NEXTDNS_DEVICE_ID="$HOST_NAME"
 
@@ -205,7 +206,12 @@ NEW_ETHERNET_NAME="${NEW_ETHERNET_NAME:-nbEthernet}"
 IS_ETHERNET=$(bash "$SYSUPDATE_CODE_BASE_DIR"/linux/commong/get_is_ethernet.sh)
 
 if [ "$GIT_USER_EMAIL" = "" ]; then
-  echo "Warning - GIT_USER_EMAIL not provided."
+  echo "Warning - GIT_USER_EMAIL not provided. Will need to be manually configured later"
+  sleep 5s
+fi
+
+if [ "$GIT_USER_NAME" = "" ]; then
+  echo "Warning - GIT_USER_NAME not provided. Will need to be manually configured later"
   sleep 5s
 fi
 
@@ -683,7 +689,7 @@ bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/atuin.sh
 
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/alacritty_orig.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/bleachbit.sh
-bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/git.sh "$GIT_USER_EMAIL"
+bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/git.sh "$GIT_USER_EMAIL" "$GIT_USER_NAME"
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/syncthing.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/avahi.sh
 bash "$SYSUPDATE_CODE_BASE_DIR"/linux/common/mpv.sh
