@@ -36,6 +36,8 @@
 #       sudo bash "$COMMON_DIR"/setup_virt_manager.sh
 #   (c) Verification only:
 #       sudo bash "$COMMON_DIR"/setup_virt_manager.sh --verify-setup
+#   (d) Undo: remove this setup and only the packages this script installed:
+#       sudo bash "$COMMON_DIR"/setup_virt_manager.sh --uninstall
 #
 # Named options (all optional)
 #   --real-user NAME           Non-root user to configure (default: the user who ran sudo)
@@ -44,6 +46,9 @@
 #   --bulk-pool-dir DIR        Directory of the "bulk" (capacity) storage pool; when
 #                              omitted, the largest data disk is auto-detected
 #   --verify-setup             Only run the verification section
+#   --uninstall                Remove this setup's configuration and ONLY the packages this
+#                              script installed (asks for confirmation; VM disks, VM
+#                              definitions and pool directories are always kept)
 #   -h, --help                 Show this overview
 
 set -uo pipefail
@@ -99,6 +104,7 @@ NET_NAT="default"; NET_ISOLATED="isolated"; NET_BRIDGED="bridged"
 POOL_FAST="default"; POOL_BULK="bulk"
 
 VERIFY_ONLY=false
+UNINSTALL=false
 
 ##################################################################################
 # Named Options processing
@@ -119,7 +125,8 @@ while [ $# -gt 0 ]; do
     --bulk-pool-dir)       [ $# -ge 2 ] || early_die "--bulk-pool-dir needs a value"; VM_BULK_POOL_DIR="$2"; shift 2 ;;
     --bulk-pool-dir=*)     VM_BULK_POOL_DIR="${1#*=}"; shift ;;
     --verify-setup)        VERIFY_ONLY=true; shift ;;
-    -h|--help)             sed -n '2,45p' "$0"; exit 0 ;;
+    --uninstall)           UNINSTALL=true; shift ;;
+    -h|--help)             sed -n '2,52p' "$0"; exit 0 ;;
     *)                     early_die "Unknown option: $1 (see --help)" ;;
   esac
 done
@@ -158,6 +165,9 @@ REAL_GROUP="$(id -gn "$REAL_USER")"
 # Small private directory where this script remembers what it changed (ACLs, SELinux
 # labels, the original network profile) so a later run can undo it precisely.
 STATE_DIR="/var/lib/virt_manager_setup"
+# Packages that this script itself installed (ones that were already present are never
+# listed), so --uninstall can remove exactly those and nothing else.
+PACKAGES_RECORD="${STATE_DIR}/installed_packages"
 
 # --- Privileges: everything below needs root; re-run under sudo if needed ---
 if [ "$(id -u)" -ne 0 ]; then
@@ -296,6 +306,41 @@ pick_subnet() {
 # does not create one.) Docker itself is never modified by this script.
 docker_present() { systemctl cat docker.service >/dev/null 2>&1; }
 
+# Does a systemd unit file exist? Used to enable only the sockets this Fedora release ships.
+unit_exists() { systemctl list-unit-files "$1" --no-legend 2>/dev/null | awk 'NF {found=1} END {exit !found}'; }
+
+# Validate a user supplied pool directory: absolute, not "/", on a mounted filesystem.
+validate_pool_dir() {
+  local dir="$1" resolved probe mount_target
+  case "$dir" in /*) ;; *) log_die "Pool directory must be an absolute path: $dir" ;; esac
+  resolved="$(realpath -m -- "$dir")"
+  [ "$resolved" != "/" ] || log_die "Refusing to use the filesystem root as a VM storage directory."
+  probe="$resolved"
+  while [ ! -e "$probe" ]; do probe="$(dirname "$probe")"; done   # nearest existing parent
+  mount_target="$(findmnt -n -T "$probe" -o TARGET 2>/dev/null || true)"
+  [ -n "$mount_target" ] || log_die "Cannot identify the filesystem holding $resolved"
+  if [ "$resolved" = "$mount_target" ]; then
+    log_warn "$resolved is a mount point itself; a subdirectory (for example $resolved/vm_images) keeps VM files apart from other data."
+  fi
+}
+
+# Warn when a pool directory has little free space.
+warn_if_low_space() {
+  local free_gb
+  free_gb="$(df -Pk "$1" 2>/dev/null | awk 'NR==2 {print int($4/1024/1024)}')"
+  if [ -n "$free_gb" ] && [ "$free_gb" -lt 20 ]; then
+    log_warn "Only ${free_gb} GB free in $1: a couple of modern guests will fill it."
+  fi
+}
+
+# Remember which packages this script installed (see --uninstall).
+record_installed_packages() {
+  [ "$#" -gt 0 ] || return 0
+  touch "$PACKAGES_RECORD" && chmod 0600 "$PACKAGES_RECORD"
+  local p
+  for p in "$@"; do grep -qxF "$p" "$PACKAGES_RECORD" || echo "$p" >> "$PACKAGES_RECORD"; done
+}
+
 # Pick the mounted data disk with the most free space. Skips: the root disk (including
 # other btrfs subvolumes of it such as /home), boot/EFI, removable media mounts.
 detect_bulk_dir() {
@@ -332,6 +377,7 @@ backup_existing() {
 
   local paths=(
     /etc/libvirt                                   # all libvirt config, network and pool definitions
+    /etc/qemu                                      # QEMU bridge helper ACL (bridge.conf)
     /etc/sysconfig/libvirt-guests
     /etc/modprobe.d/kvm-nested.conf
     /etc/NetworkManager/system-connections         # holds the ethernet profile we convert (and secrets: backup dir is 0700)
@@ -434,7 +480,8 @@ reset_previous_setup() {
     libvirtd-tcp.socket libvirtd-tls.socket >/dev/null 2>&1 || true
 
   # Files written by this script.
-  rm -f /etc/modprobe.d/kvm-nested.conf /etc/sysconfig/libvirt-guests /usr/local/bin/vm-create
+  rm -f /etc/modprobe.d/kvm-nested.conf /etc/sysconfig/libvirt-guests /usr/local/bin/vm-create \
+        /etc/polkit-1/rules.d/49-libvirt-setup.rules
 
   # Docker coexistence: remove our private chain and unit (Docker's own rules are untouched).
   [ -x /usr/local/libexec/libvirt-docker-forward ] && /usr/local/libexec/libvirt-docker-forward stop >/dev/null 2>&1
@@ -472,7 +519,9 @@ reset_previous_setup() {
   fi
   run_as_user bash -c 'source "$1"; shift; mimeapps_forget "$@"' _ "${HELPER_DIR}/helper_mimeapps.sh" application/x-virt-viewer >/dev/null 2>&1 || true
 
-  rm -rf "$STATE_DIR"
+  # Forget what was recorded about ACLs, labels and the bridge, but KEEP the record of
+  # installed packages: it must survive resets so --uninstall stays accurate.
+  rm -f "$STATE_DIR/fcontext_paths" "$STATE_DIR/acl_paths" "$STATE_DIR/bridge_origin_profile"
   install -d -m 0700 "$STATE_DIR"
   log_success "Previous setup removed; VM disks and VM definitions untouched."
 }
@@ -684,6 +733,10 @@ sanity_checks() {
     log_die "No VT-x/AMD-V found. Enable 'Intel Virtualization Technology' / 'SVM Mode' in the firmware (BIOS/UEFI) setup."
   fi
   log_success "CPU virtualization extension present (${VIRT_FLAG})"
+  local fw_mode="BIOS/legacy" sb_state="unknown"
+  [ -d /sys/firmware/efi ] && fw_mode="UEFI"
+  have_cmd mokutil && sb_state="$(mokutil --sb-state 2>/dev/null | head -n1)"
+  log_info "Firmware=${fw_mode} | Secure Boot=${sb_state:-unknown} | root fs=$(findmnt -no FSTYPE / 2>/dev/null) | RAM available=$(awk '/^MemAvailable:/ {print int($2/1024)}' /proc/meminfo) MB | SELinux=$(getenforce 2>/dev/null || echo n/a) | firewalld=$(systemctl is-active firewalld 2>/dev/null || true)"
   [ "$PC_TYPE" = "server" ] && log_warn "Headless server: virt-manager is installed anyway; manage guests with virsh or vm-create."
   return 0
 }
@@ -707,6 +760,8 @@ install_packages() {
     qemu-device-usb-redirect qemu-audio-pipewire qemu-char-spice
     qemu-device-display-virtio-gpu qemu-device-display-virtio-gpu-gl
     qemu-ui-opengl qemu-ui-spice-core
+    virt-top                                # per-VM CPU/memory/IO view, like top for guests
+    libvirt-daemon-config-nwfilter          # stock network filters (MAC/IP spoofing protection)
   )
   # GTK integration so the GTK3-based virt-manager follows the Plasma theme.
   case "$DESKTOP" in
@@ -714,11 +769,16 @@ install_packages() {
     *gnome*|*lxqt*|*cosmic*|*hypr*) : ;;   # GTK-native or theme handled by the DE itself
   esac
 
+  # Note which packages are NEW, so --uninstall removes only what this script added.
+  local newly=() p
+  for p in "${required[@]}"; do rpm_is_installed "$p" || newly+=("$p"); done
   dnf_install_packages "${required[@]}"
   local available
   available="$(dnf_available_names "${optional[@]}")"
+  for p in $available; do rpm_is_installed "$p" || newly+=("$p"); done
   # shellcheck disable=SC2086
   [ -n "$available" ] && dnf_install_packages $available
+  record_installed_packages "${newly[@]}"
   local missing=()
   for p in "${optional[@]}"; do
     echo "$available" | tr ' ' '\n' | grep -qx "$p" || missing+=("$p")
@@ -751,7 +811,7 @@ EOF
   if [ -d /sys/kernel/iommu_groups ] && [ -n "$(ls -A /sys/kernel/iommu_groups 2>/dev/null)" ]; then
     log_info "IOMMU active (device passthrough possible)."
   else
-    log_info "IOMMU not active (only needed for PCI passthrough; ignore otherwise)."
+    log_info "IOMMU not active (only needed for PCI passthrough; ignore otherwise). To enable it, turn on VT-d/AMD-Vi in firmware and add intel_iommu=on iommu=pt (or amd_iommu=on) to the kernel command line; this script never changes kernel parameters."
   fi
 }
 
@@ -760,10 +820,18 @@ setup_services() {
   # Modern Fedora runs one small daemon per driver, each started on demand by a systemd
   # socket. The old all-in-one libvirtd is disabled (see Reset). Each daemon also has a
   # read-only and an admin socket.
-  local daemon
-  for daemon in virtqemud virtnetworkd virtstoraged virtnodedevd virtsecretd virtnwfilterd virtinterfaced; do
-    systemctl enable --now "${daemon}.socket" "${daemon}-ro.socket" "${daemon}-admin.socket" >/dev/null 2>&1 \
-      || log_warn "Could not enable ${daemon} sockets"
+  # virtproxyd is a compatibility daemon: it provides the classic libvirt socket path that
+  # tools such as Vagrant, Terraform and Ansible's libvirt modules may still expect. It
+  # listens on a local unix socket only (the tcp/tls sockets are not enabled).
+  # Only sockets that exist on this Fedora release are enabled.
+  local daemon unit units
+  for daemon in virtqemud virtnetworkd virtstoraged virtnodedevd virtsecretd virtnwfilterd virtinterfaced virtproxyd; do
+    units=()
+    for unit in "${daemon}.socket" "${daemon}-ro.socket" "${daemon}-admin.socket"; do
+      unit_exists "$unit" && units+=("$unit")
+    done
+    [ "${#units[@]}" -gt 0 ] || continue
+    systemctl enable --now "${units[@]}" >/dev/null 2>&1 || log_warn "Could not enable ${daemon} sockets"
   done
   systemctl enable --now virtlogd.socket virtlockd.socket >/dev/null 2>&1 || true
   wait_for_libvirt || log_die "libvirt did not become ready. See: journalctl -u virtqemud"
@@ -779,6 +847,8 @@ define_pool() {
 
 setup_storage_pools() {
   log_header "Storage pools"
+  validate_pool_dir "$VM_FAST_POOL_DIR"
+  [ -n "$VM_BULK_POOL_DIR" ] && validate_pool_dir "$VM_BULK_POOL_DIR"
   BULK_DIR="$VM_BULK_POOL_DIR"
   if [ -z "$BULK_DIR" ]; then
     local mount_point
@@ -790,12 +860,14 @@ setup_storage_pools() {
 
   secure_pool_dir "$VM_FAST_POOL_DIR"
   define_pool "$POOL_FAST" "$VM_FAST_POOL_DIR"
+  warn_if_low_space "$VM_FAST_POOL_DIR"
   log_info "Pool '${POOL_FAST}' -> ${VM_FAST_POOL_DIR} (fast; SSD present: ${SSD_PRESENT})"
 
   local iso_parent="$VM_FAST_POOL_DIR"
   if [ -n "$BULK_DIR" ]; then
     secure_pool_dir "$BULK_DIR"
     define_pool "$POOL_BULK" "$BULK_DIR"
+    warn_if_low_space "$BULK_DIR"
     iso_parent="$BULK_DIR"
     log_info "Pool '${POOL_BULK}' -> ${BULK_DIR} (capacity disk, auto-selected or user defined)"
   else
@@ -985,6 +1057,39 @@ EOF
   systemctl enable libvirt-guests.service >/dev/null 2>&1 || log_warn "Could not enable libvirt-guests.service"
 }
 
+# Fedora's libvirt packages normally ship a polkit rule that lets members of the group
+# "libvirt" manage the system libvirt without a password. Check for it, and add a small
+# equivalent rule ONLY if the system has none (so a changed packaging never leaves
+# virt-manager asking for a password on every action).
+ensure_polkit_rule() {
+  if grep -qs 'org.libvirt.unix.manage' /usr/share/polkit-1/rules.d/*.rules /etc/polkit-1/rules.d/*.rules; then
+    log_info "polkit: the system already ships a libvirt rule; none added."
+    return 0
+  fi
+  cat > /etc/polkit-1/rules.d/49-libvirt-setup.rules <<'EOF'
+// Written by setup_virt_manager.sh (only because no libvirt rule was found on the system).
+// Members of the "libvirt" group manage the system libvirt without a password prompt.
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.libvirt.unix.manage" && subject.isInGroup("libvirt")) {
+        return polkit.Result.YES;
+    }
+});
+EOF
+  chmod 0644 /etc/polkit-1/rules.d/49-libvirt-setup.rules
+  log_info "polkit: no libvirt rule found, wrote /etc/polkit-1/rules.d/49-libvirt-setup.rules"
+}
+
+# Existing per-user VMs (what GNOME Boxes creates) live in a separate libvirt "session".
+# They are reported, never moved automatically.
+report_session_vms() {
+  local vms
+  vms="$(run_as_user virsh -c qemu:///session list --all --name 2>/dev/null | sed '/^$/d')"
+  [ -n "$vms" ] || return 0
+  log_info "Existing per-user (GNOME Boxes style) VMs found: $(echo "$vms" | tr '\n' ' ')"
+  log_info "They live in a separate libvirt session. In virt-manager: File > Add Connection > QEMU/KVM User session."
+  log_info "To move one to the system connection, see 'Moving Boxes VMs' in Troubleshooting at the end of this script."
+}
+
 # Tiny wrapper around gsettings that warns instead of failing.
 gset() { run_as_user gsettings set "$@" >/dev/null 2>&1 || log_warn "gsettings could not set: $*"; }
 
@@ -998,6 +1103,8 @@ setup_user_integration() {
   else
     log_warn "Group 'libvirt' does not exist; check the libvirt-daemon packages."
   fi
+
+  ensure_polkit_rule
 
   # 2) Make virsh/virt-install/virt-manager all use the SAME connection. Without this,
   #    virsh run as a normal user talks to a separate per-user libvirt ("session") and
@@ -1218,7 +1325,16 @@ print_summary() {
   log_header "Summary"
   log_info "Guest RAM budget: about ${GUEST_BUDGET_MB} MB in total across running VMs (host keeps ${HOST_RESERVE_MB} MB)."
   log_info "Keep total vCPUs of running VMs at or below $(( CPU_CORES * 2 )) (host has ${CPU_CORES} cores)."
+  local g_vcpu=1 g_ram=1024
+  [ "$CPU_CORES" -ge 4 ] && g_vcpu=2
+  [ "$CPU_CORES" -ge 8 ] && g_vcpu=4
+  [ "$RAM_MB" -ge 8192 ] && g_ram=2048
+  [ "$RAM_MB" -ge 16384 ] && g_ram=4096
+  [ "$RAM_MB" -ge 32768 ] && g_ram=8192
+  log_info "Suggested size for a typical guest on this host: ${g_vcpu} vCPU, ${g_ram} MB RAM (virtio disk and network, SPICE display)."
+  [ "$RAM_MB" -lt 8192 ] && log_warn "Under 8 GB RAM: keep guests at 1 to 2 GB and run few at a time."
   [ "$GPU_TIER" = "low" ] && log_info "Weak GPU: use the default SPICE display; 3D acceleration (virgl) will be limited."
+  report_session_vms
   log_info "Next steps: log out and back in (group 'libvirt'), then start virt-manager."
   log_info "Create a cloud-init VM: vm-create --name test1 --image <cloud-image> --network nat"
 }
@@ -1233,10 +1349,20 @@ run_verification() {
   [ -n "$VIRT_FLAG" ] && check_pass "CPU virtualization extension: ${VIRT_FLAG}" || check_fail "No VT-x/AMD-V."
   [ -e /dev/kvm ] && check_pass "/dev/kvm exists" || check_fail "/dev/kvm missing."
   [ -n "$KVM_MODULE" ] && lsmod | grep -q "^${KVM_MODULE}" && check_pass "${KVM_MODULE} loaded" || check_warn "KVM module not loaded."
+  # libvirt's own host validator: every FAIL/WARN line becomes a verification result.
   if have_cmd virt-host-validate; then
-    log_info "virt-host-validate output:"
-    virt-host-validate qemu 2>&1 | sed 's/^/    /'
+    local vhv vline
+    vhv="$(LC_ALL=C virt-host-validate qemu 2>&1)"
+    if grep -q ': FAIL' <<<"$vhv"; then
+      while read -r vline; do [ -n "$vline" ] && check_fail "virt-host-validate: ${vline#*: }"; done < <(grep ': FAIL' <<<"$vhv")
+    else
+      check_pass "virt-host-validate reports no hard failures"
+    fi
+    while read -r vline; do [ -n "$vline" ] && check_warn "virt-host-validate: ${vline#*: }"; done < <(grep ': WARN' <<<"$vhv")
   fi
+  run_as_user bash -c '[ -r /dev/kvm ] && [ -w /dev/kvm ]' \
+    && check_pass "/dev/kvm is readable and writable for ${REAL_USER}" \
+    || check_warn "/dev/kvm is not directly accessible for ${REAL_USER} (QEMU itself runs as its own user, so guests still work)."
 
   # --- Packages ---
   local pkg
@@ -1249,6 +1375,9 @@ run_verification() {
   for daemon in virtqemud virtnetworkd virtstoraged virtnodedevd virtsecretd; do
     systemctl is-active --quiet "${daemon}.socket" && check_pass "${daemon}.socket active" || check_fail "${daemon}.socket not active"
   done
+  if unit_exists virtproxyd.socket; then
+    systemctl is-active --quiet virtproxyd.socket && check_pass "virtproxyd.socket active (compatibility socket)" || check_warn "virtproxyd.socket not active"
+  fi
   systemctl is-enabled --quiet libvirtd.service 2>/dev/null && check_fail "Old monolithic libvirtd is enabled (conflicts with modular daemons)." || check_pass "Monolithic libvirtd not enabled"
   systemctl is-enabled --quiet libvirt-guests.service 2>/dev/null && check_pass "libvirt-guests enabled" || check_warn "libvirt-guests not enabled"
   vsh version >/dev/null 2>&1 && check_pass "libvirt reachable on qemu:///system (root)" || check_fail "libvirt not reachable."
@@ -1305,6 +1434,11 @@ run_verification() {
     if getent passwd qemu >/dev/null 2>&1 && [ -n "$pdir" ]; then
       runuser -u qemu -- test -x "$pdir" 2>/dev/null && check_pass "qemu can enter $pdir" || check_fail "qemu cannot enter $pdir (parent directory permissions)"
     fi
+    local free_gb
+    free_gb="$(df -Pk "$pdir" 2>/dev/null | awk 'NR==2 {print int($4/1024/1024)}')"
+    if [ -n "$free_gb" ]; then
+      if [ "$free_gb" -ge 20 ]; then check_pass "${free_gb} GB free in $pdir"; else check_warn "Only ${free_gb} GB free in $pdir"; fi
+    fi
   done
 
   # --- Config and integration ---
@@ -1326,8 +1460,42 @@ run_verification() {
   [ "$VERIFY_FAIL" -eq 0 ]
 }
 
+# Remove only the packages this script installed. dnf shows the full transaction and asks
+# before removing anything, so a package that something else came to depend on is visible.
+uninstall_managed_packages() {
+  log_header "Remove packages installed by this script"
+  if [ ! -s "$PACKAGES_RECORD" ]; then
+    log_info "No package record found: this script installed nothing, so nothing is removed."
+    return 0
+  fi
+  local pkgs=() p answer
+  while IFS= read -r p; do
+    [ -n "$p" ] && rpm_is_installed "$p" && pkgs+=("$p")
+  done < "$PACKAGES_RECORD"
+  if [ "${#pkgs[@]}" -eq 0 ]; then
+    rm -f "$PACKAGES_RECORD"
+    log_info "None of the recorded packages are installed any more."
+    return 0
+  fi
+  echo "Packages installed by this script (will be offered for removal):"
+  printf '  %s\n' "${pkgs[@]}"
+  echo "Kept in any case: VM disks, VM definitions (/etc/libvirt/qemu), pool directories and their files, packages that were installed before this script ran."
+  [ -t 0 ] || log_die "Confirmation required: run --uninstall from an interactive terminal."
+  read -r -p "Continue to the dnf removal step? [y/N] " answer
+  case "$answer" in [yY]|[yY][eE][sS]) ;; *) log_info "Cancelled."; return 0 ;; esac
+  dnf remove "${pkgs[@]}" && rm -f "$PACKAGES_RECORD" && log_success "Packages removed. VM data and libvirt configuration were kept."
+}
+
 main() {
   if [ "$VERIFY_ONLY" = true ]; then run_verification; exit $?; fi
+  if [ "$UNINSTALL" = true ]; then
+    require_fedora
+    install -d -m 0700 "$STATE_DIR"
+    backup_existing
+    reset_previous_setup
+    uninstall_managed_packages
+    exit 0
+  fi
   sanity_checks
   install -d -m 0700 "$STATE_DIR"
   backup_existing
@@ -1416,6 +1584,26 @@ main
 # - Android: bVNC / aSPICE (open source, on F-Droid) can open a guest's console over an
 #   SSH tunnel to the host. Use "virsh domdisplay NAME" to find the display address.
 #
+# Ideas reviewed from five other generated versions of this script
+# - Adopted: a record of packages this script installed and a matching --uninstall that
+#   removes only those; a polkit rule written only when the system has none; the
+#   virtproxyd compatibility socket; virt-host-validate FAIL/WARN lines turned into
+#   verification results; detection of existing per-user (Boxes) VMs; validation of
+#   user supplied pool directories; free-space warnings; a host inventory line (firmware,
+#   Secure Boot, root filesystem, RAM, SELinux, firewalld); virt-top; stock nwfilter rules.
+# - Rejected: setting qemu.conf user/group to root (removes the isolation between a guest
+#   and the host); auth_unix_rw="none" (drops polkit protection, and those settings now
+#   belong to the per-driver daemon config files); "firewall-cmd --add-service=libvirt"
+#   (opens libvirt's remote-management port; local use needs no firewalld service);
+#   enabling the monolithic libvirtd.service (conflicts with the modular daemons);
+#   deleting /etc/libvirt config files wholesale; adding the user to group "kvm"
+#   (/dev/kvm is already accessible to logged-in users on current Fedora, and
+#   verification checks this); a --dry-run mode (with reset-and-rebuild it would
+#   misrepresent the real run; --verify-setup is the read-only mode).
+# - swtpm and extra Windows tooling are not installed (Linux guests only). To add later:
+#   sudo dnf install swtpm swtpm-tools
+# - GNOME Boxes VMs are never migrated automatically; see Troubleshooting for the recipe.
+#
 # Replaced approaches
 # - "systemctl enable --now libvirtd" (old guides): replaced by the modular sockets.
 # - Adding the user to group "kvm": not needed; the logged-in desktop user gets access
@@ -1436,6 +1624,8 @@ main
 # cloud-init with libvirt (virt-install --cloud-init): https://docs.cloud-init.io/en/latest/howto/launch_libvirt.html
 # firewalld documentation: https://firewalld.org/documentation/
 # virt-manager project: https://virt-manager.org/
+# libvirt access control with polkit: https://libvirt.org/aclpolkit.html
+# libvirt network filters (nwfilter): https://libvirt.org/formatnwfilter.html
 
 ##################################################################################
 # Troubleshooting/Debugging/Testing/Commands
@@ -1468,4 +1658,18 @@ main
 # Cloud image workflow:               put an image in <fast pool>/templates, then:
 #                                     vm-create --name lab1 --image <file> --network isolated
 # Remove a VM and its disk:           virsh destroy NAME; virsh undefine NAME --remove-all-storage --nvram
+# Black screen / no clipboard in a guest: use the SPICE display with a virtio or QXL video
+#                                     device and install spice-vdagent inside the guest.
+# polkit prompts for a password:      journalctl -u polkit -f   (while retrying in virt-manager)
+#                                     pkcheck --action-id org.libvirt.unix.manage --process $$
+# Per-VM resource use:                virt-top
+# Undo this setup (keeps VM data):    sudo bash setup_virt_manager.sh --uninstall
+# Moving Boxes VMs to the system connection (they use the per-user "session"):
+#                                     virsh -c qemu:///session list --all        (names)
+#                                     Boxes disks: ~/.local/share/gnome-boxes/images/
+#                                     1) shut the VM down  2) sudo cp <disk> <fast pool dir>/<name>.qcow2
+#                                     3) virt-install --import --name <name> --memory 4096 --vcpus 2 \
+#                                          --os-variant generic --disk path=<fast pool dir>/<name>.qcow2 \
+#                                          --network network=default --graphics spice --noautoconsole
+#                                     Or simply add the session connection in virt-manager and keep using them there.
 # Restore from the script's backup:   ls ~/nb/nb_script_data/backups/virt_manager/
