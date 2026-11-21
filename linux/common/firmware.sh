@@ -37,6 +37,11 @@
 #       ./firmware_update.sh --verify-setup
 #   (d) what the timer runs (do not call by hand unless testing):
 #       sudo bash /usr/local/libexec/firmware-update/firmware_update.sh --scheduled
+#
+# Exit codes: 0 = everything current or applied; 2 = updates were found but NOT applied
+# (declined, deferred BIOS, failed pre-flash checks); 1 = an error or a failed update.
+# The timer unit treats 2 as success (SuccessExitStatus=2) because deferred items are
+# expected there and are reported through the log, state file and ntfy instead.
 
 set -u -o pipefail
 # systemd services may not export USER; the standard variable block below needs it.
@@ -66,6 +71,24 @@ ESP_MIN_FREE_MB="${ESP_MIN_FREE_MB:-64}"          # free space on the EFI System
 MIN_BATTERY_PERCENT="${MIN_BATTERY_PERCENT:-50}"  # laptops: minimum charge (AC is also required)
 SNAPSHOT_KEEP="${SNAPSHOT_KEEP:-3}"               # btrfs pre-flash snapshots to retain
 BIOS_STALE_YEARS="${BIOS_STALE_YEARS:-3}"         # warn when BIOS is older than this
+
+# Seconds before a network-facing or read-only fwupdmgr call is abandoned, so a hung
+# LVFS mirror cannot hang the whole run. (Flashing itself is never given a timeout.)
+FWUPD_NETWORK_TIMEOUT_SECS="${FWUPD_NETWORK_TIMEOUT_SECS:-120}"
+
+# Optional extra fwupd plugin packages (space separated). Only installed when the
+# repo offers them. Candidates: fwupd-plugin-flashrom (SPI flash on old boards; adds
+# brick risk, leave empty unless a device needs it), fwupd-plugin-modem-manager.
+FWUPD_EXTRA_PACKAGES="${FWUPD_EXTRA_PACKAGES:-}"
+
+# fwupd.conf [fwupd] settings managed by this script (documented in man fwupd.conf):
+#   EnumerateAllDevices=true : plugins list every device they find, not only ones LVFS
+#                              already knows. Needed for an honest "all devices" report.
+#   ShowDevicePrivate=false  : hides serial numbers in fwupd output, so logs/reports
+#                              you might share do not leak them.
+FWUPD_ENUMERATE_ALL_DEVICES="${FWUPD_ENUMERATE_ALL_DEVICES:-true}"
+FWUPD_SHOW_DEVICE_PRIVATE="${FWUPD_SHOW_DEVICE_PRIVATE:-false}"
+FWUPD_CONF_FILE="/etc/fwupd/fwupd.conf"
 
 # Plugins (fwupd's name for a device driver) that the unattended timer must NEVER
 # apply: a failure here can brick the machine, break boot, or lock you out of LUKS.
@@ -272,6 +295,67 @@ for d in data.get("Devices", []):
 PY
 }
 
+# fw: fwupdmgr with a timeout, for network-facing or read-only calls.
+fw() { timeout "${FWUPD_NETWORK_TIMEOUT_SECS}s" fwupdmgr "$@"; }
+
+# Device list as JSON INCLUDING devices that cannot be updated. By default fwupdmgr hides
+# those, which would make "which devices have no update path?" impossible to answer.
+# The flag was spelled --show-all-devices in older fwupd and --show-all in newer ones, so
+# try both, then fall back to the plain list.
+fw_get_devices_json() {
+  local dest="$1" opt
+  for opt in --show-all --show-all-devices; do
+    if fw get-devices "$opt" --json >"$dest" 2>/dev/null && [ -s "$dest" ]; then return 0; fi
+  done
+  fw get-devices --json >"$dest" 2>/dev/null
+}
+
+# One status row per device, pipe separated: STATUS|DEVICE|VENDOR|PLUGIN|INSTALLED|AVAILABLE
+#   UPDATE          LVFS offers a newer release
+#   current         updatable via fwupd and already current
+#   no-update-path  fwupd sees it but it is not updatable (no LVFS firmware, or locked)
+#   unknown         fwupd reported no flags, so nothing can be claimed
+fw_device_table() {   # fw_device_table <devices.json> <updates.json>
+  python3 - "$1" "$2" <<'PY'
+import json, sys
+def load(path):
+    try:
+        doc = json.load(open(path))
+    except Exception:
+        return {}
+    return doc if isinstance(doc, dict) else {}
+devs = load(sys.argv[1]).get("Devices") or []
+upd_ver = {}
+for d in load(sys.argv[2]).get("Devices") or []:
+    rel = (d.get("Releases") or [{}])[0]
+    upd_ver[d.get("DeviceId")] = rel.get("Version", "?")
+order = {"UPDATE": 0, "current": 1, "unknown": 2, "no-update-path": 3}
+def cut(text, n):
+    text = (text or "").replace("|", " ")
+    return text if len(text) <= n else text[: n - 1] + "~"
+rows = []
+for d in devs:
+    did = d.get("DeviceId", "")
+    fl = {str(x).lower() for x in (d.get("Flags") or [])}
+    if did in upd_ver:
+        st, av = "UPDATE", upd_ver[did]
+    elif not fl:
+        st, av = "unknown", "?"
+    elif "updatable" in fl:
+        st, av = "current", "-"
+    else:
+        st, av = "no-update-path", "-"
+    rows.append((st, cut(d.get("Name") or did, 34), cut((d.get("Vendor") or "").strip(), 22),
+                 d.get("Plugin", "-"), cut(d.get("Version") or "-", 18), av))
+rows.sort(key=lambda r: (order[r[0]], r[1].lower()))
+for r in rows:
+    print("|".join(r))
+PY
+}
+
+# has_plugin <plugin>: true if fwupd lists a device driven by that plugin (needs devtable.txt).
+has_plugin() { awk -F'|' -v p="$1" '$4 == p { f = 1 } END { exit !f }' "${WORK_DIR}/devtable.txt" 2>/dev/null; }
+
 # Power / ESP helpers used by the pre-flash checks.
 ac_online() {
   local s found=false
@@ -314,6 +398,7 @@ backup_existing() {
   local p
   for p in \
       /etc/fwupd \
+      /var/lib/fwupd \
       "${SYSTEMD_UNIT_DIR}/${SERVICE_NAME}.service" \
       "${SYSTEMD_UNIT_DIR}/${SERVICE_NAME}.timer" \
       "${SYSTEMD_UNIT_DIR}/fwupd-refresh.service.d" \
@@ -328,6 +413,7 @@ backup_existing() {
   done
   # State records (command output) that help if something must be rolled back.
   backup_record "$FIRMWARE_CURRENT_BACKUP_DIR" fwupd_devices fwupdmgr get-devices --no-unreported-check
+  backup_record "$FIRMWARE_CURRENT_BACKUP_DIR" fwupd_history fwupdmgr get-history
   backup_record "$FIRMWARE_CURRENT_BACKUP_DIR" fwupd_remotes fwupdmgr get-remotes
   backup_record "$FIRMWARE_CURRENT_BACKUP_DIR" firmware_packages sh -c "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE}\n' | grep -E '(firmware|microcode|fwupd|shim)' | sort"
   backup_record "$FIRMWARE_CURRENT_BACKUP_DIR" timers systemctl list-timers --all --no-pager
@@ -339,11 +425,13 @@ backup_existing() {
 ##################################################################################
 # Reset
 ##################################################################################
-# Remove everything this script owns so the install below starts clean. NOT removed:
-#   - /etc/fwupd/remotes.d/lvfs.conf: owned by the fwupd RPM; deleting it would break
-#     fwupd. configure_fwupd_remote() sets the same keys to the same values on every
-#     run, which gives the same idempotent result.
-#   - ${FW_STATE_DIR} (snapshots, pending list): data, not configuration.
+# Remove everything this script owns so the install below starts clean.
+# fwupd's own config files (fwupd.conf, remotes.d/lvfs.conf) belong to the fwupd RPM and
+# carry its option documentation. They were backed up above; here they are deleted and
+# `dnf reinstall fwupd` recreates them fresh (rpm restores missing files on reinstall, but
+# does NOT overwrite modified ones, hence the delete first). Our settings are re-applied
+# afterwards by configure_fwupd().
+# NOT removed: ${FW_STATE_DIR} (snapshots, pending list) because it is data, not config.
 reset_existing() {
   log_header "Reset (removing old timer, runtime copy, config, rules)"
   systemctl disable --now "${SERVICE_NAME}.timer" >/dev/null 2>&1 || true
@@ -352,6 +440,14 @@ reset_existing() {
   rm -f  "${HOME_DIR}/.config/systemd/user/${SERVICE_NAME}.service" "${HOME_DIR}/.config/systemd/user/${SERVICE_NAME}.timer"
   rm -rf "${FW_INSTALL_ROOT:?}" "${FW_CONF_DIR:?}"
   rm -f  "$OPENSNITCH_RULE_FILE"
+  rm -f  "$FWUPD_CONF_FILE" "$LVFS_REMOTE_CONF"
+  if dnf -y reinstall fwupd >/dev/null 2>&1; then
+    log_success "fwupd config restored to packaged defaults"
+  else
+    log_warn "dnf reinstall fwupd failed (offline?); restoring the backed-up config instead"
+    [ -f "${FIRMWARE_CURRENT_BACKUP_DIR}/fwupd/fwupd.conf" ] && cp -a "${FIRMWARE_CURRENT_BACKUP_DIR}/fwupd/fwupd.conf" "$FWUPD_CONF_FILE"
+    [ -f "${FIRMWARE_CURRENT_BACKUP_DIR}/fwupd/remotes.d/lvfs.conf" ] && cp -a "${FIRMWARE_CURRENT_BACKUP_DIR}/fwupd/remotes.d/lvfs.conf" "$LVFS_REMOTE_CONF"
+  fi
   systemctl daemon-reload
 }
 
@@ -405,6 +501,14 @@ ensure_prerequisites() {
   for pkg in fwupd fwupd-efi python3 pciutils util-linux mokutil curl dracut; do
     rpm_is_installed "$pkg" || missing+=("$pkg")
   done
+  # nvme-cli only matters when an NVMe drive exists (shows the drive's own firmware revision).
+  if ls /sys/block/nvme* >/dev/null 2>&1 && ! rpm_is_installed nvme-cli; then missing+=(nvme-cli); fi
+  # Optional extra plugin packages: only those the repos actually offer.
+  # shellcheck disable=SC2086
+  for pkg in $FWUPD_EXTRA_PACKAGES; do
+    rpm_is_installed "$pkg" && continue
+    if [ -n "$(dnf_available_names "$pkg")" ]; then missing+=("$pkg"); else log_warn "Extra package ${pkg} not available; skipped"; fi
+  done
   if [ "${#missing[@]}" -gt 0 ]; then
     log_info "Installing: ${missing[*]}"
     dnf_install_packages "${missing[@]}" || log_die "Could not install prerequisites"
@@ -415,13 +519,44 @@ ensure_prerequisites() {
   fi
 }
 
+# Make sure the fwupd daemon answers. It is D-Bus activated, so a short retry loop avoids
+# false alarms right after install/restart. fwupd-refresh.timer (shipped by the package)
+# only downloads metadata; it complements this script's own timer and is enabled here.
+ensure_fwupd_daemon() {
+  local i rc
+  systemctl enable --now fwupd-refresh.timer >/dev/null 2>&1 \
+    || log_warn "could not enable fwupd-refresh.timer (harmless on some images)"
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    systemctl is-active --quiet fwupd.service && break
+    systemctl start fwupd.service >/dev/null 2>&1
+    sleep 1
+  done
+  fwupdmgr get-devices >/dev/null 2>&1; rc=$?     # 2 = "no devices", still a live daemon
+  { [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; } \
+    || log_die "Cannot talk to the fwupd daemon. Try: systemctl restart fwupd ; journalctl -u fwupd -n 50"
+}
+
 # Privacy: no success reports to LVFS, no HSI security reports, LVFS enabled.
 # (fwupdmgr is additionally always called with --no-unreported-check.)
 set_ini_key() {   # set_ini_key <file> <key> <value>
   if grep -q "^${2}=" "$1"; then sed -i "s|^${2}=.*|${2}=${3}|" "$1"; else printf '%s=%s\n' "$2" "$3" >>"$1"; fi
 }
+# Set key=value inside the [fwupd] section of fwupd.conf (replace if present, otherwise
+# insert right under the section header, so it never lands in another section).
+set_fwupd_conf_key() {   # set_fwupd_conf_key <key> <value>
+  [ -f "$FWUPD_CONF_FILE" ] || { log_warn "${FWUPD_CONF_FILE} missing; cannot set ${1}"; return 0; }
+  if grep -q "^${1}=" "$FWUPD_CONF_FILE"; then
+    sed -i "s|^${1}=.*|${1}=${2}|" "$FWUPD_CONF_FILE"
+  elif grep -q '^\[fwupd\]' "$FWUPD_CONF_FILE"; then
+    sed -i "/^\[fwupd\]/a ${1}=${2}" "$FWUPD_CONF_FILE"
+  else
+    printf '\n[fwupd]\n%s=%s\n' "$1" "$2" >>"$FWUPD_CONF_FILE"
+  fi
+}
 configure_fwupd_remote() {
-  log_header "fwupd remote (LVFS) privacy configuration"
+  log_header "fwupd configuration (LVFS remote + daemon)"
+  set_fwupd_conf_key EnumerateAllDevices "$FWUPD_ENUMERATE_ALL_DEVICES"
+  set_fwupd_conf_key ShowDevicePrivate "$FWUPD_SHOW_DEVICE_PRIVATE"
   if [ ! -f "$LVFS_REMOTE_CONF" ]; then
     log_warn "${LVFS_REMOTE_CONF} not found; fwupd layout differs. Skipping remote hardening."
     return 0
@@ -475,6 +610,8 @@ ConditionACPower=true
 
 [Service]
 Type=oneshot
+# Exit 2 = updates pending/deferred: expected, reported via log + ntfy, not a unit failure.
+SuccessExitStatus=2
 ExecStart=/usr/bin/bash ${FW_INSTALL_ROOT}/firmware_update.sh --scheduled
 Nice=19
 IOSchedulingClass=idle
@@ -486,6 +623,9 @@ ProtectKernelTunables=true
 ProtectControlGroups=true
 RestrictRealtime=true
 LockPersonality=true
+ProtectClock=true
+ProtectHostname=true
+SystemCallArchitectures=native
 UNIT
   cat >"${SYSTEMD_UNIT_DIR}/${SERVICE_NAME}.timer" <<UNIT
 [Unit]
@@ -604,24 +744,64 @@ prepare_flash_safety_net() {
   SNAPSHOT_DONE=true
 }
 
+# Refresh LVFS metadata once, then capture the device list, pending updates and a few
+# diagnostics as raw artifacts in the run's log directory (an audit trail over time).
+DEVICES_JSON=""
+UPDATES_JSON=""
+collect_fwupd_state() {
+  log_header "fwupd state (metadata refresh, devices, pending updates)"
+  DEVICES_JSON="${WORK_DIR}/devices.json"
+  UPDATES_JSON="${WORK_DIR}/updates.json"
+  # The connection getter only informs; a wrong "none" must not block the refresh.
+  [ -n "$(getter get_connection_type)" ] || log_warn "No active network connection detected; refresh may fail and cached metadata will be used"
+  # refresh exit code 2 = "metadata already current": not an error.
+  fw refresh --force --no-unreported-check >/dev/null 2>&1 \
+    || log_warn "fwupdmgr refresh returned non-zero (offline, or LVFS blocked by DNS filtering?)"
+  fw_get_devices_json "$DEVICES_JSON" || log_warn "fwupd could not list devices"
+  fw get-updates --json --no-unreported-check --no-metadata-check >"$UPDATES_JSON" 2>/dev/null
+  cp "$DEVICES_JSON" "${FIRMWARE_CURRENT_LOG_DIR}/fwupd_devices.json" 2>/dev/null
+  cp "$UPDATES_JSON" "${FIRMWARE_CURRENT_LOG_DIR}/fwupd_updates.json" 2>/dev/null
+  # Hardware IDs are what LVFS matches against: useful when asking "why no BIOS update?".
+  fw hwids >"${FIRMWARE_CURRENT_LOG_DIR}/fwupd_hwids.txt" 2>&1 || true
+  fw get-plugins >"${FIRMWARE_CURRENT_LOG_DIR}/fwupd_plugins.txt" 2>&1 || true
+  # DMI dump without serial numbers/UUIDs so the log is safer to share.
+  if command -v dmidecode >/dev/null 2>&1; then
+    dmidecode -t bios -t system -t baseboard 2>/dev/null | grep -viE 'serial|uuid|asset tag' \
+      >"${FIRMWARE_CURRENT_LOG_DIR}/dmidecode.txt"
+  fi
+  log_success "State captured in ${FIRMWARE_CURRENT_LOG_DIR}"
+}
+
 RESULTS=()
+FAILED_COUNT=0    # updates that were attempted and failed
+PENDING_COUNT=0   # updates found but NOT applied (declined, deferred, preflight failed)
+
+# After flashing: list what is still pending (staged capsules stay "pending" until the
+# reboot completes them) and save fwupd's own history for later review.
+post_apply_check() {
+  local left
+  log_info "Re-checking device state"
+  fw get-updates --json --no-unreported-check --no-metadata-check >"${WORK_DIR}/updates_after.json" 2>/dev/null
+  left="$(fw_json_rows "${WORK_DIR}/updates_after.json" updates)"
+  if [ -n "$left" ]; then
+    log_warn "Still pending after this run (a reboot may complete staged updates):"
+    { echo "DEVICE|PLUGIN|CURRENT|NEW"; printf '%s\n' "$left" | awk -F'|' '{print $2"|"$3"|"$4"|"$5}'; } | column -t -s'|'
+  else
+    log_success "No updates remain pending"
+  fi
+  fw get-history >"${FIRMWARE_CURRENT_LOG_DIR}/fwupd_history_after.txt" 2>&1 || true
+  log_info "fwupd history saved: ${FIRMWARE_CURRENT_LOG_DIR}/fwupd_history_after.txt"
+}
+
 process_fwupd_updates() {
   log_header "fwupd / LVFS updates"
-  local tmp updates id name plugin cur new urg flags summ action
-  tmp="$(mktemp -d)"; updates="${tmp}/updates.json"
-  # refresh exit code 2 = "metadata already current": not an error.
-  fwupdmgr refresh --force --no-unreported-check >/dev/null 2>&1 \
-    || log_warn "fwupdmgr refresh returned non-zero (offline, or LVFS blocked by DNS filtering?)"
-  fwupdmgr get-updates --json --no-unreported-check --no-metadata-check >"$updates" 2>/dev/null
-  if [ -z "$(fw_json_rows "$updates" updates)" ]; then
+  local rows="${WORK_DIR}/rows.txt" id name plugin cur new urg flags summ action applied=0
+  fw_json_rows "$UPDATES_JSON" updates >"$rows"
+  if [ ! -s "$rows" ]; then
     log_success "fwupd reports no pending firmware updates"
-    rm -rf "$tmp"; return 0
+    return 0
   fi
-  fw_json_rows "$updates" updates >"${tmp}/rows.txt"
-  {
-    echo "DEVICE|PLUGIN|CURRENT|NEW|URGENCY"
-    awk -F'|' '{print $2"|"$3"|"$4"|"$5"|"$6}' "${tmp}/rows.txt"
-  } | column -t -s'|'
+  { echo "DEVICE|PLUGIN|CURRENT|NEW|URGENCY"; awk -F'|' '{print $2"|"$3"|"$4"|"$5"|"$6}' "$rows"; } | column -t -s'|'
 
   while IFS='|' read -r -u 4 id name plugin cur new urg flags summ; do
     action="ask"
@@ -629,6 +809,7 @@ process_fwupd_updates() {
       if is_in_list "$plugin" "$HIGH_RISK_PLUGINS"; then
         record_manual "${name}: ${cur} -> ${new} needs a manual run (plugin ${plugin} is never applied unattended). Run: sudo ${FW_INSTALL_ROOT}/firmware_update.sh --apply"
         RESULTS+=("${name}|${cur} -> ${new}|deferred (manual)")
+        PENDING_COUNT=$((PENDING_COUNT + 1))
         continue
       fi
       action="apply"
@@ -640,30 +821,40 @@ process_fwupd_updates() {
       if ! preflight_system_firmware; then
         record_manual "${name}: BIOS/UEFI ${cur} -> ${new} NOT applied (pre-flash checks failed, see log above)"
         RESULTS+=("${name}|${cur} -> ${new}|skipped (preflight failed)")
+        PENDING_COUNT=$((PENDING_COUNT + 1))
         continue
       fi
     fi
 
     if [ "$action" = "ask" ]; then
       log_info "${name}: ${cur} -> ${new} [${plugin}] ${summ}"
-      confirm "Apply this update?" || { RESULTS+=("${name}|${cur} -> ${new}|skipped by user"); continue; }
+      if ! confirm "Apply this update?"; then
+        RESULTS+=("${name}|${cur} -> ${new}|skipped by user")
+        PENDING_COUNT=$((PENDING_COUNT + 1))
+        continue
+      fi
     fi
 
     [ "$plugin" = "uefi_capsule" ] && prepare_flash_safety_net
 
     log_info "Applying ${name}: ${cur} -> ${new}"
     # systemd-inhibit stops suspend/shutdown/idle from interrupting a flash.
+    # Deliberately NOT used: --no-safety-check / --force (they disable fwupd's own
+    # battery, lock and requirement checks, the checks that prevent bricked devices).
     if systemd-inhibit --what=sleep:shutdown:idle --who=firmware-update --why="Applying firmware: ${name}" \
          fwupdmgr update "$id" -y --no-reboot-check --no-unreported-check --no-metadata-check; then
       RESULTS+=("${name}|${cur} -> ${new}|applied")
+      applied=$((applied + 1))
       case ",${flags}," in *,needs-reboot,*) REBOOT_REQUIRED=true ;; esac
       [ "$plugin" = "uefi_capsule" ] && REBOOT_REQUIRED=true
     else
       RESULTS+=("${name}|${cur} -> ${new}|FAILED")
-      log_error "fwupd failed to update ${name}"
+      FAILED_COUNT=$((FAILED_COUNT + 1))
+      log_error "fwupd failed to update ${name}. Do NOT power off; check the log and 'fwupdmgr get-history'."
     fi
-  done 4<"${tmp}/rows.txt"
-  rm -rf "$tmp"
+  done 4<"$rows"
+
+  [ "$applied" -gt 0 ] && post_apply_check
 }
 
 ##################################################################################
@@ -671,11 +862,10 @@ process_fwupd_updates() {
 ##################################################################################
 report_inventory() {
   log_header "Firmware inventory"
-  local tmp inv names rows dmi_v dmi_d dmi_vendor bios_year age sb
-  tmp="$(mktemp -d)"; inv="${tmp}/devices.json"; names="${tmp}/names.txt"
-  fwupdmgr get-devices --json --no-unreported-check >"$inv" 2>/dev/null
-  fw_json_rows "$inv" inventory >"${tmp}/inventory.txt"
-  cut -d'|' -f1 "${tmp}/inventory.txt" >"$names"
+  local dmi_v dmi_d dmi_vendor bios_year age sb rows blk n model fw kind rot path
+  local devtable="${WORK_DIR}/devtable.txt" names="${WORK_DIR}/names.txt"
+  fw_device_table "$DEVICES_JSON" "$UPDATES_JSON" >"$devtable"
+  cut -d'|' -f2 "$devtable" >"$names"
 
   dmi_v="$(cat /sys/class/dmi/id/bios_version 2>/dev/null || echo unknown)"
   dmi_d="$(cat /sys/class/dmi/id/bios_date 2>/dev/null || echo unknown)"
@@ -699,22 +889,28 @@ report_inventory() {
     echo "GPU vendors|$(getter get_gpu_vendors)  (NVIDIA driver: $(getter get_nvidia_driver))"
     echo "Chassis|$(getter get_pc_type)"
     echo "Kernel|$(uname -r)"
+    echo "fwupd package|$(rpm -q fwupd 2>/dev/null)"
   } | column -t -s'|'
 
   bios_year="${dmi_d##*/}"
   if [[ "$bios_year" =~ ^[0-9]{4}$ ]]; then
     age=$(( $(date +%Y) - bios_year ))
-    if [ "$age" -ge "$BIOS_STALE_YEARS" ] && ! grep -q '^.*|uefi_capsule|' "${tmp}/inventory.txt"; then
-      log_warn "BIOS is ${age} years old and fwupd has no capsule path for it. Check the ${dmi_vendor} support site manually (USB/DOS/Windows flasher)."
+    if [ "$age" -ge "$BIOS_STALE_YEARS" ] && ! has_plugin uefi_capsule; then
+      log_warn "BIOS is ${age} years old and fwupd has no capsule path for it. Check the ${dmi_vendor} support site manually (USB/DOS/Windows flasher). Hardware IDs for LVFS lookups: ${FIRMWARE_CURRENT_LOG_DIR}/fwupd_hwids.txt"
     fi
   fi
 
-  log_info "Devices fwupd can see"
-  { echo "DEVICE|PLUGIN|VERSION|UPDATABLE|LVFS-SUPPORTED"; cat "${tmp}/inventory.txt"; } | column -t -s'|'
+  log_info "All devices fwupd can see (including ones with no update path)"
+  if [ -s "$devtable" ]; then
+    { echo "STATUS|DEVICE|VENDOR|PLUGIN|INSTALLED|AVAILABLE"; cat "$devtable"; } | column -t -s'|'
+    awk -F'|' '{c[$1]++} END{printf "%d device(s): %d with an update, %d current, %d with no update path, %d unknown\n", NR, c["UPDATE"], c["current"], c["no-update-path"], c["unknown"]}' "$devtable"
+    log_info "'no-update-path' = visible to fwupd but not updatable (the vendor publishes nothing on LVFS, or it is locked). Check the vendor's own site for those."
+  else
+    log_warn "fwupd reported no devices at all (VM, container, or unusual hardware?)"
+  fi
 
   log_info "Storage devices"
   rows=("DISK|TYPE|MODEL|FIRMWARE|UPDATE PATH")
-  local blk n model fw kind rot path
   for blk in /sys/block/*; do
     n="$(basename "$blk")"
     case "$n" in loop*|zram*|dm-*|sr*|md*|ram*) continue ;; esac
@@ -730,6 +926,10 @@ report_inventory() {
     rows+=("${n}|${kind}|${model}|${fw}|${path}")
   done
   printf '%s\n' "${rows[@]}" | column -t -s'|'
+  if command -v nvme >/dev/null 2>&1 && ls /sys/block/nvme* >/dev/null 2>&1; then
+    log_info "NVMe drives (revision reported by the drive itself)"
+    nvme list 2>/dev/null || log_warn "nvme list failed"
+  fi
 
   log_info "PCI devices that load firmware blobs (update path: linux-firmware via dnf)"
   {
@@ -743,6 +943,11 @@ report_inventory() {
   if getter get_gpu_vendors | grep -q nvidia; then
     log_info "NVIDIA GPU: the video BIOS cannot be updated from Linux; only the driver package (dnf/RPM Fusion/vendor) changes its behavior."
   fi
+
+  log_info "Platform security (fwupd HSI; full report saved to the log directory)"
+  fw security --no-unreported-check </dev/null >"${FIRMWARE_CURRENT_LOG_DIR}/fwupd_security.txt" 2>&1 || true
+  grep -iE 'Host Security ID|^HSI' "${FIRMWARE_CURRENT_LOG_DIR}/fwupd_security.txt" | head -n 3 || true
+  [ -s "${FIRMWARE_CURRENT_LOG_DIR}/fwupd_security.txt" ] || log_info "(fwupdmgr security unavailable on this build or hardware)"
 
   log_info "Kernel messages about missing/failed firmware (this boot)"
   journalctl -k -b --no-pager -g 'Direct firmware load.*failed|failed to load firmware|firmware.*not found' 2>/dev/null | tail -n 15
@@ -760,19 +965,18 @@ report_inventory() {
   log_info "Update path per component"
   {
     echo "COMPONENT|PATH|STATUS"
-    if grep -q '^.*|uefi_capsule|' "${tmp}/inventory.txt"; then
+    if has_plugin uefi_capsule; then
       echo "BIOS/UEFI|fwupd capsule|automatable (manual in timer)"
     else
       echo "BIOS/UEFI|vendor site only|NO fwupd path"
     fi
-    echo "Secure Boot dbx|fwupd uefi_dbx|$(grep -q '|uefi_dbx|' "${tmp}/inventory.txt" && echo available || echo 'not listed')"
+    echo "Secure Boot dbx|fwupd uefi_dbx|$(has_plugin uefi_dbx && echo available || echo 'not listed')"
     echo "CPU microcode|dnf (microcode_ctl / linux-firmware)|automated"
     echo "Wi-Fi/BT/GPU blobs|dnf (linux-firmware)|automated"
     echo "Disks|see storage table|per device"
     echo "Embedded controller/ME|part of BIOS package|follows BIOS"
     echo "Monitors, USB hubs, misc|fwupd if listed above|otherwise none"
   } | column -t -s'|'
-  rm -rf "$tmp"
 }
 
 ##################################################################################
@@ -798,6 +1002,18 @@ verify_setup() {
   vcheck "service unit passes systemd-analyze" systemd-analyze verify "${SYSTEMD_UNIT_DIR}/${SERVICE_NAME}.service"
   vcheck "timer enabled" systemctl is-enabled "${SERVICE_NAME}.timer"
   vcheck "timer active" systemctl is-active "${SERVICE_NAME}.timer"
+  vcheck "fwupd-refresh.timer enabled" systemctl is-enabled fwupd-refresh.timer
+  vcheck "fwupd.conf EnumerateAllDevices=${FWUPD_ENUMERATE_ALL_DEVICES}" grep -q "^EnumerateAllDevices=${FWUPD_ENUMERATE_ALL_DEVICES}" "$FWUPD_CONF_FILE"
+  vcheck "fwupd.conf ShowDevicePrivate=${FWUPD_SHOW_DEVICE_PRIVATE}" grep -q "^ShowDevicePrivate=${FWUPD_SHOW_DEVICE_PRIVATE}" "$FWUPD_CONF_FILE"
+  vcheck "fwupd JSON device list parses" sh -c "fwupdmgr get-devices --json 2>/dev/null | python3 -c 'import json,sys; json.load(sys.stdin)'"
+  # End-to-end: run the INSTALLED copy (relocated getters/helpers) under sandbox properties
+  # like the real unit's. Proves the timer's environment works, not just that files exist.
+  # Skipped inside that nested run to avoid recursion.
+  if [ "$MODE_SCHEDULED" = false ]; then
+    vcheck "installed copy runs sandboxed (--scheduled --verify-setup)" \
+      systemd-run --wait --collect --pipe -q -p ProtectHome=true -p PrivateTmp=true -p NoNewPrivileges=true \
+      /usr/bin/bash "${FW_INSTALL_ROOT}/firmware_update.sh" --scheduled --verify-setup
+  fi
   if [ -d /sys/firmware/efi ]; then
     vcheck "ESP mounted" esp_mount
     vcheck "capsule support (ESRT) visible" test -d /sys/firmware/efi/esrt/entries
@@ -816,6 +1032,9 @@ verify_setup() {
 # Run
 ##################################################################################
 start_logging
+# Scratch space for JSON/tables; removed on exit.
+WORK_DIR="$(mktemp -d)"
+trap 'rm -rf "$WORK_DIR"' EXIT
 log_header "Firmware update (${FILENAME_TIMESTAMP}) mode: $( [ "$MODE_SCHEDULED" = true ] && echo scheduled || { [ "$MODE_APPLY" = true ] && echo apply || echo interactive; } )"
 
 # Load ntfy settings saved by the setup run (timer runs have no command-line options).
@@ -837,9 +1056,15 @@ if [ "$MODE_SCHEDULED" = false ]; then
   configure_security
 else
   require_fedora
-  fwupdmgr --version >/dev/null 2>&1 || log_die "fwupd unavailable"
+fi
+ensure_fwupd_daemon
+
+# Headless servers have no console to intervene if a staged capsule misbehaves at reboot.
+if [ "$MODE_APPLY" = true ] && [ "$(getter get_pc_type)" = "server" ]; then
+  log_warn "--apply on a server-type machine: staged updates commit on reboot. Make sure you have console/IPMI access."
 fi
 
+collect_fwupd_state
 report_inventory
 update_firmware_packages
 process_fwupd_updates
@@ -858,8 +1083,11 @@ if [ "${#PENDING_MANUAL[@]}" -gt 0 ] || [ "$REBOOT_REQUIRED" = true ] || [ "${#R
   notify "Firmware: $(hostname -s)" "$msg" "$([ "${#PENDING_MANUAL[@]}" -gt 0 ] && echo high || echo default)"
 fi
 
-[ "$MODE_SCHEDULED" = false ] && verify_setup
+if [ "$MODE_SCHEDULED" = false ]; then verify_setup || true; fi
 log_info "Log: ${LOG_FILE}"
+# Exit codes: 1 = failure, 2 = updates still pending (see the overview), 0 = all good.
+if [ "$FAILED_COUNT" -gt 0 ] || [ "$VERIFY_FAILS" -gt 0 ]; then exit 1; fi
+if [ "$PENDING_COUNT" -gt 0 ]; then exit 2; fi
 exit 0
 
 ##################################################################################
@@ -891,6 +1119,20 @@ exit 0
 #   signatures: PKCS#7/GPG/Jcat for LVFS, GPG for RPMs), so no extra clamscan step.
 # * NextDNS: fwupd uses the system resolver (systemd-resolved -> NextDNS profile), so
 #   no per-app DNS setting exists. Make sure fwupd.org and cdn.fwupd.org are allowed.
+# * Device listing uses --show-all (older fwupd: --show-all-devices). Without it fwupdmgr
+#   hides devices that cannot be updated, so the "no update path" report would be empty.
+#   fwupd.conf also gets EnumerateAllDevices=true and ShowDevicePrivate=false (both in
+#   man fwupd.conf). Each run saves devices/updates JSON, HWIDs, plugins, HSI report and
+#   post-update history under the run's log directory as an audit trail.
+# * Reset deletes fwupd.conf and lvfs.conf (after backup) and runs `dnf reinstall fwupd`
+#   so they come back in packaged, fully documented form; settings are then re-applied.
+# * Deliberately not used: `fwupdmgr update --no-safety-check` / `--force` (disable the
+#   checks that prevent bricking), secrets in unit Environment= lines (readable with
+#   `systemctl cat`), `fwupdmgr enable` (operates on plugins, not capsules), and
+#   options such as UriSoundingBoard or a fwupd.conf.d drop-in directory, which are not
+#   in the fwupd.conf man page this script was written against.
+# * Reports claimed elsewhere but NOT verified here: that dbx updates are refused when
+#   Secure Boot is disabled. Check `fwupdmgr get-devices` on the machine if dbx is missing.
 # * Not implemented on purpose: Fedora Server/macOS paths (Fedora Workstation/KDE
 #   targeted), automatic reboot, automatic BIOS flashing by timer.
 
